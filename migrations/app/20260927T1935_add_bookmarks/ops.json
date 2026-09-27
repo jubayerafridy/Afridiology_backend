@@ -1,0 +1,686 @@
+[
+  {
+    "id": "table.bookmark",
+    "label": "Create table \"bookmark\"",
+    "summary": "Creates table \"bookmark\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "bookmark"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"bookmark\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"bookmark\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"bookmark\"",
+        "sql": "CREATE TABLE \"public\".\"bookmark\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"starRating\" int4 DEFAULT 0 NOT NULL,\n  \"targetId\" int4 NOT NULL,\n  \"targetType\" text NOT NULL,\n  \"updatedAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"userId\" int4 NOT NULL,\n  CONSTRAINT \"bookmark_pkey\" PRIMARY KEY (\"id\"),\n  CONSTRAINT \"bookmark_starRating_check\" CHECK (((\"starRating\" >= 0) AND (\"starRating\" <= 5))),\n  CONSTRAINT \"bookmark_targetType_check\" CHECK ((\"targetType\" = ANY (ARRAY['CHAPTER'::text, 'LESSON'::text, 'CONCEPT'::text, 'EXECUTION'::text, 'CQ'::text, 'MCQ'::text])))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"bookmark\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"bookmark\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.bookmarkCollection",
+    "label": "Create table \"bookmarkCollection\"",
+    "summary": "Creates table \"bookmarkCollection\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "bookmarkCollection"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"bookmarkCollection\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"bookmarkCollection\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"bookmarkCollection\"",
+        "sql": "CREATE TABLE \"public\".\"bookmarkCollection\" (\n  \"color\" text NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"defaultType\" text,\n  \"id\" SERIAL NOT NULL,\n  \"name\" text NOT NULL,\n  \"sortOrder\" int4 DEFAULT 0 NOT NULL,\n  \"type\" text NOT NULL,\n  \"updatedAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"userId\" int4 NOT NULL,\n  CONSTRAINT \"bookmarkCollection_pkey\" PRIMARY KEY (\"id\"),\n  CONSTRAINT \"bookmarkCollection_defaultType_check\" CHECK ((((type = 'DEFAULT'::text) AND (\"defaultType\" IS NOT NULL)) OR ((type = 'CUSTOM'::text) AND (\"defaultType\" IS NULL)))),\n  CONSTRAINT \"bookmarkCollection_type_check\" CHECK ((type = ANY (ARRAY['DEFAULT'::text, 'CUSTOM'::text])))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"bookmarkCollection\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"bookmarkCollection\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.bookmarkCollectionItem",
+    "label": "Create table \"bookmarkCollectionItem\"",
+    "summary": "Creates table \"bookmarkCollectionItem\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "bookmarkCollectionItem"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"bookmarkCollectionItem\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"bookmarkCollectionItem\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"bookmarkCollectionItem\"",
+        "sql": "CREATE TABLE \"public\".\"bookmarkCollectionItem\" (\n  \"bookmarkId\" int4 NOT NULL,\n  \"collectionId\" int4 NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  CONSTRAINT \"bookmarkCollectionItem_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"bookmarkCollectionItem\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"bookmarkCollectionItem\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.bookmark.bookmark_userId_targetType_targetId_key",
+    "label": "Add unique constraint on \"bookmark\" (userId, targetType, targetId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "bookmark_userId_targetType_targetId_key",
+        "table": "bookmark"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"bookmark_userId_targetType_targetId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "bookmark_userId_targetType_targetId_key",
+          "public",
+          "\"public\".\"bookmark\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"bookmark_userId_targetType_targetId_key\"",
+        "sql": "ALTER TABLE \"public\".\"bookmark\" ADD CONSTRAINT \"bookmark_userId_targetType_targetId_key\" UNIQUE (\"userId\", \"targetType\", \"targetId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"bookmark_userId_targetType_targetId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "bookmark_userId_targetType_targetId_key",
+          "public",
+          "\"public\".\"bookmark\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.bookmarkCollection.bookmarkCollection_userId_defaultType_key",
+    "label": "Add unique constraint on \"bookmarkCollection\" (userId, defaultType)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "bookmarkCollection_userId_defaultType_key",
+        "table": "bookmarkCollection"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"bookmarkCollection_userId_defaultType_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "bookmarkCollection_userId_defaultType_key",
+          "public",
+          "\"public\".\"bookmarkCollection\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"bookmarkCollection_userId_defaultType_key\"",
+        "sql": "ALTER TABLE \"public\".\"bookmarkCollection\" ADD CONSTRAINT \"bookmarkCollection_userId_defaultType_key\" UNIQUE (\"userId\", \"defaultType\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"bookmarkCollection_userId_defaultType_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "bookmarkCollection_userId_defaultType_key",
+          "public",
+          "\"public\".\"bookmarkCollection\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.bookmarkCollectionItem.bookmarkCollectionItem_bookmarkId_collectionId_key",
+    "label": "Add unique constraint on \"bookmarkCollectionItem\" (bookmarkId, collectionId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "bookmarkCollectionItem_bookmarkId_collectionId_key",
+        "table": "bookmarkCollectionItem"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"bookmarkCollectionItem_bookmarkId_collectionId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "bookmarkCollectionItem_bookmarkId_collectionId_key",
+          "public",
+          "\"public\".\"bookmarkCollectionItem\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"bookmarkCollectionItem_bookmarkId_collectionId_key\"",
+        "sql": "ALTER TABLE \"public\".\"bookmarkCollectionItem\" ADD CONSTRAINT \"bookmarkCollectionItem_bookmarkId_collectionId_key\" UNIQUE (\"bookmarkId\", \"collectionId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"bookmarkCollectionItem_bookmarkId_collectionId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "bookmarkCollectionItem_bookmarkId_collectionId_key",
+          "public",
+          "\"public\".\"bookmarkCollectionItem\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.bookmark.bookmark_targetType_targetId_idx_7a5ee9cb",
+    "label": "Create index \"bookmark_targetType_targetId_idx_7a5ee9cb\" on \"bookmark\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "bookmark_targetType_targetId_idx_7a5ee9cb",
+        "table": "bookmark"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"bookmark_targetType_targetId_idx_7a5ee9cb\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"bookmark_targetType_targetId_idx_7a5ee9cb\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"bookmark_targetType_targetId_idx_7a5ee9cb\"",
+        "sql": "CREATE INDEX \"bookmark_targetType_targetId_idx_7a5ee9cb\" ON \"public\".\"bookmark\" (\"targetType\", \"targetId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"bookmark_targetType_targetId_idx_7a5ee9cb\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"bookmark_targetType_targetId_idx_7a5ee9cb\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.bookmark.bookmark_userId_idx_a489d58a",
+    "label": "Create index \"bookmark_userId_idx_a489d58a\" on \"bookmark\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "bookmark_userId_idx_a489d58a",
+        "table": "bookmark"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"bookmark_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"bookmark_userId_idx_a489d58a\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"bookmark_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"bookmark_userId_idx_a489d58a\" ON \"public\".\"bookmark\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"bookmark_userId_idx_a489d58a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"bookmark_userId_idx_a489d58a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.bookmark.bookmark_userId_updatedAt_idx_42f5280d",
+    "label": "Create index \"bookmark_userId_updatedAt_idx_42f5280d\" on \"bookmark\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "bookmark_userId_updatedAt_idx_42f5280d",
+        "table": "bookmark"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"bookmark_userId_updatedAt_idx_42f5280d\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"bookmark_userId_updatedAt_idx_42f5280d\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"bookmark_userId_updatedAt_idx_42f5280d\"",
+        "sql": "CREATE INDEX \"bookmark_userId_updatedAt_idx_42f5280d\" ON \"public\".\"bookmark\" (\"userId\", \"updatedAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"bookmark_userId_updatedAt_idx_42f5280d\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"bookmark_userId_updatedAt_idx_42f5280d\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.bookmarkCollection.bookmarkCollection_userId_idx_a489d58a",
+    "label": "Create index \"bookmarkCollection_userId_idx_a489d58a\" on \"bookmarkCollection\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "bookmarkCollection_userId_idx_a489d58a",
+        "table": "bookmarkCollection"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"bookmarkCollection_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"bookmarkCollection_userId_idx_a489d58a\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"bookmarkCollection_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"bookmarkCollection_userId_idx_a489d58a\" ON \"public\".\"bookmarkCollection\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"bookmarkCollection_userId_idx_a489d58a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"bookmarkCollection_userId_idx_a489d58a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.bookmarkCollection.bookmarkCollection_userId_sortOrder_idx_174a06c9",
+    "label": "Create index \"bookmarkCollection_userId_sortOrder_idx_174a06c9\" on \"bookmarkCollection\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "bookmarkCollection_userId_sortOrder_idx_174a06c9",
+        "table": "bookmarkCollection"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"bookmarkCollection_userId_sortOrder_idx_174a06c9\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"bookmarkCollection_userId_sortOrder_idx_174a06c9\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"bookmarkCollection_userId_sortOrder_idx_174a06c9\"",
+        "sql": "CREATE INDEX \"bookmarkCollection_userId_sortOrder_idx_174a06c9\" ON \"public\".\"bookmarkCollection\" (\"userId\", \"sortOrder\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"bookmarkCollection_userId_sortOrder_idx_174a06c9\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"bookmarkCollection_userId_sortOrder_idx_174a06c9\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.bookmarkCollectionItem.bookmarkCollectionItem_bookmarkId_idx_1962ac1f",
+    "label": "Create index \"bookmarkCollectionItem_bookmarkId_idx_1962ac1f\" on \"bookmarkCollectionItem\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "bookmarkCollectionItem_bookmarkId_idx_1962ac1f",
+        "table": "bookmarkCollectionItem"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"bookmarkCollectionItem_bookmarkId_idx_1962ac1f\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"bookmarkCollectionItem_bookmarkId_idx_1962ac1f\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"bookmarkCollectionItem_bookmarkId_idx_1962ac1f\"",
+        "sql": "CREATE INDEX \"bookmarkCollectionItem_bookmarkId_idx_1962ac1f\" ON \"public\".\"bookmarkCollectionItem\" (\"bookmarkId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"bookmarkCollectionItem_bookmarkId_idx_1962ac1f\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"bookmarkCollectionItem_bookmarkId_idx_1962ac1f\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.bookmarkCollectionItem.bookmarkCollectionItem_collectionId_idx_b344fc1a",
+    "label": "Create index \"bookmarkCollectionItem_collectionId_idx_b344fc1a\" on \"bookmarkCollectionItem\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "bookmarkCollectionItem_collectionId_idx_b344fc1a",
+        "table": "bookmarkCollectionItem"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"bookmarkCollectionItem_collectionId_idx_b344fc1a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"bookmarkCollectionItem_collectionId_idx_b344fc1a\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"bookmarkCollectionItem_collectionId_idx_b344fc1a\"",
+        "sql": "CREATE INDEX \"bookmarkCollectionItem_collectionId_idx_b344fc1a\" ON \"public\".\"bookmarkCollectionItem\" (\"collectionId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"bookmarkCollectionItem_collectionId_idx_b344fc1a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"bookmarkCollectionItem_collectionId_idx_b344fc1a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.bookmark.bookmark_userId_fkey",
+    "label": "Add foreign key \"bookmark_userId_fkey\" on \"bookmark\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "bookmark_userId_fkey",
+        "table": "bookmark"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"bookmark_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "bookmark_userId_fkey",
+          "public",
+          "\"public\".\"bookmark\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"bookmark_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"bookmark\"\nADD CONSTRAINT \"bookmark_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"user\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"bookmark_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "bookmark_userId_fkey",
+          "public",
+          "\"public\".\"bookmark\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.bookmarkCollection.bookmarkCollection_userId_fkey",
+    "label": "Add foreign key \"bookmarkCollection_userId_fkey\" on \"bookmarkCollection\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "bookmarkCollection_userId_fkey",
+        "table": "bookmarkCollection"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"bookmarkCollection_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "bookmarkCollection_userId_fkey",
+          "public",
+          "\"public\".\"bookmarkCollection\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"bookmarkCollection_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"bookmarkCollection\"\nADD CONSTRAINT \"bookmarkCollection_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"user\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"bookmarkCollection_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "bookmarkCollection_userId_fkey",
+          "public",
+          "\"public\".\"bookmarkCollection\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.bookmarkCollectionItem.bookmarkCollectionItem_bookmarkId_fkey",
+    "label": "Add foreign key \"bookmarkCollectionItem_bookmarkId_fkey\" on \"bookmarkCollectionItem\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "bookmarkCollectionItem_bookmarkId_fkey",
+        "table": "bookmarkCollectionItem"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"bookmarkCollectionItem_bookmarkId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "bookmarkCollectionItem_bookmarkId_fkey",
+          "public",
+          "\"public\".\"bookmarkCollectionItem\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"bookmarkCollectionItem_bookmarkId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"bookmarkCollectionItem\"\nADD CONSTRAINT \"bookmarkCollectionItem_bookmarkId_fkey\"\nFOREIGN KEY (\"bookmarkId\")\nREFERENCES \"public\".\"bookmark\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"bookmarkCollectionItem_bookmarkId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "bookmarkCollectionItem_bookmarkId_fkey",
+          "public",
+          "\"public\".\"bookmarkCollectionItem\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.bookmarkCollectionItem.bookmarkCollectionItem_collectionId_fkey",
+    "label": "Add foreign key \"bookmarkCollectionItem_collectionId_fkey\" on \"bookmarkCollectionItem\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "bookmarkCollectionItem_collectionId_fkey",
+        "table": "bookmarkCollectionItem"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"bookmarkCollectionItem_collectionId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "bookmarkCollectionItem_collectionId_fkey",
+          "public",
+          "\"public\".\"bookmarkCollectionItem\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"bookmarkCollectionItem_collectionId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"bookmarkCollectionItem\"\nADD CONSTRAINT \"bookmarkCollectionItem_collectionId_fkey\"\nFOREIGN KEY (\"collectionId\")\nREFERENCES \"public\".\"bookmarkCollection\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"bookmarkCollectionItem_collectionId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "bookmarkCollectionItem_collectionId_fkey",
+          "public",
+          "\"public\".\"bookmarkCollectionItem\""
+        ]
+      }
+    ]
+  }
+]

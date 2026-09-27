@@ -1,0 +1,6 @@
+allowBuilds:
+  argon2: true
+  bcrypt: true
+  esbuild: true
+  msgpackr-extract: true
+  workerd: true

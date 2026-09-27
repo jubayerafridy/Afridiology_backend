@@ -1,0 +1,735 @@
+import { prisma } from "../../../config/prisma.js";
+
+/*
+ * ==================================================
+ * TYPES
+ * ==================================================
+ */
+
+type KnowledgeLinkType = "CHAPTER" | "LESSON" | "CONCEPT" | "EXECUTION";
+
+type KnowledgeItemType =
+  | "chapter"
+  | "lesson"
+  | "concept"
+  | "math"
+  | "cq"
+  | "mcq";
+
+type QuestionSource =
+  | "board"
+  | "test-paper"
+  | "model-test"
+  | "game"
+  | "quiz"
+  | "extra";
+
+interface KnowledgeGraphItem {
+  id: string;
+  type: KnowledgeItemType;
+  title: string;
+  slug: string;
+  description?: string;
+  parentId?: string;
+  side?: "left" | "right";
+  questionMeta?: {
+    sourceType: QuestionSource;
+    board?: string;
+    institution?: string;
+    year?: number;
+    paperId?: number;
+  };
+}
+
+interface KnowledgeGraphRelation {
+  id: string;
+  source: string;
+  target: string;
+  type: "contains" | "question";
+}
+
+export interface KnowledgeGraphData {
+  chapter: {
+    id: number;
+    chapterNo: number;
+    nameBN: string;
+    nameEng: string;
+  };
+  items: KnowledgeGraphItem[];
+  relations: KnowledgeGraphRelation[];
+}
+
+/*
+ * ==================================================
+ * HELPERS
+ * ==================================================
+ */
+
+function slugify(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9\u0980-\u09ff-]/g, "")
+    .replace(/-+/g, "-");
+}
+
+function buildQuestionTitle(questionPaper: {
+  source: string;
+  board: string | null;
+  institution: string | null;
+  year: number | null;
+}): string {
+  switch (questionPaper.source) {
+    case "BOARD":
+      return questionPaper.year !== null
+        ? `${questionPaper.board ?? "Board"} Board ${questionPaper.year}`
+        : `${questionPaper.board ?? "Board"} Board`;
+
+    case "TEST_PAPER":
+      return questionPaper.year !== null
+        ? `${questionPaper.institution ?? "Test Paper"} ${questionPaper.year}`
+        : (questionPaper.institution ?? "Test Paper");
+
+    case "MODEL_TEST":
+      return questionPaper.year !== null
+        ? `Model Test ${questionPaper.year}`
+        : "Model Test";
+
+    case "GAME":
+      return "Game";
+
+    case "QUIZ":
+      return "Quiz";
+
+    case "EXTRA":
+      return "Extra";
+
+    default:
+      return "Question";
+  }
+}
+
+function normalizeBoardName(board: string | null): string | undefined {
+  if (board === null) {
+    return undefined;
+  }
+
+  const normalized = board.trim();
+
+  if (normalized.length === 0) {
+    return undefined;
+  }
+
+  return normalized;
+}
+
+function normalizeInstitution(institution: string | null): string | undefined {
+  if (institution === null) {
+    return undefined;
+  }
+
+  const normalized = institution.trim();
+
+  if (normalized.length === 0) {
+    return undefined;
+  }
+
+  return normalized;
+}
+
+function normalizeYear(year: number | null): number | undefined {
+  return year ?? undefined;
+}
+
+/*
+ * ==================================================
+ * GRAPH ID HELPERS
+ * ==================================================
+ */
+
+function getGraphId(type: KnowledgeLinkType, id: number): string {
+  switch (type) {
+    case "CHAPTER":
+      return `chapter-${id}`;
+
+    case "LESSON":
+      return `lesson-${id}`;
+
+    case "CONCEPT":
+      return `concept-${id}`;
+
+    case "EXECUTION":
+      return `math-${id}`;
+  }
+}
+
+/*
+ * ==================================================
+ * QUESTION MAPPING
+ * ==================================================
+ */
+
+interface QuestionMapping {
+  type: KnowledgeLinkType;
+  id: number;
+}
+
+/**
+ * Prisma 8 RC currently exposes enum fields from generated
+ * model rows as string values.
+ *
+ * We therefore validate the runtime value before treating it
+ * as our stricter KnowledgeLinkType.
+ */
+function isKnowledgeLinkType(value: string | null): value is KnowledgeLinkType {
+  return (
+    value === "CHAPTER" ||
+    value === "LESSON" ||
+    value === "CONCEPT" ||
+    value === "EXECUTION"
+  );
+}
+
+function getCQMappings(cq: {
+  quesKaLinkType: string | null;
+  quesKaLinkId: number | null;
+
+  quesKhaLinkType: string | null;
+  quesKhaLinkId: number | null;
+
+  quesGaLinkType: string | null;
+  quesGaLinkId: number | null;
+
+  quesGhaLinkType: string | null;
+  quesGhaLinkId: number | null;
+}): QuestionMapping[] {
+  const mappings: QuestionMapping[] = [];
+
+  const links = [
+    {
+      type: cq.quesKaLinkType,
+      id: cq.quesKaLinkId,
+    },
+    {
+      type: cq.quesKhaLinkType,
+      id: cq.quesKhaLinkId,
+    },
+    {
+      type: cq.quesGaLinkType,
+      id: cq.quesGaLinkId,
+    },
+    {
+      type: cq.quesGhaLinkType,
+      id: cq.quesGhaLinkId,
+    },
+  ];
+
+  for (const link of links) {
+    if (link.id !== null && isKnowledgeLinkType(link.type)) {
+      mappings.push({
+        type: link.type,
+        id: link.id,
+      });
+    }
+  }
+
+  return mappings;
+}
+
+function getMCQMappings(mcq: {
+  linkType: string | null;
+  linkId: number | null;
+}): QuestionMapping[] {
+  if (mcq.linkId === null || !isKnowledgeLinkType(mcq.linkType)) {
+    return [];
+  }
+
+  return [
+    {
+      type: mcq.linkType,
+      id: mcq.linkId,
+    },
+  ];
+}
+
+/*
+ * ==================================================
+ * QUESTION SOURCE
+ * ==================================================
+ */
+
+function getQuestionSourceType(source: string): QuestionSource {
+  switch (source) {
+    case "BOARD":
+      return "board";
+
+    case "TEST_PAPER":
+      return "test-paper";
+
+    case "MODEL_TEST":
+      return "model-test";
+
+    case "GAME":
+      return "game";
+
+    case "QUIZ":
+      return "quiz";
+
+    case "EXTRA":
+      return "extra";
+
+    default:
+      return "extra";
+  }
+}
+
+/*
+ * ==================================================
+ * QUESTION META
+ * ==================================================
+ */
+
+function buildQuestionMeta(questionPaper: {
+  id: number;
+  source: string;
+  board: string | null;
+  institution: string | null;
+  year: number | null;
+}): {
+  sourceType: QuestionSource;
+  board?: string;
+  institution?: string;
+  year?: number;
+  paperId: number;
+} {
+  const meta: {
+    sourceType: QuestionSource;
+    board?: string;
+    institution?: string;
+    year?: number;
+    paperId: number;
+  } = {
+    sourceType: getQuestionSourceType(questionPaper.source),
+    paperId: questionPaper.id,
+  };
+
+  const board = normalizeBoardName(questionPaper.board);
+  const institution = normalizeInstitution(questionPaper.institution);
+  const year = normalizeYear(questionPaper.year);
+
+  if (board !== undefined) {
+    meta.board = board;
+  }
+
+  if (institution !== undefined) {
+    meta.institution = institution;
+  }
+
+  if (year !== undefined) {
+    meta.year = year;
+  }
+
+  return meta;
+}
+
+/*
+ * ==================================================
+ * CHAPTER GRAPH
+ * ==================================================
+ */
+
+export async function getChapterKnowledgeGraph(
+  chapterId: number,
+): Promise<KnowledgeGraphData | null> {
+  const chapter = await prisma.orm.public.Chapter.first({
+    id: chapterId,
+  });
+
+  if (!chapter) {
+    return null;
+  }
+
+  const lessons = await prisma.orm.public.Lesson.where({
+    chapterId,
+    isActive: true,
+  })
+    .orderBy((lesson) => lesson.id.asc())
+    .all();
+
+  const items: KnowledgeGraphItem[] = [];
+  const relations: KnowledgeGraphRelation[] = [];
+
+  /*
+   * --------------------------------------------------
+   * CHAPTER
+   * --------------------------------------------------
+   */
+
+  const chapterGraphId = `chapter-${chapter.id}`;
+
+  items.push({
+    id: chapterGraphId,
+    type: "chapter",
+    title: chapter.nameBN,
+    slug: slugify(chapter.nameEng),
+    description: chapter.nameEng,
+  });
+
+  /*
+   * --------------------------------------------------
+   * LESSONS
+   * --------------------------------------------------
+   */
+
+  for (const lesson of lessons) {
+    const lessonGraphId = `lesson-${lesson.id}`;
+
+    const lessonTitle =
+      lesson.lessonNo !== null
+        ? `${lesson.lessonNo} ${lesson.nameBN}`
+        : lesson.nameBN;
+
+    items.push({
+      id: lessonGraphId,
+      type: "lesson",
+      title: lessonTitle,
+      slug: slugify(lesson.nameEng),
+      description: lesson.descriptionBN,
+      parentId: chapterGraphId,
+    });
+
+    relations.push({
+      id: `contains-chapter-${chapter.id}-lesson-${lesson.id}`,
+      source: chapterGraphId,
+      target: lessonGraphId,
+      type: "contains",
+    });
+
+    /*
+     * ------------------------------------------------
+     * CONCEPTS
+     * ------------------------------------------------
+     */
+
+    const concepts = await prisma.orm.public.Concept.where({
+      lessonId: lesson.id,
+      isActive: true,
+    })
+      .orderBy((concept) => concept.id.asc())
+      .all();
+
+    for (const concept of concepts) {
+      const conceptGraphId = `concept-${concept.id}`;
+
+      items.push({
+        id: conceptGraphId,
+        type: "concept",
+        title: concept.nameBN,
+        slug: slugify(concept.nameEng),
+        description: concept.descriptionBN,
+        parentId: lessonGraphId,
+      });
+
+      relations.push({
+        id: `contains-lesson-${lesson.id}-concept-${concept.id}`,
+        source: lessonGraphId,
+        target: conceptGraphId,
+        type: "contains",
+      });
+
+      /*
+       * ------------------------------------------------
+       * EXECUTIONS
+       * ------------------------------------------------
+       */
+
+      const executions = await prisma.orm.public.Execution.where({
+        conceptId: concept.id,
+        isActive: true,
+      })
+        .orderBy((execution) => execution.id.asc())
+        .all();
+
+      for (const execution of executions) {
+        const executionGraphId = `math-${execution.id}`;
+
+        items.push({
+          id: executionGraphId,
+          type: "math",
+          title: execution.nameBN,
+          slug: slugify(execution.nameEng),
+          description: execution.descriptionBN,
+          parentId: conceptGraphId,
+        });
+
+        relations.push({
+          id: `contains-concept-${concept.id}-execution-${execution.id}`,
+          source: conceptGraphId,
+          target: executionGraphId,
+          type: "contains",
+        });
+      }
+    }
+  }
+
+  /*
+   * ==================================================
+   * HIERARCHY IDS
+   * ==================================================
+   */
+
+  const hierarchyIds = new Set<string>();
+
+  for (const item of items) {
+    if (
+      item.type === "chapter" ||
+      item.type === "lesson" ||
+      item.type === "concept" ||
+      item.type === "math"
+    ) {
+      hierarchyIds.add(item.id);
+    }
+  }
+
+  /*
+   * ==================================================
+   * CQs
+   * ==================================================
+   */
+
+  const cqRecords = await prisma.orm.public.CQ.where({
+    isActive: true,
+  }).all();
+
+  let cqSideIndex = 0;
+
+  for (const cq of cqRecords) {
+    const mappings = getCQMappings(cq);
+
+    const chapterMappings = mappings.filter((mapping) =>
+      hierarchyIds.has(getGraphId(mapping.type, mapping.id)),
+    );
+
+    if (chapterMappings.length === 0) {
+      continue;
+    }
+
+    const questionPaper = await prisma.orm.public.QuestionPaper.first({
+      id: cq.questionPaperId,
+    });
+
+    if (!questionPaper || !questionPaper.isActive) {
+      continue;
+    }
+
+    if (questionPaper.questionType !== "CQ") {
+      continue;
+    }
+
+    const questionGraphId = `cq-${cq.id}`;
+
+    items.push({
+      id: questionGraphId,
+      type: "cq",
+      title: buildQuestionTitle(questionPaper),
+      slug: `cq-${cq.id}`,
+      side: cqSideIndex % 2 === 0 ? "left" : "right",
+      questionMeta: buildQuestionMeta(questionPaper),
+    });
+
+    cqSideIndex += 1;
+
+    /*
+     * A single CQ can have multiple hierarchy mappings.
+     */
+
+    for (const mapping of chapterMappings) {
+      const sourceId = getGraphId(mapping.type, mapping.id);
+
+      relations.push({
+        id: `question-cq-${cq.id}-${mapping.type}-${mapping.id}`,
+        source: sourceId,
+        target: questionGraphId,
+        type: "question",
+      });
+    }
+  }
+
+  /*
+   * ==================================================
+   * MCQs
+   * ==================================================
+   */
+
+  const mcqRecords = await prisma.orm.public.MCQ.where({
+    isActive: true,
+  }).all();
+
+  let mcqSideIndex = 0;
+
+  for (const mcq of mcqRecords) {
+    const mappings = getMCQMappings(mcq);
+
+    const chapterMappings = mappings.filter((mapping) =>
+      hierarchyIds.has(getGraphId(mapping.type, mapping.id)),
+    );
+
+    if (chapterMappings.length === 0) {
+      continue;
+    }
+
+    const questionPaper = await prisma.orm.public.QuestionPaper.first({
+      id: mcq.questionPaperId,
+    });
+
+    if (!questionPaper || !questionPaper.isActive) {
+      continue;
+    }
+
+    if (questionPaper.questionType !== "MCQ") {
+      continue;
+    }
+
+    const questionGraphId = `mcq-${mcq.id}`;
+
+    items.push({
+      id: questionGraphId,
+      type: "mcq",
+      title: buildQuestionTitle(questionPaper),
+      slug: `mcq-${mcq.id}`,
+      side: mcqSideIndex % 2 === 0 ? "left" : "right",
+      questionMeta: buildQuestionMeta(questionPaper),
+    });
+
+    mcqSideIndex += 1;
+
+    for (const mapping of chapterMappings) {
+      const sourceId = getGraphId(mapping.type, mapping.id);
+
+      relations.push({
+        id: `question-mcq-${mcq.id}-${mapping.type}-${mapping.id}`,
+        source: sourceId,
+        target: questionGraphId,
+        type: "question",
+      });
+    }
+  }
+
+  /*
+   * ==================================================
+   * RESULT
+   * ==================================================
+   */
+
+  return {
+    chapter: {
+      id: chapter.id,
+      chapterNo: chapter.chapterNo,
+      nameBN: chapter.nameBN,
+      nameEng: chapter.nameEng,
+    },
+    items,
+    relations,
+  };
+}
+
+/*
+ * ==================================================
+ * FULL CQ
+ * ==================================================
+ */
+
+export async function getCQDetail(id: number) {
+  const cq = await prisma.orm.public.CQ.first({
+    id,
+  });
+
+  if (!cq || !cq.isActive) {
+    return null;
+  }
+
+  const questionPaper = await prisma.orm.public.QuestionPaper.first({
+    id: cq.questionPaperId,
+  });
+
+  if (!questionPaper || !questionPaper.isActive) {
+    return null;
+  }
+
+  return {
+    id: cq.id,
+    questionPaperId: cq.questionPaperId,
+    qusNo: cq.qusNo,
+
+    source: {
+      type: questionPaper.source,
+      board: questionPaper.board,
+      institution: questionPaper.institution,
+      year: questionPaper.year,
+    },
+
+    stimulus: cq.quesUddipok,
+
+    questions: {
+      a: cq.quesKaEng,
+      b: cq.quesKhaEng,
+      c: cq.quesGaEng,
+      d: cq.quesGhaEng,
+    },
+
+    answers: {
+      a: cq.ansKaEng,
+      b: cq.ansKhaEng,
+      c: cq.ansGaEng,
+      d: cq.ansGhaEng,
+    },
+
+    imageUrl: cq.imageUrl,
+  };
+}
+
+/*
+ * ==================================================
+ * FULL MCQ
+ * ==================================================
+ */
+
+export async function getMCQDetail(id: number) {
+  const mcq = await prisma.orm.public.MCQ.first({
+    id,
+  });
+
+  if (!mcq || !mcq.isActive) {
+    return null;
+  }
+
+  const questionPaper = await prisma.orm.public.QuestionPaper.first({
+    id: mcq.questionPaperId,
+  });
+
+  if (!questionPaper || !questionPaper.isActive) {
+    return null;
+  }
+
+  return {
+    id: mcq.id,
+    questionPaperId: mcq.questionPaperId,
+    qusNo: mcq.qusNo,
+
+    source: {
+      type: questionPaper.source,
+      board: questionPaper.board,
+      institution: questionPaper.institution,
+      year: questionPaper.year,
+    },
+
+    stimulus: mcq.quesUddipok,
+
+    options: mcq.optionsEng,
+    rightAnswer: mcq.rightAnsEng,
+    explanation: mcq.explanationEng,
+
+    imageUrl: mcq.imageUrl,
+  };
+}

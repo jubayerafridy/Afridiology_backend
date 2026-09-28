@@ -15,6 +15,8 @@ import studentChapterRouter from "../modules/student/chapter/chapter.route.js";
 import knowledgeGraphRouter from "../modules/student/knowledgeGraph/knowledgeGraph.route.js";
 import studentQuestionBankRouter from "../modules/student/questionBank/questionBank.route.js";
 
+import bookmarkRouter from "../modules/student/bookmark/bookmark.route.js";
+
 const router = Router();
 
 /*
@@ -58,5 +60,7 @@ router.use("/chapters", studentChapterRouter);
 router.use("/knowledge-graph", knowledgeGraphRouter);
 
 router.use("/question-bank", studentQuestionBankRouter);
+
+router.use("/bookmarks", bookmarkRouter);
 
 export default router;

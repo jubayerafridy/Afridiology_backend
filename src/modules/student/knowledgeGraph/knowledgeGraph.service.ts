@@ -1,5 +1,13 @@
 import { prisma } from "../../../config/prisma.js";
 
+import { getBookmarkStates } from "../bookmark/bookmark.service.js";
+
+import type {
+  BookmarkCollectionData,
+  BookmarkState,
+  BookmarkStateLookupTarget,
+} from "../bookmark/bookmark.types.js";
+
 /*
  * ==================================================
  * TYPES
@@ -32,6 +40,23 @@ interface KnowledgeGraphItem {
   description?: string;
   parentId?: string;
   side?: "left" | "right";
+
+  /*
+   * Bookmark is intentionally optional.
+   *
+   * It is only added for:
+   * - concept
+   * - math / execution
+   * - cq
+   * - mcq
+   *
+   * Chapter and lesson NEVER receive this field.
+   *
+   * Also, when the item is not bookmarked, the
+   * property is omitted completely.
+   */
+  bookmark?: BookmarkState;
+
   questionMeta?: {
     sourceType: QuestionSource;
     board?: string;
@@ -55,6 +80,27 @@ export interface KnowledgeGraphData {
     nameBN: string;
     nameEng: string;
   };
+
+  /*
+   * Bookmark collection definitions are sent ONCE
+   * at graph level.
+   *
+   * Individual bookmark objects only contain
+   * collectionIds.
+   *
+   * This prevents repeating:
+   *
+   *   name
+   *   color
+   *   type
+   *
+   * inside every bookmarked graph item.
+   *
+   * This field is only added for authenticated users
+   * who have at least one bookmark collection.
+   */
+  bookmarkCollections?: BookmarkCollectionData[];
+
   items: KnowledgeGraphItem[];
   relations: KnowledgeGraphRelation[];
 }
@@ -315,7 +361,9 @@ function buildQuestionMeta(questionPaper: {
   };
 
   const board = normalizeBoardName(questionPaper.board);
+
   const institution = normalizeInstitution(questionPaper.institution);
+
   const year = normalizeYear(questionPaper.year);
 
   if (board !== undefined) {
@@ -335,12 +383,140 @@ function buildQuestionMeta(questionPaper: {
 
 /*
  * ==================================================
+ * BOOKMARK HELPERS
+ * ==================================================
+ */
+
+/**
+ * Convert a graph item into the corresponding Bookmark
+ * target.
+ *
+ * Only these graph item types are bookmarkable from the
+ * Knowledge Graph:
+ *
+ *   concept -> CONCEPT
+ *   math    -> EXECUTION
+ *   cq      -> CQ
+ *   mcq     -> MCQ
+ *
+ * Chapter and lesson intentionally return null.
+ */
+function getBookmarkTargetFromGraphItem(
+  item: KnowledgeGraphItem,
+): BookmarkStateLookupTarget | null {
+  switch (item.type) {
+    case "concept":
+      return {
+        targetType: "CONCEPT",
+        targetId: Number(item.id.replace("concept-", "")),
+      };
+
+    case "math":
+      return {
+        targetType: "EXECUTION",
+        targetId: Number(item.id.replace("math-", "")),
+      };
+
+    case "cq":
+      return {
+        targetType: "CQ",
+        targetId: Number(item.id.replace("cq-", "")),
+      };
+
+    case "mcq":
+      return {
+        targetType: "MCQ",
+        targetId: Number(item.id.replace("mcq-", "")),
+      };
+
+    case "chapter":
+    case "lesson":
+      return null;
+  }
+}
+
+/**
+ * Enrich graph items with bookmark state.
+ *
+ * Important rules:
+ *
+ * 1. Only concept/math/cq/mcq are enriched.
+ * 2. Chapter/lesson never receive bookmark.
+ * 3. If a target is not bookmarked, bookmark is omitted.
+ * 4. questionMeta remains completely separate.
+ */
+function applyBookmarkStates(
+  items: KnowledgeGraphItem[],
+  bookmarkStates: Map<string, BookmarkState>,
+): void {
+  for (const item of items) {
+    const target = getBookmarkTargetFromGraphItem(item);
+
+    if (!target) {
+      continue;
+    }
+
+    const key = `${target.targetType}:${target.targetId}`;
+
+    const state = bookmarkStates.get(key);
+
+    if (!state) {
+      /*
+       * Important:
+       *
+       * Do NOT add:
+       *
+       * bookmark: null
+       *
+       * or:
+       *
+       * bookmark: { bookmarked: false }
+       *
+       * The field must simply not exist.
+       */
+      continue;
+    }
+
+    item.bookmark = state;
+  }
+}
+
+/**
+ * Convert database BookmarkCollection rows into the
+ * public graph response shape.
+ *
+ * Collection definitions are sent once at the top level.
+ */
+function buildBookmarkCollectionData(
+  collections: Array<{
+    id: number;
+    name: string;
+    color: string;
+    type: string;
+    defaultType: string | null;
+    sortOrder: number;
+  }>,
+): BookmarkCollectionData[] {
+  return collections.map((collection) => ({
+    id: collection.id,
+    name: collection.name,
+    color: collection.color,
+    type: collection.type as BookmarkCollectionData["type"],
+    defaultType:
+      collection.defaultType as BookmarkCollectionData["defaultType"],
+    sortOrder: collection.sortOrder,
+  }));
+}
+
+/*
+ * ==================================================
  * CHAPTER GRAPH
  * ==================================================
  */
 
 export async function getChapterKnowledgeGraph(
   chapterId: number,
+  userId?: number,
 ): Promise<KnowledgeGraphData | null> {
   const chapter = await prisma.orm.public.Chapter.first({
     id: chapterId,
@@ -618,20 +794,137 @@ export async function getChapterKnowledgeGraph(
 
   /*
    * ==================================================
+   * OPTIONAL BOOKMARK ENRICHMENT
+   * ==================================================
+   *
+   * This section is deliberately at the END of graph
+   * construction.
+   *
+   * Therefore:
+   *
+   * - public graph requests can return normally
+   * - no bookmark query happens without userId
+   * - chapter/lesson never receive bookmark
+   * - only relevant component types are checked
+   */
+
+  let bookmarkCollections: BookmarkCollectionData[] | undefined;
+
+  if (userId !== undefined) {
+    /*
+     * ------------------------------------------------
+     * STEP 1
+     * Load this user's collections.
+     *
+     * IMPORTANT:
+     *
+     * We do NOT call ensureDefaultBookmarkCollections().
+     *
+     * Viewing the graph must NEVER create bookmark
+     * collections.
+     *
+     * We fetch the collection definitions once because
+     * the frontend needs:
+     *
+     *   id
+     *   name
+     *   color
+     *
+     * to resolve bookmark.collectionIds.
+     * ------------------------------------------------
+     */
+
+    const collections = await prisma.orm.public.BookmarkCollection.where({
+      userId,
+    })
+      .orderBy((collection) => collection.sortOrder.asc())
+      .all();
+
+    /*
+     * No collections means this user has not initialized
+     * bookmark collections yet.
+     *
+     * Do not create them and do not perform bookmark
+     * state queries.
+     */
+    if (collections.length > 0) {
+      /*
+       * Send collection metadata ONCE at graph level.
+       */
+      bookmarkCollections = buildBookmarkCollectionData(collections);
+
+      /*
+       * ------------------------------------------------
+       * STEP 2
+       * Collect only bookmarkable graph targets.
+       * ------------------------------------------------
+       */
+
+      const targets: BookmarkStateLookupTarget[] = [];
+
+      for (const item of items) {
+        const target = getBookmarkTargetFromGraphItem(item);
+
+        if (target) {
+          targets.push(target);
+        }
+      }
+
+      /*
+       * ------------------------------------------------
+       * STEP 3
+       * Ask bookmark service for only those targets.
+       * ------------------------------------------------
+       */
+
+      if (targets.length > 0) {
+        const bookmarkStates = await getBookmarkStates(userId, targets);
+
+        /*
+         * ------------------------------------------------
+         * STEP 4
+         * Add bookmark only when a bookmark exists.
+         * ------------------------------------------------
+         */
+
+        applyBookmarkStates(items, bookmarkStates);
+      }
+    }
+  }
+
+  /*
+   * ==================================================
    * RESULT
    * ==================================================
    */
 
-  return {
+  const result: KnowledgeGraphData = {
     chapter: {
       id: chapter.id,
       chapterNo: chapter.chapterNo,
       nameBN: chapter.nameBN,
       nameEng: chapter.nameEng,
     },
+
     items,
+
     relations,
   };
+
+  /*
+   * Do not add bookmarkCollections for:
+   *
+   * - anonymous users
+   * - authenticated users with no collections
+   *
+   * This keeps the public graph response free of
+   * bookmark-specific data.
+   */
+  if (bookmarkCollections !== undefined) {
+    result.bookmarkCollections = bookmarkCollections;
+  }
+
+  return result;
 }
 
 /*

@@ -8,6 +8,20 @@ import {
 
 /*
  * ==================================================
+ * TYPES
+ * ==================================================
+ */
+
+interface AuthenticatedRequest extends Request {
+  auth?: {
+    userId: number;
+    role: string;
+    sessionId: number;
+  };
+}
+
+/*
+ * ==================================================
  * HELPERS
  * ==================================================
  */
@@ -38,6 +52,56 @@ function parsePositiveInt(value: string | string[] | undefined): number | null {
 
 /*
  * ==================================================
+ * OPTIONAL AUTHENTICATED USER
+ * ==================================================
+ *
+ * IMPORTANT:
+ *
+ * The Knowledge Graph route remains PUBLIC.
+ *
+ * optionalAuthenticate middleware may attach:
+ *
+ * req.auth = {
+ *   userId,
+ *   role,
+ *   sessionId,
+ * }
+ *
+ * If the visitor is anonymous, req.auth is undefined.
+ *
+ * Therefore:
+ *
+ * PUBLIC USER
+ *   ↓
+ * no userId
+ *   ↓
+ * no bookmark queries
+ *
+ * LOGGED-IN USER
+ *   ↓
+ * userId
+ *   ↓
+ * bookmark-aware graph
+ */
+
+function getOptionalAuthenticatedUserId(req: Request): number | undefined {
+  const authenticatedRequest = req as AuthenticatedRequest;
+
+  const auth = authenticatedRequest.auth;
+
+  if (!auth) {
+    return undefined;
+  }
+
+  if (!Number.isInteger(auth.userId) || auth.userId <= 0) {
+    return undefined;
+  }
+
+  return auth.userId;
+}
+
+/*
+ * ==================================================
  * CHAPTER GRAPH
  * ==================================================
  */
@@ -54,16 +118,32 @@ export async function getChapterKnowledgeGraphController(
         success: false,
         message: "Invalid chapter ID",
       });
+
       return;
     }
 
-    const graph = await getChapterKnowledgeGraph(chapterId);
+    /*
+     * Authentication is OPTIONAL.
+     *
+     * We intentionally do not reject the request when
+     * there is no authenticated user.
+     */
+    const userId = getOptionalAuthenticatedUserId(req);
+
+    /*
+     * The service receives undefined for anonymous users.
+     *
+     * In that case the service does not perform any
+     * bookmark queries.
+     */
+    const graph = await getChapterKnowledgeGraph(chapterId, userId);
 
     if (!graph) {
       res.status(404).json({
         success: false,
         message: "Chapter not found",
       });
+
       return;
     }
 
@@ -99,6 +179,7 @@ export async function getCQDetailController(
         success: false,
         message: "Invalid CQ ID",
       });
+
       return;
     }
 
@@ -109,6 +190,7 @@ export async function getCQDetailController(
         success: false,
         message: "CQ not found",
       });
+
       return;
     }
 
@@ -144,6 +226,7 @@ export async function getMCQDetailController(
         success: false,
         message: "Invalid MCQ ID",
       });
+
       return;
     }
 
@@ -154,6 +237,7 @@ export async function getMCQDetailController(
         success: false,
         message: "MCQ not found",
       });
+
       return;
     }
 

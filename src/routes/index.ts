@@ -16,6 +16,7 @@ import knowledgeGraphRouter from "../modules/student/knowledgeGraph/knowledgeGra
 import studentQuestionBankRouter from "../modules/student/questionBank/questionBank.route.js";
 
 import bookmarkRouter from "../modules/student/bookmark/bookmark.route.js";
+import questionProgressRouter from "../modules/student/questionProgress/questionProgress.routes.js";
 
 const router = Router();
 
@@ -62,5 +63,7 @@ router.use("/knowledge-graph", knowledgeGraphRouter);
 router.use("/question-bank", studentQuestionBankRouter);
 
 router.use("/bookmarks", bookmarkRouter);
+
+router.use("/question-progress", questionProgressRouter);
 
 export default router;

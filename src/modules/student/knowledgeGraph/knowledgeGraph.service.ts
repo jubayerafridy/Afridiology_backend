@@ -1,11 +1,11 @@
 import { prisma } from "../../../config/prisma.js";
 
 import { getBookmarkStates } from "../bookmark/bookmark.service.js";
+import { getQuestionProgressStates } from "../questionProgress/questionProgress.service.js";
 
 import type {
   BookmarkCollectionData,
   BookmarkState,
-  BookmarkStateLookupTarget,
 } from "../bookmark/bookmark.types.js";
 
 /*
@@ -42,7 +42,7 @@ interface KnowledgeGraphItem {
   side?: "left" | "right";
 
   /*
-   * Bookmark is intentionally optional.
+   * Personalization package is intentionally optional.
    *
    * It is only added for:
    * - concept
@@ -52,8 +52,12 @@ interface KnowledgeGraphItem {
    *
    * Chapter and lesson NEVER receive this field.
    *
-   * Also, when the item is not bookmarked, the
-   * property is omitted completely.
+   * For supported item types, the package contains both
+   * bookmark information and QuestionProgress state.
+   *
+   * The bookmark package is returned even when the item
+   * has no Bookmark row, because progress is independent
+   * from bookmarking.
    */
   bookmark?: BookmarkState;
 
@@ -85,8 +89,8 @@ export interface KnowledgeGraphData {
    * Bookmark collection definitions are sent ONCE
    * at graph level.
    *
-   * Individual bookmark objects only contain
-   * collectionIds.
+   * Individual bookmark objects contain bookmark
+   * information, collectionIds, and progress state.
    *
    * This prevents repeating:
    *
@@ -383,16 +387,22 @@ function buildQuestionMeta(questionPaper: {
 
 /*
  * ==================================================
- * BOOKMARK HELPERS
+ * BOOKMARK / PROGRESS HELPERS
  * ==================================================
  */
 
+type PersonalizedGraphTargetType = "CONCEPT" | "EXECUTION" | "CQ" | "MCQ";
+
+interface PersonalizedGraphTarget {
+  targetType: PersonalizedGraphTargetType;
+  targetId: number;
+}
+
 /**
- * Convert a graph item into the corresponding Bookmark
- * target.
+ * Convert a graph item into the corresponding
+ * bookmark/progress target.
  *
- * Only these graph item types are bookmarkable from the
- * Knowledge Graph:
+ * Only these graph item types carry personalization:
  *
  *   concept -> CONCEPT
  *   math    -> EXECUTION
@@ -401,9 +411,9 @@ function buildQuestionMeta(questionPaper: {
  *
  * Chapter and lesson intentionally return null.
  */
-function getBookmarkTargetFromGraphItem(
+function getPersonalizedTargetFromGraphItem(
   item: KnowledgeGraphItem,
-): BookmarkStateLookupTarget | null {
+): PersonalizedGraphTarget | null {
   switch (item.type) {
     case "concept":
       return {
@@ -436,21 +446,29 @@ function getBookmarkTargetFromGraphItem(
 }
 
 /**
- * Enrich graph items with bookmark state.
+ * Enrich graph items with bookmark + progress state.
  *
  * Important rules:
  *
  * 1. Only concept/math/cq/mcq are enriched.
  * 2. Chapter/lesson never receive bookmark.
- * 3. If a target is not bookmarked, bookmark is omitted.
- * 4. questionMeta remains completely separate.
+ * 3. Progress exists independently from Bookmark.
+ * 4. If no Bookmark row exists, a default bookmark
+ *    package is still returned so progress can travel
+ *    through the existing graph personalization shape.
+ * 5. Missing progress means NOT_STARTED.
+ * 6. questionMeta remains completely separate.
  */
-function applyBookmarkStates(
+function applyPersonalizationStates(
   items: KnowledgeGraphItem[],
   bookmarkStates: Map<string, BookmarkState>,
+  progressStates: Map<
+    string,
+    { status: "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED" }
+  >,
 ): void {
   for (const item of items) {
-    const target = getBookmarkTargetFromGraphItem(item);
+    const target = getPersonalizedTargetFromGraphItem(item);
 
     if (!target) {
       continue;
@@ -458,26 +476,18 @@ function applyBookmarkStates(
 
     const key = `${target.targetType}:${target.targetId}`;
 
-    const state = bookmarkStates.get(key);
+    const bookmarkState = bookmarkStates.get(key);
+    const progressState = progressStates.get(key);
 
-    if (!state) {
-      /*
-       * Important:
-       *
-       * Do NOT add:
-       *
-       * bookmark: null
-       *
-       * or:
-       *
-       * bookmark: { bookmarked: false }
-       *
-       * The field must simply not exist.
-       */
-      continue;
-    }
-
-    item.bookmark = state;
+    item.bookmark = {
+      bookmarked: bookmarkState?.bookmarked ?? false,
+      bookmarkId: bookmarkState?.bookmarkId ?? 0,
+      starRating: bookmarkState?.starRating ?? 0,
+      collectionIds: bookmarkState?.collectionIds ?? [],
+      progress: {
+        status: progressState?.status ?? "NOT_STARTED",
+      },
+    };
   }
 }
 
@@ -794,7 +804,7 @@ export async function getChapterKnowledgeGraph(
 
   /*
    * ==================================================
-   * OPTIONAL BOOKMARK ENRICHMENT
+   * OPTIONAL PERSONALIZATION ENRICHMENT
    * ==================================================
    *
    * This section is deliberately at the END of graph
@@ -803,9 +813,12 @@ export async function getChapterKnowledgeGraph(
    * Therefore:
    *
    * - public graph requests can return normally
-   * - no bookmark query happens without userId
-   * - chapter/lesson never receive bookmark
+   * - no bookmark/progress query happens without userId
+   * - chapter/lesson never receive personalization data
    * - only relevant component types are checked
+   * - Bookmark and QuestionProgress remain separate in DB
+   * - the response combines them into the existing
+   *   bookmark package used by KnowledgeExplorer
    */
 
   let bookmarkCollections: BookmarkCollectionData[] | undefined;
@@ -822,15 +835,6 @@ export async function getChapterKnowledgeGraph(
      *
      * Viewing the graph must NEVER create bookmark
      * collections.
-     *
-     * We fetch the collection definitions once because
-     * the frontend needs:
-     *
-     *   id
-     *   name
-     *   color
-     *
-     * to resolve bookmark.collectionIds.
      * ------------------------------------------------
      */
 
@@ -840,55 +844,57 @@ export async function getChapterKnowledgeGraph(
       .orderBy((collection) => collection.sortOrder.asc())
       .all();
 
-    /*
-     * No collections means this user has not initialized
-     * bookmark collections yet.
-     *
-     * Do not create them and do not perform bookmark
-     * state queries.
-     */
     if (collections.length > 0) {
       /*
        * Send collection metadata ONCE at graph level.
        */
       bookmarkCollections = buildBookmarkCollectionData(collections);
+    }
+
+    /*
+     * ------------------------------------------------
+     * STEP 2
+     * Collect only graph targets that support both
+     * bookmark and progress personalization.
+     * ------------------------------------------------
+     */
+
+    const targets: PersonalizedGraphTarget[] = [];
+
+    for (const item of items) {
+      const target = getPersonalizedTargetFromGraphItem(item);
+
+      if (target) {
+        targets.push(target);
+      }
+    }
+
+    /*
+     * ------------------------------------------------
+     * STEP 3
+     * Load bookmark and progress state independently.
+     *
+     * Progress MUST NOT depend on bookmark collections.
+     * A student can have progress without ever creating
+     * or using a bookmark.
+     * ------------------------------------------------
+     */
+
+    if (targets.length > 0) {
+      const [bookmarkStates, progressStates] = await Promise.all([
+        getBookmarkStates(userId, targets),
+        getQuestionProgressStates(userId, targets),
+      ]);
 
       /*
        * ------------------------------------------------
-       * STEP 2
-       * Collect only bookmarkable graph targets.
+       * STEP 4
+       * Merge both states into the existing bookmark
+       * package consumed by KnowledgeExplorer.
        * ------------------------------------------------
        */
 
-      const targets: BookmarkStateLookupTarget[] = [];
-
-      for (const item of items) {
-        const target = getBookmarkTargetFromGraphItem(item);
-
-        if (target) {
-          targets.push(target);
-        }
-      }
-
-      /*
-       * ------------------------------------------------
-       * STEP 3
-       * Ask bookmark service for only those targets.
-       * ------------------------------------------------
-       */
-
-      if (targets.length > 0) {
-        const bookmarkStates = await getBookmarkStates(userId, targets);
-
-        /*
-         * ------------------------------------------------
-         * STEP 4
-         * Add bookmark only when a bookmark exists.
-         * ------------------------------------------------
-         */
-
-        applyBookmarkStates(items, bookmarkStates);
-      }
+      applyPersonalizationStates(items, bookmarkStates, progressStates);
     }
   }
 

@@ -4,6 +4,8 @@ import type {
   BookmarkTargetType,
 } from "./bookmark.constants.js";
 
+import type { QuestionProgressState } from "../questionProgress/questionProgress.types.js";
+
 /*
  * ==================================================
  * BOOKMARK TYPES
@@ -22,7 +24,27 @@ import type {
 
 export interface BookmarkTarget {
   targetType: BookmarkTargetType;
+
   targetId: number;
+}
+
+/* ==================================================
+ * BOOKMARK PROGRESS
+ * ==================================================
+ *
+ * Progress is stored independently from Bookmark in
+ * the QuestionProgress table.
+ *
+ * It is included here because Knowledge Graph /
+ * Question Bank responses already transport the
+ * bookmark package for personalized graph items.
+ *
+ * Therefore the frontend can receive bookmark +
+ * progress information together.
+ */
+
+export interface BookmarkProgressState {
+  status: QuestionProgressState["status"];
 }
 
 /* ==================================================
@@ -31,6 +53,9 @@ export interface BookmarkTarget {
  *
  * This is the compact bookmark information that can
  * travel with Knowledge Graph / Question Bank data.
+ *
+ * Progress is intentionally nested inside this
+ * response package.
  */
 
 export interface BookmarkState {
@@ -41,6 +66,8 @@ export interface BookmarkState {
   starRating: number;
 
   collectionIds: number[];
+
+  progress: BookmarkProgressState;
 }
 
 /* ==================================================

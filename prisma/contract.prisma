@@ -15,6 +15,7 @@ model User {
   authSessions        AuthSession[]
   bookmarks           Bookmark[]
   bookmarkCollections BookmarkCollection[]
+  questionProgress    QuestionProgress[]
 
   @@index([role], name: "user_role_idx")
   @@index([status], name: "user_status_idx")
@@ -258,9 +259,33 @@ model Bookmark {
   @@unique([userId, targetType, targetId], map: "bookmark_userId_targetType_targetId_key")
   @@index([userId, updatedAt], name: "bookmark_userId_updatedAt_idx")
   @@index([targetType, targetId], name: "bookmark_targetType_targetId_idx")
- @@check(expression: "((\"starRating\" >= 0) AND (\"starRating\" <= 5))", map: "bookmark_starRating_check")
+  @@check(expression: "((\"starRating\" >= 0) AND (\"starRating\" <= 5))", map: "bookmark_starRating_check")
   @@check(expression: "(\"targetType\" = ANY (ARRAY['CHAPTER'::text, 'LESSON'::text, 'CONCEPT'::text, 'EXECUTION'::text, 'CQ'::text, 'MCQ'::text]))", map: "bookmark_targetType_check")
   @@map("bookmark")
+}
+
+model QuestionProgress {
+  id         Int         @id(map: "questionProgress_pkey") @default(autoincrement())
+  userId     Int
+  targetType String
+  targetId   Int
+  status     String
+  createdAt  Timestamptz @default(now())
+  updatedAt  Timestamptz @default(now())
+
+  user       User        @relation(fields:[userId], references:[id], onDelete: Cascade, map: "questionProgress_userId_fkey")
+
+  @@unique([userId, targetType, targetId], map: "questionProgress_userId_targetType_targetId_key")
+
+  @@index([userId, updatedAt], name: "questionProgress_userId_updatedAt_idx")
+
+  @@index([targetType, targetId], name: "questionProgress_targetType_targetId_idx")
+
+  @@check(expression: "(\"targetType\" = ANY (ARRAY['CONCEPT'::text, 'EXECUTION'::text, 'CQ'::text, 'MCQ'::text]))", map: "questionProgress_targetType_check")
+
+  @@check(expression: "(status = ANY (ARRAY['NOT_STARTED'::text, 'IN_PROGRESS'::text, 'COMPLETED'::text]))", map: "questionProgress_status_check")
+
+  @@map("questionProgress")
 }
 
 model BookmarkCollection {
@@ -281,7 +306,7 @@ model BookmarkCollection {
   @@index([userId], name: "bookmarkCollection_userId_idx")
   @@index([userId, sortOrder], name: "bookmarkCollection_userId_sortOrder_idx")
   @@check(expression: "(type = ANY (ARRAY['DEFAULT'::text, 'CUSTOM'::text]))", map: "bookmarkCollection_type_check")
- @@check(expression: "(((type = 'DEFAULT'::text) AND (\"defaultType\" IS NOT NULL)) OR ((type = 'CUSTOM'::text) AND (\"defaultType\" IS NULL)))", map: "bookmarkCollection_defaultType_check")
+  @@check(expression: "(((type = 'DEFAULT'::text) AND (\"defaultType\" IS NOT NULL)) OR ((type = 'CUSTOM'::text) AND (\"defaultType\" IS NULL)))", map: "bookmarkCollection_defaultType_check")
   @@map("bookmarkCollection")
 }
 

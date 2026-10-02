@@ -7,6 +7,13 @@ import {
   updateChapter,
 } from "./chapter.service.js";
 
+type JsonPrimitive = string | number | boolean | null;
+
+type JsonValue =
+  | JsonPrimitive
+  | JsonValue[]
+  | { readonly [key: string]: JsonValue };
+
 function parsePositiveInteger(value: unknown): number | null {
   const number = Number(value);
 
@@ -17,20 +24,62 @@ function parsePositiveInteger(value: unknown): number | null {
   return number;
 }
 
+function isJsonValue(value: unknown): value is JsonValue {
+  if (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return true;
+  }
+
+  if (Array.isArray(value)) {
+    return value.every(isJsonValue);
+  }
+
+  if (typeof value === "object") {
+    return Object.values(value).every(isJsonValue);
+  }
+
+  return false;
+}
+
+function parseJsonValue(value: unknown, fieldName: string): JsonValue | null {
+  if (!isJsonValue(value)) {
+    return null;
+  }
+
+  return value;
+}
+
 export async function createChapterController(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const { subjectId, chapterNo, nameBN, nameEng } = req.body as {
+  const {
+    subjectId,
+    chapterNo,
+    nameBN,
+    nameEng,
+    descriptionBN,
+    descriptionEng,
+  } = req.body as {
     subjectId?: unknown;
     chapterNo?: unknown;
     nameBN?: unknown;
     nameEng?: unknown;
+    descriptionBN?: unknown;
+    descriptionEng?: unknown;
   };
 
   const parsedSubjectId = parsePositiveInteger(subjectId);
 
   const parsedChapterNo = parsePositiveInteger(chapterNo);
+
+  const parsedDescriptionBN = parseJsonValue(descriptionBN, "descriptionBN");
+
+  const parsedDescriptionEng = parseJsonValue(descriptionEng, "descriptionEng");
 
   if (parsedSubjectId === null) {
     res.status(400).json({
@@ -68,12 +117,32 @@ export async function createChapterController(
     return;
   }
 
+  if (parsedDescriptionBN === null) {
+    res.status(400).json({
+      success: false,
+      message: "Valid Bangla chapter description is required",
+    });
+
+    return;
+  }
+
+  if (parsedDescriptionEng === null) {
+    res.status(400).json({
+      success: false,
+      message: "Valid English chapter description is required",
+    });
+
+    return;
+  }
+
   try {
     const chapter = await createChapter({
       subjectId: parsedSubjectId,
       chapterNo: parsedChapterNo,
       nameBN: nameBN.trim(),
       nameEng: nameEng.trim(),
+      descriptionBN: parsedDescriptionBN,
+      descriptionEng: parsedDescriptionEng,
     });
 
     res.status(201).json({
@@ -149,13 +218,20 @@ export async function updateChapterController(
     return;
   }
 
-  const { chapterNo, nameBN, nameEng } = req.body as {
-    chapterNo?: unknown;
-    nameBN?: unknown;
-    nameEng?: unknown;
-  };
+  const { chapterNo, nameBN, nameEng, descriptionBN, descriptionEng } =
+    req.body as {
+      chapterNo?: unknown;
+      nameBN?: unknown;
+      nameEng?: unknown;
+      descriptionBN?: unknown;
+      descriptionEng?: unknown;
+    };
 
   const parsedChapterNo = parsePositiveInteger(chapterNo);
+
+  const parsedDescriptionBN = parseJsonValue(descriptionBN, "descriptionBN");
+
+  const parsedDescriptionEng = parseJsonValue(descriptionEng, "descriptionEng");
 
   if (parsedChapterNo === null) {
     res.status(400).json({
@@ -184,11 +260,31 @@ export async function updateChapterController(
     return;
   }
 
+  if (parsedDescriptionBN === null) {
+    res.status(400).json({
+      success: false,
+      message: "Valid Bangla chapter description is required",
+    });
+
+    return;
+  }
+
+  if (parsedDescriptionEng === null) {
+    res.status(400).json({
+      success: false,
+      message: "Valid English chapter description is required",
+    });
+
+    return;
+  }
+
   try {
     const chapter = await updateChapter(id, {
       chapterNo: parsedChapterNo,
       nameBN: nameBN.trim(),
       nameEng: nameEng.trim(),
+      descriptionBN: parsedDescriptionBN,
+      descriptionEng: parsedDescriptionEng,
     });
 
     if (!chapter) {

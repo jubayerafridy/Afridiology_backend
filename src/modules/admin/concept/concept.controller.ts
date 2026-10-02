@@ -8,6 +8,42 @@ import {
   updateConcept,
 } from "./concept.service.js";
 
+type JsonPrimitive = string | number | boolean | null;
+
+type JsonValue =
+  | JsonPrimitive
+  | JsonValue[]
+  | { readonly [key: string]: JsonValue };
+
+function isJsonValue(value: unknown): value is JsonValue {
+  if (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return true;
+  }
+
+  if (Array.isArray(value)) {
+    return value.every(isJsonValue);
+  }
+
+  if (typeof value === "object") {
+    return Object.values(value).every(isJsonValue);
+  }
+
+  return false;
+}
+
+function parseJsonValue(value: unknown): JsonValue | null {
+  if (!isJsonValue(value)) {
+    return null;
+  }
+
+  return value;
+}
+
 export async function createConceptController(
   req: Request,
   res: Response,
@@ -50,22 +86,22 @@ export async function createConceptController(
     return;
   }
 
-  if (typeof descriptionBN !== "string" || descriptionBN.trim().length === 0) {
+  const parsedDescriptionBN = parseJsonValue(descriptionBN);
+  const parsedDescriptionEng = parseJsonValue(descriptionEng);
+
+  if (parsedDescriptionBN === null) {
     res.status(400).json({
       success: false,
-      message: "Bangla concept description is required",
+      message: "Valid Bangla concept description is required",
     });
 
     return;
   }
 
-  if (
-    typeof descriptionEng !== "string" ||
-    descriptionEng.trim().length === 0
-  ) {
+  if (parsedDescriptionEng === null) {
     res.status(400).json({
       success: false,
-      message: "English concept description is required",
+      message: "Valid English concept description is required",
     });
 
     return;
@@ -76,8 +112,8 @@ export async function createConceptController(
       lessonId: parsedLessonId,
       nameBN: nameBN.trim(),
       nameEng: nameEng.trim(),
-      descriptionBN: descriptionBN.trim(),
-      descriptionEng: descriptionEng.trim(),
+      descriptionBN: parsedDescriptionBN,
+      descriptionEng: parsedDescriptionEng,
     });
 
     res.status(201).json({
@@ -200,22 +236,22 @@ export async function updateConceptController(
     return;
   }
 
-  if (typeof descriptionBN !== "string" || descriptionBN.trim().length === 0) {
+  const parsedDescriptionBN = parseJsonValue(descriptionBN);
+  const parsedDescriptionEng = parseJsonValue(descriptionEng);
+
+  if (parsedDescriptionBN === null) {
     res.status(400).json({
       success: false,
-      message: "Bangla concept description is required",
+      message: "Valid Bangla concept description is required",
     });
 
     return;
   }
 
-  if (
-    typeof descriptionEng !== "string" ||
-    descriptionEng.trim().length === 0
-  ) {
+  if (parsedDescriptionEng === null) {
     res.status(400).json({
       success: false,
-      message: "English concept description is required",
+      message: "Valid English concept description is required",
     });
 
     return;
@@ -224,8 +260,8 @@ export async function updateConceptController(
   const concept = await updateConcept(id, {
     nameBN: nameBN.trim(),
     nameEng: nameEng.trim(),
-    descriptionBN: descriptionBN.trim(),
-    descriptionEng: descriptionEng.trim(),
+    descriptionBN: parsedDescriptionBN,
+    descriptionEng: parsedDescriptionEng,
   });
 
   if (!concept) {

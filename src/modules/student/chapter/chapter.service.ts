@@ -23,11 +23,18 @@ export async function getChaptersBySubject(subjectId: number) {
       id: subject.id,
       name: subject.name,
     },
+
     chapters: chapters.map((chapter) => ({
       id: chapter.id,
       chapterNo: chapter.chapterNo,
       nameBN: chapter.nameBN,
       nameEng: chapter.nameEng,
+
+      // JSON content documents.
+      // The blocks array inside each document preserves the
+      // exact author-defined rendering order for the frontend.
+      descriptionBN: chapter.descriptionBN,
+      descriptionEng: chapter.descriptionEng,
     })),
   };
 }

@@ -6,6 +6,42 @@ import {
   getExecutions,
 } from "./execution.service.js";
 
+type JsonPrimitive = string | number | boolean | null;
+
+type JsonValue =
+  | JsonPrimitive
+  | JsonValue[]
+  | { readonly [key: string]: JsonValue };
+
+function isJsonValue(value: unknown): value is JsonValue {
+  if (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return true;
+  }
+
+  if (Array.isArray(value)) {
+    return value.every(isJsonValue);
+  }
+
+  if (typeof value === "object") {
+    return Object.values(value).every(isJsonValue);
+  }
+
+  return false;
+}
+
+function parseJsonValue(value: unknown): JsonValue | null {
+  if (!isJsonValue(value)) {
+    return null;
+  }
+
+  return value;
+}
+
 export async function createExecutionController(
   req: Request,
   res: Response,
@@ -48,22 +84,22 @@ export async function createExecutionController(
     return;
   }
 
-  if (typeof descriptionBN !== "string" || descriptionBN.trim().length === 0) {
+  const parsedDescriptionBN = parseJsonValue(descriptionBN);
+  const parsedDescriptionEng = parseJsonValue(descriptionEng);
+
+  if (parsedDescriptionBN === null) {
     res.status(400).json({
       success: false,
-      message: "Bangla execution description is required",
+      message: "Valid Bangla execution description is required",
     });
 
     return;
   }
 
-  if (
-    typeof descriptionEng !== "string" ||
-    descriptionEng.trim().length === 0
-  ) {
+  if (parsedDescriptionEng === null) {
     res.status(400).json({
       success: false,
-      message: "English execution description is required",
+      message: "Valid English execution description is required",
     });
 
     return;
@@ -74,8 +110,8 @@ export async function createExecutionController(
       conceptId: parsedConceptId,
       nameBN: nameBN.trim(),
       nameEng: nameEng.trim(),
-      descriptionBN: descriptionBN.trim(),
-      descriptionEng: descriptionEng.trim(),
+      descriptionBN: parsedDescriptionBN,
+      descriptionEng: parsedDescriptionEng,
     });
 
     res.status(201).json({

@@ -1,11 +1,18 @@
 import { prisma } from "../../../config/prisma.js";
 
+type JsonPrimitive = string | number | boolean | null;
+
+type JsonValue =
+  | JsonPrimitive
+  | JsonValue[]
+  | { readonly [key: string]: JsonValue };
+
 export interface CreateExecutionInput {
   conceptId: number;
   nameBN: string;
   nameEng: string;
-  descriptionBN: string;
-  descriptionEng: string;
+  descriptionBN: JsonValue;
+  descriptionEng: JsonValue;
 }
 
 export async function createExecution(data: CreateExecutionInput) {

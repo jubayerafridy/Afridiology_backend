@@ -1,16 +1,27 @@
 import { prisma } from "../../../config/prisma.js";
 
+type JsonPrimitive = string | number | boolean | null;
+
+type JsonValue =
+  | JsonPrimitive
+  | JsonValue[]
+  | { readonly [key: string]: JsonValue };
+
 export interface CreateChapterInput {
   subjectId: number;
   chapterNo: number;
   nameBN: string;
   nameEng: string;
+  descriptionBN: JsonValue;
+  descriptionEng: JsonValue;
 }
 
 export interface UpdateChapterInput {
   chapterNo: number;
   nameBN: string;
   nameEng: string;
+  descriptionBN: JsonValue;
+  descriptionEng: JsonValue;
 }
 
 export async function createChapter(data: CreateChapterInput) {
@@ -38,6 +49,8 @@ export async function createChapter(data: CreateChapterInput) {
     chapterNo: data.chapterNo,
     nameBN: data.nameBN,
     nameEng: data.nameEng,
+    descriptionBN: data.descriptionBN,
+    descriptionEng: data.descriptionEng,
   });
 }
 
@@ -79,6 +92,8 @@ export async function updateChapter(id: number, data: UpdateChapterInput) {
     chapterNo: data.chapterNo,
     nameBN: data.nameBN,
     nameEng: data.nameEng,
+    descriptionBN: data.descriptionBN,
+    descriptionEng: data.descriptionEng,
   });
 }
 

@@ -37,7 +37,20 @@ interface KnowledgeGraphItem {
   type: KnowledgeItemType;
   title: string;
   slug: string;
-  description?: string;
+
+  /*
+   * JSON content document.
+   *
+   * The Prisma ORM exposes JSON fields through its own
+   * generated JSON type. We intentionally keep the public
+   * service response type as unknown so the exact JSON
+   * document is passed through without changing it or
+   * fighting the generated ORM type.
+   */
+  description?: unknown;
+  descriptionBN?: unknown;
+  descriptionEng?: unknown;
+
   parentId?: string;
   side?: "left" | "right";
 
@@ -83,6 +96,8 @@ export interface KnowledgeGraphData {
     chapterNo: number;
     nameBN: string;
     nameEng: string;
+    descriptionBN: unknown;
+    descriptionEng: unknown;
   };
 
   /*
@@ -559,7 +574,9 @@ export async function getChapterKnowledgeGraph(
     type: "chapter",
     title: chapter.nameBN,
     slug: slugify(chapter.nameEng),
-    description: chapter.nameEng,
+    description: chapter.descriptionBN,
+    descriptionBN: chapter.descriptionBN,
+    descriptionEng: chapter.descriptionEng,
   });
 
   /*
@@ -582,6 +599,8 @@ export async function getChapterKnowledgeGraph(
       title: lessonTitle,
       slug: slugify(lesson.nameEng),
       description: lesson.descriptionBN,
+      descriptionBN: lesson.descriptionBN,
+      descriptionEng: lesson.descriptionEng,
       parentId: chapterGraphId,
     });
 
@@ -614,6 +633,8 @@ export async function getChapterKnowledgeGraph(
         title: concept.nameBN,
         slug: slugify(concept.nameEng),
         description: concept.descriptionBN,
+        descriptionBN: concept.descriptionBN,
+        descriptionEng: concept.descriptionEng,
         parentId: lessonGraphId,
       });
 
@@ -646,6 +667,8 @@ export async function getChapterKnowledgeGraph(
           title: execution.nameBN,
           slug: slugify(execution.nameEng),
           description: execution.descriptionBN,
+          descriptionBN: execution.descriptionBN,
+          descriptionEng: execution.descriptionEng,
           parentId: conceptGraphId,
         });
 
@@ -720,6 +743,9 @@ export async function getChapterKnowledgeGraph(
       type: "cq",
       title: buildQuestionTitle(questionPaper),
       slug: `cq-${cq.id}`,
+      description: cq.descriptionBN,
+      descriptionBN: cq.descriptionBN,
+      descriptionEng: cq.descriptionEng,
       side: cqSideIndex % 2 === 0 ? "left" : "right",
       questionMeta: buildQuestionMeta(questionPaper),
     });
@@ -784,6 +810,9 @@ export async function getChapterKnowledgeGraph(
       type: "mcq",
       title: buildQuestionTitle(questionPaper),
       slug: `mcq-${mcq.id}`,
+      description: mcq.descriptionBN,
+      descriptionBN: mcq.descriptionBN,
+      descriptionEng: mcq.descriptionEng,
       side: mcqSideIndex % 2 === 0 ? "left" : "right",
       questionMeta: buildQuestionMeta(questionPaper),
     });
@@ -910,6 +939,8 @@ export async function getChapterKnowledgeGraph(
       chapterNo: chapter.chapterNo,
       nameBN: chapter.nameBN,
       nameEng: chapter.nameEng,
+      descriptionBN: chapter.descriptionBN,
+      descriptionEng: chapter.descriptionEng,
     },
 
     items,
@@ -926,6 +957,7 @@ export async function getChapterKnowledgeGraph(
    * This keeps the public graph response free of
    * bookmark-specific data.
    */
+
   if (bookmarkCollections !== undefined) {
     result.bookmarkCollections = bookmarkCollections;
   }
@@ -967,6 +999,9 @@ export async function getCQDetail(id: number) {
       institution: questionPaper.institution,
       year: questionPaper.year,
     },
+
+    descriptionBN: cq.descriptionBN,
+    descriptionEng: cq.descriptionEng,
 
     stimulus: cq.quesUddipok,
 
@@ -1022,6 +1057,9 @@ export async function getMCQDetail(id: number) {
       institution: questionPaper.institution,
       year: questionPaper.year,
     },
+
+    descriptionBN: mcq.descriptionBN,
+    descriptionEng: mcq.descriptionEng,
 
     stimulus: mcq.quesUddipok,
 

@@ -654,6 +654,20 @@
                   "kind": "scalar"
                 }
               },
+              "descriptionBN": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/json@1",
+                  "kind": "scalar"
+                }
+              },
+              "descriptionEng": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/json@1",
+                  "kind": "scalar"
+                }
+              },
               "id": {
                 "nullable": false,
                 "type": {
@@ -863,6 +877,12 @@
                 "createdAt": {
                   "column": "createdAt"
                 },
+                "descriptionBN": {
+                  "column": "descriptionBN"
+                },
+                "descriptionEng": {
+                  "column": "descriptionEng"
+                },
                 "id": {
                   "column": "id"
                 },
@@ -953,6 +973,20 @@
                   "kind": "scalar"
                 }
               },
+              "descriptionBN": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/json@1",
+                  "kind": "scalar"
+                }
+              },
+              "descriptionEng": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/json@1",
+                  "kind": "scalar"
+                }
+              },
               "id": {
                 "nullable": false,
                 "type": {
@@ -1037,6 +1071,12 @@
                 "createdAt": {
                   "column": "createdAt"
                 },
+                "descriptionBN": {
+                  "column": "descriptionBN"
+                },
+                "descriptionEng": {
+                  "column": "descriptionEng"
+                },
                 "id": {
                   "column": "id"
                 },
@@ -1072,14 +1112,14 @@
               "descriptionBN": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/text@1",
+                  "codecId": "pg/json@1",
                   "kind": "scalar"
                 }
               },
               "descriptionEng": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/text@1",
+                  "codecId": "pg/json@1",
                   "kind": "scalar"
                 }
               },
@@ -1289,14 +1329,14 @@
               "descriptionBN": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/text@1",
+                  "codecId": "pg/json@1",
                   "kind": "scalar"
                 }
               },
               "descriptionEng": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/text@1",
+                  "codecId": "pg/json@1",
                   "kind": "scalar"
                 }
               },
@@ -1407,14 +1447,14 @@
               "descriptionBN": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/text@1",
+                  "codecId": "pg/json@1",
                   "kind": "scalar"
                 }
               },
               "descriptionEng": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/text@1",
+                  "codecId": "pg/json@1",
                   "kind": "scalar"
                 }
               },
@@ -1537,6 +1577,20 @@
                 "nullable": false,
                 "type": {
                   "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              },
+              "descriptionBN": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/json@1",
+                  "kind": "scalar"
+                }
+              },
+              "descriptionEng": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/json@1",
                   "kind": "scalar"
                 }
               },
@@ -1668,6 +1722,12 @@
               "fields": {
                 "createdAt": {
                   "column": "createdAt"
+                },
+                "descriptionBN": {
+                  "column": "descriptionBN"
+                },
+                "descriptionEng": {
+                  "column": "descriptionEng"
                 },
                 "explanationBN": {
                   "column": "explanationBN"
@@ -2262,7 +2322,8 @@
               "checks": [
                 {
                   "expression": "(provider = ANY (ARRAY['GOOGLE'::text, 'FACEBOOK'::text]))",
-                  "name": "authIdentity_provider_check_ff14e296"
+                  "name": "authIdentity_provider_check_ff14e296_5f9e855b",
+                  "prefix": "authIdentity_provider_check_ff14e296"
                 }
               ],
               "columns": {
@@ -2460,11 +2521,13 @@
               "checks": [
                 {
                   "expression": "((\"starRating\" >= 0) AND (\"starRating\" <= 5))",
-                  "name": "bookmark_starRating_check"
+                  "name": "bookmark_starRating_range_guard_8576ec40",
+                  "prefix": "bookmark_starRating_range_guard"
                 },
                 {
                   "expression": "(\"targetType\" = ANY (ARRAY['CHAPTER'::text, 'LESSON'::text, 'CONCEPT'::text, 'EXECUTION'::text, 'CQ'::text, 'MCQ'::text]))",
-                  "name": "bookmark_targetType_check"
+                  "name": "bookmark_targetType_guard_7953d357",
+                  "prefix": "bookmark_targetType_guard"
                 }
               ],
               "columns": {
@@ -2589,11 +2652,13 @@
               "checks": [
                 {
                   "expression": "(((type = 'DEFAULT'::text) AND (\"defaultType\" IS NOT NULL)) OR ((type = 'CUSTOM'::text) AND (\"defaultType\" IS NULL)))",
-                  "name": "bookmarkCollection_defaultType_check"
+                  "name": "bookmarkCollection_defaultType_guard_0a376a70",
+                  "prefix": "bookmarkCollection_defaultType_guard"
                 },
                 {
                   "expression": "(type = ANY (ARRAY['DEFAULT'::text, 'CUSTOM'::text]))",
-                  "name": "bookmarkCollection_type_check"
+                  "name": "bookmarkCollection_type_guard_98acd6c4",
+                  "prefix": "bookmarkCollection_type_guard"
                 }
               ],
               "columns": {
@@ -2766,7 +2831,6 @@
                 },
                 {
                   "name": "bookmarkCollectionItem_collectionId_fkey",
-                  "onDelete": "cascade",
                   "source": {
                     "columns": [
                       "collectionId"
@@ -2821,19 +2885,23 @@
               "checks": [
                 {
                   "expression": "(\"quesGaLinkType\" = ANY (ARRAY['CHAPTER'::text, 'LESSON'::text, 'CONCEPT'::text, 'EXECUTION'::text]))",
-                  "name": "cQ_quesGaLinkType_check_d4dcebe0"
+                  "name": "cQ_quesGaLinkType_check_d4dcebe0_cdad55a5",
+                  "prefix": "cQ_quesGaLinkType_check_d4dcebe0"
                 },
                 {
                   "expression": "(\"quesGhaLinkType\" = ANY (ARRAY['CHAPTER'::text, 'LESSON'::text, 'CONCEPT'::text, 'EXECUTION'::text]))",
-                  "name": "cQ_quesGhaLinkType_check_4f0b21d6"
+                  "name": "cQ_quesGhaLinkType_check_4f0b21d6_530e4056",
+                  "prefix": "cQ_quesGhaLinkType_check_4f0b21d6"
                 },
                 {
                   "expression": "(\"quesKaLinkType\" = ANY (ARRAY['CHAPTER'::text, 'LESSON'::text, 'CONCEPT'::text, 'EXECUTION'::text]))",
-                  "name": "cQ_quesKaLinkType_check_0020e8a5"
+                  "name": "cQ_quesKaLinkType_check_0020e8a5_8bdb540e",
+                  "prefix": "cQ_quesKaLinkType_check_0020e8a5"
                 },
                 {
                   "expression": "(\"quesKhaLinkType\" = ANY (ARRAY['CHAPTER'::text, 'LESSON'::text, 'CONCEPT'::text, 'EXECUTION'::text]))",
-                  "name": "cQ_quesKhaLinkType_check_e93f81d1"
+                  "name": "cQ_quesKhaLinkType_check_e93f81d1_ccde7833",
+                  "prefix": "cQ_quesKhaLinkType_check_e93f81d1"
                 }
               ],
               "columns": {
@@ -2884,6 +2952,16 @@
                     "kind": "function"
                   },
                   "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "descriptionBN": {
+                  "codecId": "pg/json@1",
+                  "nativeType": "json",
+                  "nullable": false
+                },
+                "descriptionEng": {
+                  "codecId": "pg/json@1",
+                  "nativeType": "json",
                   "nullable": false
                 },
                 "id": {
@@ -3103,6 +3181,16 @@
                   "nativeType": "timestamptz",
                   "nullable": false
                 },
+                "descriptionBN": {
+                  "codecId": "pg/json@1",
+                  "nativeType": "json",
+                  "nullable": false
+                },
+                "descriptionEng": {
+                  "codecId": "pg/json@1",
+                  "nativeType": "json",
+                  "nullable": false
+                },
                 "id": {
                   "codecId": "pg/int4@1",
                   "default": {
@@ -3203,13 +3291,13 @@
                   "nullable": false
                 },
                 "descriptionBN": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
+                  "codecId": "pg/json@1",
+                  "nativeType": "json",
                   "nullable": false
                 },
                 "descriptionEng": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
+                  "codecId": "pg/json@1",
+                  "nativeType": "json",
                   "nullable": false
                 },
                 "id": {
@@ -3363,13 +3451,13 @@
                   "nullable": false
                 },
                 "descriptionBN": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
+                  "codecId": "pg/json@1",
+                  "nativeType": "json",
                   "nullable": false
                 },
                 "descriptionEng": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
+                  "codecId": "pg/json@1",
+                  "nativeType": "json",
                   "nullable": false
                 },
                 "id": {
@@ -3464,13 +3552,13 @@
                   "nullable": false
                 },
                 "descriptionBN": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
+                  "codecId": "pg/json@1",
+                  "nativeType": "json",
                   "nullable": false
                 },
                 "descriptionEng": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
+                  "codecId": "pg/json@1",
+                  "nativeType": "json",
                   "nullable": false
                 },
                 "id": {
@@ -3565,7 +3653,8 @@
               "checks": [
                 {
                   "expression": "(\"linkType\" = ANY (ARRAY['CHAPTER'::text, 'LESSON'::text, 'CONCEPT'::text, 'EXECUTION'::text]))",
-                  "name": "mCQ_linkType_check_5f57da78"
+                  "name": "mCQ_linkType_check_5f57da78_561ff9bd",
+                  "prefix": "mCQ_linkType_check_5f57da78"
                 }
               ],
               "columns": {
@@ -3576,6 +3665,16 @@
                     "kind": "function"
                   },
                   "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "descriptionBN": {
+                  "codecId": "pg/json@1",
+                  "nativeType": "json",
+                  "nullable": false
+                },
+                "descriptionEng": {
+                  "codecId": "pg/json@1",
+                  "nativeType": "json",
                   "nullable": false
                 },
                 "explanationBN": {
@@ -3716,11 +3815,13 @@
               "checks": [
                 {
                   "expression": "(\"questionType\" = ANY (ARRAY['CQ'::text, 'MCQ'::text]))",
-                  "name": "questionPaper_questionType_check_fc2fe208"
+                  "name": "questionPaper_questionType_check_fc2fe208_f1eadf48",
+                  "prefix": "questionPaper_questionType_check_fc2fe208"
                 },
                 {
                   "expression": "(source = ANY (ARRAY['BOARD'::text, 'TEST_PAPER'::text, 'MODEL_TEST'::text, 'GAME'::text, 'QUIZ'::text, 'EXTRA'::text]))",
-                  "name": "questionPaper_source_check_4f230989"
+                  "name": "questionPaper_source_check_4f230989_80787773",
+                  "prefix": "questionPaper_source_check_4f230989"
                 }
               ],
               "columns": {
@@ -3819,11 +3920,13 @@
               "checks": [
                 {
                   "expression": "(status = ANY (ARRAY['NOT_STARTED'::text, 'IN_PROGRESS'::text, 'COMPLETED'::text]))",
-                  "name": "questionProgress_status_check"
+                  "name": "questionProgress_status_guard_31755cbe",
+                  "prefix": "questionProgress_status_guard"
                 },
                 {
-                  "expression": "(\"targetType\" = ANY (ARRAY['CONCEPT'::text, 'EXECUTION'::text, 'CQ'::text, 'MCQ'::text]))",
-                  "name": "questionProgress_targetType_check"
+                  "expression": "(\"targetType\" = ANY (ARRAY['CHAPTER'::text, 'LESSON'::text, 'CONCEPT'::text, 'EXECUTION'::text, 'CQ'::text, 'MCQ'::text]))",
+                  "name": "questionProgress_targetType_guard_7953d357",
+                  "prefix": "questionProgress_targetType_guard"
                 }
               ],
               "columns": {
@@ -3896,15 +3999,6 @@
                 }
               ],
               "indexes": [
-                {
-                  "columns": [
-                    "targetType",
-                    "targetId"
-                  ],
-                  "name": "questionProgress_targetType_targetId_idx_7a5ee9cb",
-                  "prefix": "questionProgress_targetType_targetId_idx",
-                  "unique": false
-                },
                 {
                   "columns": [
                     "userId"
@@ -4030,11 +4124,13 @@
               "checks": [
                 {
                   "expression": "(role = ANY (ARRAY['STUDENT'::text, 'TEACHER'::text, 'AUTHOR'::text, 'MODERATOR'::text, 'ADMIN'::text, 'SUPER_ADMIN'::text]))",
-                  "name": "user_role_check_2d5baecb"
+                  "name": "user_role_check_2d5baecb_2204808b",
+                  "prefix": "user_role_check_2d5baecb"
                 },
                 {
                   "expression": "(status = ANY (ARRAY['ACTIVE'::text, 'SUSPENDED'::text, 'DEACTIVATED'::text]))",
-                  "name": "user_status_check_5dec1c59"
+                  "name": "user_status_check_5dec1c59_87df64c6",
+                  "prefix": "user_status_check_5dec1c59"
                 }
               ],
               "columns": {
@@ -4148,7 +4244,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "8c47af7c4174dab60f4371f5e04c52289bd1a84b23432e1fff07c7ecdc65504b"
+    "storageHash": "8f936467c018abeba35a33fdb21f633f74f74a49b770ac898b040bb3e2a83384"
   },
   "capabilities": {
     "postgres": {

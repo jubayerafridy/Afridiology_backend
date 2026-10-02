@@ -1,5 +1,6 @@
 // use prisma-8
-// Contract inferred from the live database schema. Edit as needed, then run `prisma contract emit`.
+// Production contract for Afridiology.
+// Run `pnpm prisma contract format` and then `pnpm prisma contract emit`.
 model User {
   id                  Int                  @id(map: "user_pkey") @default(autoincrement())
   createdAt           Timestamptz          @default(now())
@@ -20,9 +21,9 @@ model User {
   @@index([role], name: "user_role_idx")
   @@index([status], name: "user_status_idx")
 
-  @@check(expression: "(role = ANY (ARRAY['STUDENT'::text, 'TEACHER'::text, 'AUTHOR'::text, 'MODERATOR'::text, 'ADMIN'::text, 'SUPER_ADMIN'::text]))", map: "user_role_check_2d5baecb")
+  @@check(expression: "(role = ANY (ARRAY['STUDENT'::text, 'TEACHER'::text, 'AUTHOR'::text, 'MODERATOR'::text, 'ADMIN'::text, 'SUPER_ADMIN'::text]))", name: "user_role_check_2d5baecb")
 
-  @@check(expression: "(status = ANY (ARRAY['ACTIVE'::text, 'SUSPENDED'::text, 'DEACTIVATED'::text]))", map: "user_status_check_5dec1c59")
+  @@check(expression: "(status = ANY (ARRAY['ACTIVE'::text, 'SUSPENDED'::text, 'DEACTIVATED'::text]))", name: "user_status_check_5dec1c59")
 
   @@map("user")
 }
@@ -34,11 +35,14 @@ model AuthIdentity {
   providerId String
   updatedAt  Timestamptz @default(now())
   userId     Int
+
   user       User        @relation(fields:[userId], references:[id], map: "authIdentity_userId_fkey")
 
   @@unique([provider, providerId], map: "authIdentity_provider_providerId_key")
   @@index([userId], name: "authIdentity_userId_idx")
-  @@check(expression: "(provider = ANY (ARRAY['GOOGLE'::text, 'FACEBOOK'::text]))", map: "authIdentity_provider_check_ff14e296")
+
+  @@check(expression: "(provider = ANY (ARRAY['GOOGLE'::text, 'FACEBOOK'::text]))", name: "authIdentity_provider_check_ff14e296")
+
   @@map("authIdentity")
 }
 
@@ -50,10 +54,12 @@ model AuthSession {
   tokenHash String       @unique(map: "authSession_tokenHash_key")
   updatedAt Timestamptz  @default(now())
   userId    Int
+
   user      User         @relation(fields:[userId], references:[id], map: "authSession_userId_fkey")
 
   @@index([expiresAt], name: "authSession_expiresAt_idx")
   @@index([userId], name: "authSession_userId_idx")
+
   @@map("authSession")
 }
 
@@ -69,12 +75,16 @@ model QuestionPaper {
   subjectId    Int
   updatedAt    Timestamptz @default(now())
   year         Int?
+
   cQS          CQ[]
   mCQS         MCQ[]
 
   @@index([subjectId], name: "questionPaper_subjectId_idx")
-  @@check(expression: "(\"questionType\" = ANY (ARRAY['CQ'::text, 'MCQ'::text]))", map: "questionPaper_questionType_check_fc2fe208")
-  @@check(expression: "(source = ANY (ARRAY['BOARD'::text, 'TEST_PAPER'::text, 'MODEL_TEST'::text, 'GAME'::text, 'QUIZ'::text, 'EXTRA'::text]))", map: "questionPaper_source_check_4f230989")
+
+  @@check(expression: "(\"questionType\" = ANY (ARRAY['CQ'::text, 'MCQ'::text]))", name: "questionPaper_questionType_check_fc2fe208")
+
+  @@check(expression: "(source = ANY (ARRAY['BOARD'::text, 'TEST_PAPER'::text, 'MODEL_TEST'::text, 'GAME'::text, 'QUIZ'::text, 'EXTRA'::text]))", name: "questionPaper_source_check_4f230989")
+
   @@map("questionPaper")
 }
 
@@ -89,28 +99,38 @@ model CQ {
   ansKhaBN        String?
   ansKhaEng       String?
   createdAt       Timestamptz   @default(now())
+
+  descriptionBN   Json
+  descriptionEng  Json
+
   imageUrl        String?
   isActive        Boolean       @default(true)
+
   quesGaBN        String
   quesGaEng       String
   quesGaLinkId    Int?
   quesGaLinkType  String?
+
   quesGhaBN       String
   quesGhaEng      String
   quesGhaLinkId   Int?
   quesGhaLinkType String?
+
   quesKaBN        String
   quesKaEng       String
   quesKaLinkId    Int?
   quesKaLinkType  String?
+
   quesKhaBN       String
   quesKhaEng      String
   quesKhaLinkId   Int?
   quesKhaLinkType String?
+
   quesUddipok     String?
   questionPaperId Int
   qusNo           Int
   updatedAt       Timestamptz   @default(now())
+
   questionPaper   QuestionPaper @relation(fields:[questionPaperId], references:[id], map: "cQ_questionPaperId_fkey")
 
   @@index([quesGaLinkType, quesGaLinkId], name: "cQ_quesGaLinkType_quesGaLinkId_idx")
@@ -118,10 +138,15 @@ model CQ {
   @@index([quesKaLinkType, quesKaLinkId], name: "cQ_quesKaLinkType_quesKaLinkId_idx")
   @@index([quesKhaLinkType, quesKhaLinkId], name: "cQ_quesKhaLinkType_quesKhaLinkId_idx")
   @@index([questionPaperId], name: "cQ_questionPaperId_idx")
-  @@check(expression: "(\"quesGaLinkType\" = ANY (ARRAY['CHAPTER'::text, 'LESSON'::text, 'CONCEPT'::text, 'EXECUTION'::text]))", map: "cQ_quesGaLinkType_check_d4dcebe0")
-  @@check(expression: "(\"quesGhaLinkType\" = ANY (ARRAY['CHAPTER'::text, 'LESSON'::text, 'CONCEPT'::text, 'EXECUTION'::text]))", map: "cQ_quesGhaLinkType_check_4f0b21d6")
-  @@check(expression: "(\"quesKaLinkType\" = ANY (ARRAY['CHAPTER'::text, 'LESSON'::text, 'CONCEPT'::text, 'EXECUTION'::text]))", map: "cQ_quesKaLinkType_check_0020e8a5")
-  @@check(expression: "(\"quesKhaLinkType\" = ANY (ARRAY['CHAPTER'::text, 'LESSON'::text, 'CONCEPT'::text, 'EXECUTION'::text]))", map: "cQ_quesKhaLinkType_check_e93f81d1")
+
+  @@check(expression: "(\"quesGaLinkType\" = ANY (ARRAY['CHAPTER'::text, 'LESSON'::text, 'CONCEPT'::text, 'EXECUTION'::text]))", name: "cQ_quesGaLinkType_check_d4dcebe0")
+
+  @@check(expression: "(\"quesGhaLinkType\" = ANY (ARRAY['CHAPTER'::text, 'LESSON'::text, 'CONCEPT'::text, 'EXECUTION'::text]))", name: "cQ_quesGhaLinkType_check_4f0b21d6")
+
+  @@check(expression: "(\"quesKaLinkType\" = ANY (ARRAY['CHAPTER'::text, 'LESSON'::text, 'CONCEPT'::text, 'EXECUTION'::text]))", name: "cQ_quesKaLinkType_check_0020e8a5")
+
+  @@check(expression: "(\"quesKhaLinkType\" = ANY (ARRAY['CHAPTER'::text, 'LESSON'::text, 'CONCEPT'::text, 'EXECUTION'::text]))", name: "cQ_quesKhaLinkType_check_e93f81d1")
+
   @@map("cQ")
 }
 
@@ -131,6 +156,7 @@ model EducationLevel {
   createdAt Timestamptz @default(now())
   isActive  Boolean     @default(true)
   updatedAt Timestamptz @default(now())
+
   subjects  Subject[]
 
   @@map("educationLevel")
@@ -143,27 +169,36 @@ model Subject {
   createdAt        Timestamptz    @default(now())
   isActive         Boolean        @default(true)
   updatedAt        Timestamptz    @default(now())
+
   chapters         Chapter[]
   educationLevel   EducationLevel @relation(fields:[educationLevelId], references:[id], map: "subject_educationLevelId_fkey")
 
   @@index([educationLevelId], name: "subject_educationLevelId_idx")
+
   @@map("subject")
 }
 
 model Chapter {
-  id        Int         @id(map: "chapter_pkey") @default(autoincrement())
-  subjectId Int
-  createdAt Timestamptz @default(now())
-  isActive  Boolean     @default(true)
-  updatedAt Timestamptz @default(now())
-  nameBN    String
-  nameEng   String
-  chapterNo Int
-  lessons   Lesson[]
-  subject   Subject     @relation(fields:[subjectId], references:[id], map: "chapter_subjectId_fkey")
+  id             Int         @id(map: "chapter_pkey") @default(autoincrement())
+  subjectId      Int
+  createdAt      Timestamptz @default(now())
+
+  descriptionBN  Json
+  descriptionEng Json
+
+  isActive       Boolean     @default(true)
+  updatedAt      Timestamptz @default(now())
+
+  nameBN         String
+  nameEng        String
+  chapterNo      Int
+
+  lessons        Lesson[]
+  subject        Subject     @relation(fields:[subjectId], references:[id], map: "chapter_subjectId_fkey")
 
   @@unique([subjectId, chapterNo], map: "chapter_subjectId_chapterNo_key")
   @@index([subjectId], name: "chapter_subjectId_idx")
+
   @@map("chapter")
 }
 
@@ -171,35 +206,47 @@ model Lesson {
   id             Int         @id(map: "lesson_pkey") @default(autoincrement())
   chapterId      Int
   createdAt      Timestamptz @default(now())
-  descriptionBN  String
-  descriptionEng String
+
+  descriptionBN  Json
+  descriptionEng Json
+
   isActive       Boolean     @default(true)
+
   nameBN         String
   nameEng        String
+
   updatedAt      Timestamptz @default(now())
   lessonNo       String?
+
   concepts       Concept[]
   chapter        Chapter     @relation(fields:[chapterId], references:[id], map: "lesson_chapterId_fkey")
 
   @@unique([chapterId, lessonNo], map: "lesson_chapterId_lessonNo_key")
   @@index([chapterId], name: "lesson_chapterId_idx")
+
   @@map("lesson")
 }
 
 model Concept {
   id             Int         @id(map: "concept_pkey") @default(autoincrement())
   createdAt      Timestamptz @default(now())
-  descriptionBN  String
-  descriptionEng String
+
+  descriptionBN  Json
+  descriptionEng Json
+
   isActive       Boolean     @default(true)
   lessonId       Int
+
   nameBN         String
   nameEng        String
+
   updatedAt      Timestamptz @default(now())
+
   executions     Execution[]
   lesson         Lesson      @relation(fields:[lessonId], references:[id], map: "concept_lessonId_fkey")
 
   @@index([lessonId], name: "concept_lessonId_idx")
+
   @@map("concept")
 }
 
@@ -207,40 +254,59 @@ model Execution {
   id             Int         @id(map: "execution_pkey") @default(autoincrement())
   conceptId      Int
   createdAt      Timestamptz @default(now())
-  descriptionBN  String
-  descriptionEng String
+
+  descriptionBN  Json
+  descriptionEng Json
+
   isActive       Boolean     @default(true)
+
   nameBN         String
   nameEng        String
+
   updatedAt      Timestamptz @default(now())
+
   concept        Concept     @relation(fields:[conceptId], references:[id], map: "execution_conceptId_fkey")
 
   @@index([conceptId], name: "execution_conceptId_idx")
+
   @@map("execution")
 }
 
 model MCQ {
   id              Int           @id(map: "mCQ_pkey") @default(autoincrement())
   createdAt       Timestamptz   @default(now())
+
+  descriptionBN   Json
+  descriptionEng  Json
+
   explanationBN   String?
   explanationEng  String?
+
   imageUrl        String?
   isActive        Boolean       @default(true)
+
   linkId          Int?
   linkType        String?
+
   optionsBN       Json
   optionsEng      Json
+
   quesUddipok     String?
   questionPaperId Int
   qusNo           Int
+
   rightAnsBN      String
   rightAnsEng     String
+
   updatedAt       Timestamptz   @default(now())
+
   questionPaper   QuestionPaper @relation(fields:[questionPaperId], references:[id], map: "mCQ_questionPaperId_fkey")
 
   @@index([linkType, linkId], name: "mCQ_linkType_linkId_idx")
   @@index([questionPaperId], name: "mCQ_questionPaperId_idx")
-  @@check(expression: "(\"linkType\" = ANY (ARRAY['CHAPTER'::text, 'LESSON'::text, 'CONCEPT'::text, 'EXECUTION'::text]))", map: "mCQ_linkType_check_5f57da78")
+
+  @@check(expression: "(\"linkType\" = ANY (ARRAY['CHAPTER'::text, 'LESSON'::text, 'CONCEPT'::text, 'EXECUTION'::text]))", name: "mCQ_linkType_check_5f57da78")
+
   @@map("mCQ")
 }
 
@@ -259,8 +325,11 @@ model Bookmark {
   @@unique([userId, targetType, targetId], map: "bookmark_userId_targetType_targetId_key")
   @@index([userId, updatedAt], name: "bookmark_userId_updatedAt_idx")
   @@index([targetType, targetId], name: "bookmark_targetType_targetId_idx")
-  @@check(expression: "((\"starRating\" >= 0) AND (\"starRating\" <= 5))", map: "bookmark_starRating_check")
-  @@check(expression: "(\"targetType\" = ANY (ARRAY['CHAPTER'::text, 'LESSON'::text, 'CONCEPT'::text, 'EXECUTION'::text, 'CQ'::text, 'MCQ'::text]))", map: "bookmark_targetType_check")
+
+  @@check(expression: "((\"starRating\" >= 0) AND (\"starRating\" <= 5))", name: "bookmark_starRating_range_guard")
+
+  @@check(expression: "(\"targetType\" = ANY (ARRAY['CHAPTER'::text, 'LESSON'::text, 'CONCEPT'::text, 'EXECUTION'::text, 'CQ'::text, 'MCQ'::text]))", name: "bookmark_targetType_guard")
+
   @@map("bookmark")
 }
 
@@ -279,11 +348,9 @@ model QuestionProgress {
 
   @@index([userId, updatedAt], name: "questionProgress_userId_updatedAt_idx")
 
-  @@index([targetType, targetId], name: "questionProgress_targetType_targetId_idx")
+  @@check(expression: "(\"targetType\" = ANY (ARRAY['CHAPTER'::text, 'LESSON'::text, 'CONCEPT'::text, 'EXECUTION'::text, 'CQ'::text, 'MCQ'::text]))", name: "questionProgress_targetType_guard")
 
-  @@check(expression: "(\"targetType\" = ANY (ARRAY['CONCEPT'::text, 'EXECUTION'::text, 'CQ'::text, 'MCQ'::text]))", map: "questionProgress_targetType_check")
-
-  @@check(expression: "(status = ANY (ARRAY['NOT_STARTED'::text, 'IN_PROGRESS'::text, 'COMPLETED'::text]))", map: "questionProgress_status_check")
+  @@check(expression: "(status = ANY (ARRAY['NOT_STARTED'::text, 'IN_PROGRESS'::text, 'COMPLETED'::text]))", name: "questionProgress_status_guard")
 
   @@map("questionProgress")
 }
@@ -305,8 +372,11 @@ model BookmarkCollection {
   @@unique([userId, defaultType], map: "bookmarkCollection_userId_defaultType_key")
   @@index([userId], name: "bookmarkCollection_userId_idx")
   @@index([userId, sortOrder], name: "bookmarkCollection_userId_sortOrder_idx")
-  @@check(expression: "(type = ANY (ARRAY['DEFAULT'::text, 'CUSTOM'::text]))", map: "bookmarkCollection_type_check")
-  @@check(expression: "(((type = 'DEFAULT'::text) AND (\"defaultType\" IS NOT NULL)) OR ((type = 'CUSTOM'::text) AND (\"defaultType\" IS NULL)))", map: "bookmarkCollection_defaultType_check")
+
+  @@check(expression: "(type = ANY (ARRAY['DEFAULT'::text, 'CUSTOM'::text]))", name: "bookmarkCollection_type_guard")
+
+  @@check(expression: "(((type = 'DEFAULT'::text) AND (\"defaultType\" IS NOT NULL)) OR ((type = 'CUSTOM'::text) AND (\"defaultType\" IS NULL)))", name: "bookmarkCollection_defaultType_guard")
+
   @@map("bookmarkCollection")
 }
 
@@ -317,9 +387,10 @@ model BookmarkCollectionItem {
   createdAt    Timestamptz        @default(now())
 
   bookmark     Bookmark           @relation(fields:[bookmarkId], references:[id], onDelete: Cascade, map: "bookmarkCollectionItem_bookmarkId_fkey")
-  collection   BookmarkCollection @relation(fields:[collectionId], references:[id], onDelete: Cascade, map: "bookmarkCollectionItem_collectionId_fkey")
+  collection   BookmarkCollection @relation(fields:[collectionId], references:[id], map: "bookmarkCollectionItem_collectionId_fkey")
 
   @@unique([bookmarkId, collectionId], map: "bookmarkCollectionItem_bookmarkId_collectionId_key")
   @@index([collectionId], name: "bookmarkCollectionItem_collectionId_idx")
+
   @@map("bookmarkCollectionItem")
 }

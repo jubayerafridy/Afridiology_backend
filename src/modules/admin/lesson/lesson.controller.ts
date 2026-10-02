@@ -8,6 +8,13 @@ import {
   updateLesson,
 } from "./lesson.service.js";
 
+type JsonPrimitive = string | number | boolean | null;
+
+type JsonValue =
+  | JsonPrimitive
+  | JsonValue[]
+  | { readonly [key: string]: JsonValue };
+
 function normalizeLessonNumber(value: string): string {
   return value
     .replace(/[০-৯]/g, (digit) => String("০১২৩৪৫৬৭৮৯".indexOf(digit)))
@@ -16,6 +23,35 @@ function normalizeLessonNumber(value: string): string {
 
 function isValidLessonNumber(value: string): boolean {
   return /^\d+(?:\.\d+)+$/.test(value);
+}
+
+function isJsonValue(value: unknown): value is JsonValue {
+  if (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return true;
+  }
+
+  if (Array.isArray(value)) {
+    return value.every(isJsonValue);
+  }
+
+  if (typeof value === "object") {
+    return Object.values(value).every(isJsonValue);
+  }
+
+  return false;
+}
+
+function parseJsonValue(value: unknown): JsonValue | null {
+  if (!isJsonValue(value)) {
+    return null;
+  }
+
+  return value;
 }
 
 export async function createLessonController(
@@ -87,22 +123,22 @@ export async function createLessonController(
     return;
   }
 
-  if (typeof descriptionBN !== "string" || descriptionBN.trim().length === 0) {
+  const parsedDescriptionBN = parseJsonValue(descriptionBN);
+  const parsedDescriptionEng = parseJsonValue(descriptionEng);
+
+  if (parsedDescriptionBN === null) {
     res.status(400).json({
       success: false,
-      message: "Bangla lesson description is required",
+      message: "Valid Bangla lesson description is required",
     });
 
     return;
   }
 
-  if (
-    typeof descriptionEng !== "string" ||
-    descriptionEng.trim().length === 0
-  ) {
+  if (parsedDescriptionEng === null) {
     res.status(400).json({
       success: false,
-      message: "English lesson description is required",
+      message: "Valid English lesson description is required",
     });
 
     return;
@@ -114,8 +150,8 @@ export async function createLessonController(
       lessonNo: normalizedLessonNo,
       nameBN: nameBN.trim(),
       nameEng: nameEng.trim(),
-      descriptionBN: descriptionBN.trim(),
-      descriptionEng: descriptionEng.trim(),
+      descriptionBN: parsedDescriptionBN,
+      descriptionEng: parsedDescriptionEng,
     });
 
     res.status(201).json({
@@ -273,22 +309,22 @@ export async function updateLessonController(
     return;
   }
 
-  if (typeof descriptionBN !== "string" || descriptionBN.trim().length === 0) {
+  const parsedDescriptionBN = parseJsonValue(descriptionBN);
+  const parsedDescriptionEng = parseJsonValue(descriptionEng);
+
+  if (parsedDescriptionBN === null) {
     res.status(400).json({
       success: false,
-      message: "Bangla lesson description is required",
+      message: "Valid Bangla lesson description is required",
     });
 
     return;
   }
 
-  if (
-    typeof descriptionEng !== "string" ||
-    descriptionEng.trim().length === 0
-  ) {
+  if (parsedDescriptionEng === null) {
     res.status(400).json({
       success: false,
-      message: "English lesson description is required",
+      message: "Valid English lesson description is required",
     });
 
     return;
@@ -299,8 +335,8 @@ export async function updateLessonController(
       lessonNo: normalizedLessonNo,
       nameBN: nameBN.trim(),
       nameEng: nameEng.trim(),
-      descriptionBN: descriptionBN.trim(),
-      descriptionEng: descriptionEng.trim(),
+      descriptionBN: parsedDescriptionBN,
+      descriptionEng: parsedDescriptionEng,
     });
 
     if (!lesson) {

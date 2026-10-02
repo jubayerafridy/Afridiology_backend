@@ -293,6 +293,15 @@ export async function getPaperCQs(paperId: number) {
 
       chapterId: await getCQChapterId(cq),
 
+      /*
+       * JSON content documents.
+       *
+       * These contain the complete ordered educational
+       * content for the CQ in BN and English.
+       */
+      descriptionBN: cq.descriptionBN,
+      descriptionEng: cq.descriptionEng,
+
       stimulus: cq.quesUddipok,
 
       questions: {
@@ -331,8 +340,6 @@ export async function getPaperCQs(paperId: number) {
 
 /* =========================================================
  * PAPER MCQs
- *
- * MCQ is intentionally left unchanged for now.
  * ========================================================= */
 
 export async function getPaperMCQs(paperId: number) {
@@ -372,6 +379,15 @@ export async function getPaperMCQs(paperId: number) {
     questions: mcqs.map((mcq) => ({
       id: mcq.id,
       qusNo: mcq.qusNo,
+
+      /*
+       * JSON content documents.
+       *
+       * These contain the complete ordered educational
+       * content for the MCQ in BN and English.
+       */
+      descriptionBN: mcq.descriptionBN,
+      descriptionEng: mcq.descriptionEng,
 
       stimulus: mcq.quesUddipok,
 

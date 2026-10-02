@@ -11,6 +11,13 @@ import {
   type UpdateCQInput,
 } from "./cq.service.js";
 
+type JsonPrimitive = string | number | boolean | null;
+
+type JsonValue =
+  | JsonPrimitive
+  | JsonValue[]
+  | { readonly [key: string]: JsonValue };
+
 function parsePositiveInt(value: unknown, fieldName: string): number {
   const parsed = Number(value);
 
@@ -75,6 +82,35 @@ function parseRequiredString(value: unknown, fieldName: string): string {
   return value;
 }
 
+function isJsonValue(value: unknown): value is JsonValue {
+  if (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return true;
+  }
+
+  if (Array.isArray(value)) {
+    return value.every(isJsonValue);
+  }
+
+  if (typeof value === "object") {
+    return Object.values(value).every(isJsonValue);
+  }
+
+  return false;
+}
+
+function parseRequiredJsonValue(value: unknown, fieldName: string): JsonValue {
+  if (!isJsonValue(value)) {
+    throw new Error(`${fieldName} is required and must contain valid JSON`);
+  }
+
+  return value;
+}
+
 function buildLink(
   body: Record<string, unknown>,
   typeField: string,
@@ -99,6 +135,13 @@ function buildCreateInput(body: Record<string, unknown>): CreateCQInput {
     questionPaperId: parsePositiveInt(body.questionPaperId, "questionPaperId"),
 
     qusNo: parsePositiveInt(body.qusNo, "qusNo"),
+
+    descriptionBN: parseRequiredJsonValue(body.descriptionBN, "descriptionBN"),
+
+    descriptionEng: parseRequiredJsonValue(
+      body.descriptionEng,
+      "descriptionEng",
+    ),
 
     quesUddipok: parseNullableString(body.quesUddipok),
 

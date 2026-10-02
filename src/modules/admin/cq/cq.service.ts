@@ -1,5 +1,12 @@
 import { prisma } from "../../../config/prisma.js";
 
+type JsonPrimitive = string | number | boolean | null;
+
+type JsonValue =
+  | JsonPrimitive
+  | JsonValue[]
+  | { readonly [key: string]: JsonValue };
+
 export type KnowledgeLinkType = "CHAPTER" | "LESSON" | "CONCEPT" | "EXECUTION";
 
 export interface KnowledgeLinkInput {
@@ -10,6 +17,9 @@ export interface KnowledgeLinkInput {
 export interface CreateCQInput {
   questionPaperId: number;
   qusNo: number;
+
+  descriptionBN: JsonValue;
+  descriptionEng: JsonValue;
 
   quesUddipok?: string | null;
   imageUrl?: string | null;
@@ -55,6 +65,9 @@ interface NormalizedLink {
 interface NormalizedCQData {
   questionPaperId: number;
   qusNo: number;
+
+  descriptionBN: JsonValue;
+  descriptionEng: JsonValue;
 
   quesUddipok: string | null;
   imageUrl: string | null;
@@ -107,6 +120,7 @@ function normalizeRequiredText(value: string, fieldName: string): string {
 
   return trimmed;
 }
+
 function normalizeLink(
   linkType?: KnowledgeLinkType | null,
   linkId?: number | null,
@@ -274,6 +288,9 @@ function normalizeData(data: CreateCQInput): NormalizedCQData {
     questionPaperId: data.questionPaperId,
     qusNo: data.qusNo,
 
+    descriptionBN: data.descriptionBN,
+    descriptionEng: data.descriptionEng,
+
     quesUddipok: normalizeOptionalText(data.quesUddipok),
     imageUrl: normalizeOptionalText(data.imageUrl),
 
@@ -379,6 +396,9 @@ export async function createCQ(data: CreateCQInput) {
     questionPaperId: normalizedData.questionPaperId,
     qusNo: normalizedData.qusNo,
 
+    descriptionBN: normalizedData.descriptionBN,
+    descriptionEng: normalizedData.descriptionEng,
+
     quesUddipok: normalizedData.quesUddipok,
     imageUrl: normalizedData.imageUrl,
 
@@ -463,6 +483,9 @@ export async function updateCQ(id: number, data: UpdateCQInput) {
   return prisma.orm.public.CQ.where({ id }).update({
     questionPaperId: normalizedData.questionPaperId,
     qusNo: normalizedData.qusNo,
+
+    descriptionBN: normalizedData.descriptionBN,
+    descriptionEng: normalizedData.descriptionEng,
 
     quesUddipok: normalizedData.quesUddipok,
     imageUrl: normalizedData.imageUrl,

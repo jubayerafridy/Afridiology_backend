@@ -1,20 +1,27 @@
 import { prisma } from "../../../config/prisma.js";
 
+type JsonPrimitive = string | number | boolean | null;
+
+type JsonValue =
+  | JsonPrimitive
+  | JsonValue[]
+  | { readonly [key: string]: JsonValue };
+
 export interface CreateLessonInput {
   chapterId: number;
   lessonNo: string;
   nameBN: string;
   nameEng: string;
-  descriptionBN: string;
-  descriptionEng: string;
+  descriptionBN: JsonValue;
+  descriptionEng: JsonValue;
 }
 
 export interface UpdateLessonInput {
   lessonNo: string;
   nameBN: string;
   nameEng: string;
-  descriptionBN: string;
-  descriptionEng: string;
+  descriptionBN: JsonValue;
+  descriptionEng: JsonValue;
 }
 
 export async function createLesson(data: CreateLessonInput) {

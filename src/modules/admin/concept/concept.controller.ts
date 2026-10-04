@@ -8,12 +8,31 @@ import {
   updateConcept,
 } from "./concept.service.js";
 
+import type {
+  CreateConceptInput,
+  UpdateConceptInput,
+} from "./concept.service.js";
+
+/**
+ * ================================================================
+ * JSON TYPES
+ * ================================================================
+ */
+
 type JsonPrimitive = string | number | boolean | null;
 
 type JsonValue =
   | JsonPrimitive
   | JsonValue[]
-  | { readonly [key: string]: JsonValue };
+  | {
+      readonly [key: string]: JsonValue;
+    };
+
+/**
+ * ================================================================
+ * JSON VALIDATION
+ * ================================================================
+ */
 
 function isJsonValue(value: unknown): value is JsonValue {
   if (
@@ -29,7 +48,7 @@ function isJsonValue(value: unknown): value is JsonValue {
     return value.every(isJsonValue);
   }
 
-  if (typeof value === "object") {
+  if (typeof value === "object" && value !== null) {
     return Object.values(value).every(isJsonValue);
   }
 
@@ -44,6 +63,117 @@ function parseJsonValue(value: unknown): JsonValue | null {
   return value;
 }
 
+/**
+ * ================================================================
+ * CONCEPT DOCUMENT VALIDATION
+ * ================================================================
+ *
+ * Concept.descriptionBN and Concept.descriptionEng are ordered
+ * JSON documents.
+ *
+ * Example:
+ *
+ * [
+ *   {
+ *     "type": "text",
+ *     "content": "Some content"
+ *   },
+ *   {
+ *     "type": "execution",
+ *     "executionID": 51
+ *   },
+ *   {
+ *     "type": "heading",
+ *     "content": "Next section"
+ *   }
+ * ]
+ *
+ * IMPORTANT:
+ *
+ * - There is NO `structure`.
+ * - There is NO `flow`.
+ * - There is NO artificial block ID.
+ * - Array order is the source of truth.
+ *
+ * Only `type` is required on a document item.
+ */
+
+function parseConceptDocument(value: unknown): JsonValue[] | null {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+
+  const document: JsonValue[] = [];
+
+  for (const item of value) {
+    if (typeof item !== "object" || item === null || Array.isArray(item)) {
+      return null;
+    }
+
+    const candidate = item as Record<string, unknown>;
+
+    if (
+      typeof candidate.type !== "string" ||
+      candidate.type.trim().length === 0
+    ) {
+      return null;
+    }
+
+    /*
+     * Validate every additional property
+     * as JSON.
+     *
+     * This allows:
+     *
+     * {
+     *   type: "text",
+     *   content: "Hello"
+     * }
+     *
+     * and:
+     *
+     * {
+     *   type: "execution",
+     *   executionID: 51
+     * }
+     *
+     * without requiring an artificial ID.
+     */
+
+    for (const [key, propertyValue] of Object.entries(candidate)) {
+      if (key === "type") {
+        continue;
+      }
+
+      if (!isJsonValue(propertyValue)) {
+        return null;
+      }
+    }
+
+    document.push(candidate as JsonValue);
+  }
+
+  return document;
+}
+
+/**
+ * ================================================================
+ * CREATE CONCEPT
+ * ================================================================
+ *
+ * POST /admin/concepts
+ *
+ * concept.service.ts handles:
+ *
+ * 1. Verifying the parent Lesson.
+ * 2. Creating the Concept.
+ * 3. Saving descriptionBN / descriptionEng.
+ * 4. Adding the Concept reference to the parent Lesson's
+ *    descriptionBN and descriptionEng.
+ *
+ * No `structure` field is accepted.
+ */
+
 export async function createConceptController(
   req: Request,
   res: Response,
@@ -57,6 +187,12 @@ export async function createConceptController(
       descriptionEng?: unknown;
     };
 
+  /*
+   * --------------------------------------------------
+   * Validate lessonId
+   * --------------------------------------------------
+   */
+
   const parsedLessonId = Number(lessonId);
 
   if (!Number.isInteger(parsedLessonId) || parsedLessonId <= 0) {
@@ -68,6 +204,12 @@ export async function createConceptController(
     return;
   }
 
+  /*
+   * --------------------------------------------------
+   * Validate Bangla concept name
+   * --------------------------------------------------
+   */
+
   if (typeof nameBN !== "string" || nameBN.trim().length === 0) {
     res.status(400).json({
       success: false,
@@ -76,6 +218,12 @@ export async function createConceptController(
 
     return;
   }
+
+  /*
+   * --------------------------------------------------
+   * Validate English concept name
+   * --------------------------------------------------
+   */
 
   if (typeof nameEng !== "string" || nameEng.trim().length === 0) {
     res.status(400).json({
@@ -86,35 +234,60 @@ export async function createConceptController(
     return;
   }
 
-  const parsedDescriptionBN = parseJsonValue(descriptionBN);
-  const parsedDescriptionEng = parseJsonValue(descriptionEng);
+  /*
+   * --------------------------------------------------
+   * Validate Bangla description
+   * --------------------------------------------------
+   */
+
+  const parsedDescriptionBN = parseConceptDocument(descriptionBN);
 
   if (parsedDescriptionBN === null) {
     res.status(400).json({
       success: false,
-      message: "Valid Bangla concept description is required",
+      message: "Valid Bangla concept description array is required",
     });
 
     return;
   }
+
+  /*
+   * --------------------------------------------------
+   * Validate English description
+   * --------------------------------------------------
+   */
+
+  const parsedDescriptionEng = parseConceptDocument(descriptionEng);
 
   if (parsedDescriptionEng === null) {
     res.status(400).json({
       success: false,
-      message: "Valid English concept description is required",
+      message: "Valid English concept description array is required",
     });
 
     return;
   }
 
+  /*
+   * --------------------------------------------------
+   * Create Concept
+   * --------------------------------------------------
+   */
+
   try {
-    const concept = await createConcept({
+    const conceptInput: CreateConceptInput = {
       lessonId: parsedLessonId,
+
       nameBN: nameBN.trim(),
+
       nameEng: nameEng.trim(),
+
       descriptionBN: parsedDescriptionBN,
+
       descriptionEng: parsedDescriptionEng,
-    });
+    };
+
+    const concept = await createConcept(conceptInput);
 
     res.status(201).json({
       success: true,
@@ -122,6 +295,12 @@ export async function createConceptController(
       data: concept,
     });
   } catch (error) {
+    /*
+     * --------------------------------------------------
+     * Parent Lesson not found
+     * --------------------------------------------------
+     */
+
     if (error instanceof Error && error.message === "Lesson not found") {
       res.status(404).json({
         success: false,
@@ -134,6 +313,28 @@ export async function createConceptController(
     throw error;
   }
 }
+
+/**
+ * ================================================================
+ * GET CONCEPTS
+ * ================================================================
+ *
+ * Optional:
+ *
+ * GET /admin/concepts?lessonId=123
+ *
+ * Without lessonId:
+ *
+ * GET /admin/concepts
+ *
+ * This endpoint is for CRUD/listing purposes.
+ *
+ * The Knowledge Graph does not use database ID ordering
+ * as document order.
+ *
+ * Document order comes from the parent Lesson's
+ * descriptionBN / descriptionEng arrays.
+ */
 
 export async function getConceptsController(
   req: Request,
@@ -163,6 +364,12 @@ export async function getConceptsController(
     data: concepts,
   });
 }
+
+/**
+ * ================================================================
+ * GET SINGLE CONCEPT
+ * ================================================================
+ */
 
 export async function getConceptController(
   req: Request,
@@ -196,6 +403,26 @@ export async function getConceptController(
   });
 }
 
+/**
+ * ================================================================
+ * UPDATE CONCEPT
+ * ================================================================
+ *
+ * PUT /admin/concepts/:id
+ *
+ * Updates:
+ *
+ * - nameBN
+ * - nameEng
+ * - descriptionBN
+ * - descriptionEng
+ *
+ * No `structure` field is accepted.
+ *
+ * Updating the Concept does not change the parent Lesson's
+ * Concept reference because the Concept ID remains unchanged.
+ */
+
 export async function updateConceptController(
   req: Request,
   res: Response,
@@ -218,6 +445,12 @@ export async function updateConceptController(
     descriptionEng?: unknown;
   };
 
+  /*
+   * --------------------------------------------------
+   * Validate Bangla concept name
+   * --------------------------------------------------
+   */
+
   if (typeof nameBN !== "string" || nameBN.trim().length === 0) {
     res.status(400).json({
       success: false,
@@ -226,6 +459,12 @@ export async function updateConceptController(
 
     return;
   }
+
+  /*
+   * --------------------------------------------------
+   * Validate English concept name
+   * --------------------------------------------------
+   */
 
   if (typeof nameEng !== "string" || nameEng.trim().length === 0) {
     res.status(400).json({
@@ -236,33 +475,57 @@ export async function updateConceptController(
     return;
   }
 
-  const parsedDescriptionBN = parseJsonValue(descriptionBN);
-  const parsedDescriptionEng = parseJsonValue(descriptionEng);
+  /*
+   * --------------------------------------------------
+   * Validate Bangla description
+   * --------------------------------------------------
+   */
+
+  const parsedDescriptionBN = parseConceptDocument(descriptionBN);
 
   if (parsedDescriptionBN === null) {
     res.status(400).json({
       success: false,
-      message: "Valid Bangla concept description is required",
+      message: "Valid Bangla concept description array is required",
     });
 
     return;
   }
+
+  /*
+   * --------------------------------------------------
+   * Validate English description
+   * --------------------------------------------------
+   */
+
+  const parsedDescriptionEng = parseConceptDocument(descriptionEng);
 
   if (parsedDescriptionEng === null) {
     res.status(400).json({
       success: false,
-      message: "Valid English concept description is required",
+      message: "Valid English concept description array is required",
     });
 
     return;
   }
 
-  const concept = await updateConcept(id, {
+  /*
+   * --------------------------------------------------
+   * Update Concept
+   * --------------------------------------------------
+   */
+
+  const conceptInput: UpdateConceptInput = {
     nameBN: nameBN.trim(),
+
     nameEng: nameEng.trim(),
+
     descriptionBN: parsedDescriptionBN,
+
     descriptionEng: parsedDescriptionEng,
-  });
+  };
+
+  const concept = await updateConcept(id, conceptInput);
 
   if (!concept) {
     res.status(404).json({
@@ -279,6 +542,24 @@ export async function updateConceptController(
     data: concept,
   });
 }
+
+/**
+ * ================================================================
+ * DELETE CONCEPT
+ * ================================================================
+ *
+ * concept.service.ts handles:
+ *
+ * 1. Finding the Concept.
+ * 2. Removing its reference from the parent Lesson's
+ *    descriptionBN and descriptionEng.
+ * 3. Deleting the Concept entity.
+ *
+ * Connected CQ / MCQ records are intentionally NOT deleted.
+ *
+ * Questions are independent connected records rather than
+ * hierarchy children.
+ */
 
 export async function deleteConceptController(
   req: Request,

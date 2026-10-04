@@ -8,6 +8,7 @@ import conceptRouter from "../modules/admin/concept/concept.route.js";
 import executionRouter from "../modules/admin/execution/execution.route.js";
 import questionPaperRouter from "../modules/admin/questionPaper/questionPaper.route.js";
 import cqRouter from "../modules/admin/cq/cq.route.js";
+import adminKnowledgeGraphRouter from "../modules/admin/knowledgeGraph/adminknowledgeGraph.route.js";
 
 import authRouter from "../modules/auth/auth.route.js";
 
@@ -50,11 +51,7 @@ router.use("/admin/question-papers", questionPaperRouter);
 
 router.use("/admin/cqs", cqRouter);
 
-/*
- * ==================================================
- * STUDENT
- * ==================================================
- */
+router.use("/admin/knowledge-graph", adminKnowledgeGraphRouter);
 
 router.use("/chapters", studentChapterRouter);
 

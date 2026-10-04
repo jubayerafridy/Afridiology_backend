@@ -4,6 +4,7 @@ import {
   createSubject,
   deleteSubject,
   getSubjects,
+  updateSubject,
 } from "./subject.service.js";
 
 export async function createSubjectController(
@@ -92,6 +93,54 @@ export async function getSubjectsController(
   res.status(200).json({
     success: true,
     data: subjects,
+  });
+}
+
+export async function updateSubjectController(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const id = Number(req.params.id);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(400).json({
+      success: false,
+      message: "Invalid subject ID",
+    });
+
+    return;
+  }
+
+  const { name } = req.body as {
+    name?: unknown;
+  };
+
+  if (typeof name !== "string" || name.trim().length === 0) {
+    res.status(400).json({
+      success: false,
+      message: "Subject name is required",
+    });
+
+    return;
+  }
+
+  const subject = await updateSubject(id, {
+    name: name.trim(),
+  });
+
+  if (!subject) {
+    res.status(404).json({
+      success: false,
+      message: "Subject not found",
+    });
+
+    return;
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Subject updated successfully",
+    data: subject,
   });
 }
 

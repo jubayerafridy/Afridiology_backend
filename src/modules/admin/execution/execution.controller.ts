@@ -3,8 +3,23 @@ import type { Request, Response } from "express";
 import {
   createExecution,
   deleteExecution,
+  getExecution,
   getExecutions,
+  updateExecution,
 } from "./execution.service.js";
+
+import type {
+  CreateExecutionInput,
+  ExecutionDocument,
+  ExecutionDocumentItem,
+  UpdateExecutionInput,
+} from "./execution.service.js";
+
+/**
+ * ================================================================
+ * JSON TYPES
+ * ================================================================
+ */
 
 type JsonPrimitive = string | number | boolean | null;
 
@@ -12,6 +27,12 @@ type JsonValue =
   | JsonPrimitive
   | JsonValue[]
   | { readonly [key: string]: JsonValue };
+
+/**
+ * ================================================================
+ * JSON VALIDATION
+ * ================================================================
+ */
 
 function isJsonValue(value: unknown): value is JsonValue {
   if (
@@ -42,6 +63,102 @@ function parseJsonValue(value: unknown): JsonValue | null {
   return value;
 }
 
+/**
+ * ================================================================
+ * EXECUTION DOCUMENT VALIDATION
+ * ================================================================
+ *
+ * Execution owns two ordered bilingual documents:
+ *
+ *   descriptionBN
+ *   descriptionEng
+ *
+ * Example:
+ *
+ * [
+ *   {
+ *     "type": "text",
+ *     "content": "..."
+ *   },
+ *   {
+ *     "type": "heading",
+ *     "content": "..."
+ *   },
+ *   {
+ *     "type": "table",
+ *     "tableID": 12
+ *   }
+ * ]
+ *
+ * Rules:
+ *
+ * - document must be an array
+ * - every item must be an object
+ * - every item must contain a non-empty string `type`
+ * - all other properties must contain valid JSON values
+ *
+ * There is NO block ID.
+ *
+ * Array order is the source of truth.
+ *
+ * There is NO `structure` field.
+ */
+
+function parseExecutionDocument(value: unknown): ExecutionDocument | null {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+
+  const document: ExecutionDocument = [];
+
+  for (const item of value) {
+    if (typeof item !== "object" || item === null || Array.isArray(item)) {
+      return null;
+    }
+
+    const candidate = item as Record<string, unknown>;
+
+    if (
+      typeof candidate.type !== "string" ||
+      candidate.type.trim().length === 0
+    ) {
+      return null;
+    }
+
+    for (const [key, propertyValue] of Object.entries(candidate)) {
+      if (key === "type") {
+        continue;
+      }
+
+      if (!isJsonValue(propertyValue)) {
+        return null;
+      }
+    }
+
+    document.push(candidate as ExecutionDocumentItem);
+  }
+
+  return document;
+}
+
+/**
+ * ================================================================
+ * CREATE EXECUTION
+ * ================================================================
+ *
+ * The controller validates the request.
+ *
+ * execution.service.ts handles:
+ *
+ * 1. Verifying the parent Concept.
+ * 2. Creating the Execution.
+ * 3. Getting the generated Execution ID.
+ * 4. Adding the Execution reference to:
+ *
+ *      Concept.descriptionBN
+ *      Concept.descriptionEng
+ */
+
 export async function createExecutionController(
   req: Request,
   res: Response,
@@ -55,6 +172,12 @@ export async function createExecutionController(
       descriptionEng?: unknown;
     };
 
+  /**
+   * --------------------------------------------------
+   * Validate conceptId
+   * --------------------------------------------------
+   */
+
   const parsedConceptId = Number(conceptId);
 
   if (!Number.isInteger(parsedConceptId) || parsedConceptId <= 0) {
@@ -66,6 +189,12 @@ export async function createExecutionController(
     return;
   }
 
+  /**
+   * --------------------------------------------------
+   * Validate Bangla execution name
+   * --------------------------------------------------
+   */
+
   if (typeof nameBN !== "string" || nameBN.trim().length === 0) {
     res.status(400).json({
       success: false,
@@ -74,6 +203,12 @@ export async function createExecutionController(
 
     return;
   }
+
+  /**
+   * --------------------------------------------------
+   * Validate English execution name
+   * --------------------------------------------------
+   */
 
   if (typeof nameEng !== "string" || nameEng.trim().length === 0) {
     res.status(400).json({
@@ -84,8 +219,13 @@ export async function createExecutionController(
     return;
   }
 
-  const parsedDescriptionBN = parseJsonValue(descriptionBN);
-  const parsedDescriptionEng = parseJsonValue(descriptionEng);
+  /**
+   * --------------------------------------------------
+   * Validate Bangla document
+   * --------------------------------------------------
+   */
+
+  const parsedDescriptionBN = parseExecutionDocument(descriptionBN);
 
   if (parsedDescriptionBN === null) {
     res.status(400).json({
@@ -96,6 +236,14 @@ export async function createExecutionController(
     return;
   }
 
+  /**
+   * --------------------------------------------------
+   * Validate English document
+   * --------------------------------------------------
+   */
+
+  const parsedDescriptionEng = parseExecutionDocument(descriptionEng);
+
   if (parsedDescriptionEng === null) {
     res.status(400).json({
       success: false,
@@ -105,14 +253,28 @@ export async function createExecutionController(
     return;
   }
 
+  /**
+   * --------------------------------------------------
+   * Build input
+   * --------------------------------------------------
+   */
+
+  const executionInput: CreateExecutionInput = {
+    conceptId: parsedConceptId,
+    nameBN: nameBN.trim(),
+    nameEng: nameEng.trim(),
+    descriptionBN: parsedDescriptionBN,
+    descriptionEng: parsedDescriptionEng,
+  };
+
+  /**
+   * --------------------------------------------------
+   * Create Execution
+   * --------------------------------------------------
+   */
+
   try {
-    const execution = await createExecution({
-      conceptId: parsedConceptId,
-      nameBN: nameBN.trim(),
-      nameEng: nameEng.trim(),
-      descriptionBN: parsedDescriptionBN,
-      descriptionEng: parsedDescriptionEng,
-    });
+    const execution = await createExecution(executionInput);
 
     res.status(201).json({
       success: true,
@@ -132,6 +294,20 @@ export async function createExecutionController(
     throw error;
   }
 }
+
+/**
+ * ================================================================
+ * GET EXECUTIONS
+ * ================================================================
+ *
+ * GET /admin/executions
+ *
+ * Returns all executions.
+ *
+ * GET /admin/executions?conceptId=123
+ *
+ * Returns executions belonging to Concept 123.
+ */
 
 export async function getExecutionsController(
   req: Request,
@@ -161,6 +337,220 @@ export async function getExecutionsController(
     data: executions,
   });
 }
+
+/**
+ * ================================================================
+ * GET SINGLE EXECUTION
+ * ================================================================
+ *
+ * GET /admin/executions/:id
+ *
+ * This endpoint is required by the admin knowledge graph when
+ * editing an Execution.
+ *
+ * The frontend first reads the current Execution so that it can
+ * preserve:
+ *
+ *   nameBN
+ *   nameEng
+ *
+ * while changing only:
+ *
+ *   descriptionBN
+ *   descriptionEng
+ */
+
+export async function getExecutionController(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const id = Number(req.params.id);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(400).json({
+      success: false,
+      message: "Invalid execution ID",
+    });
+
+    return;
+  }
+
+  const execution = await getExecution(id);
+
+  if (!execution) {
+    res.status(404).json({
+      success: false,
+      message: "Execution not found",
+    });
+
+    return;
+  }
+
+  res.status(200).json({
+    success: true,
+    data: execution,
+  });
+}
+
+/**
+ * ================================================================
+ * UPDATE EXECUTION
+ * ================================================================
+ *
+ * PUT /admin/executions/:id
+ *
+ * Updates:
+ *
+ * - nameBN
+ * - nameEng
+ * - descriptionBN
+ * - descriptionEng
+ *
+ * The parent Concept reference remains unchanged.
+ */
+
+export async function updateExecutionController(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const id = Number(req.params.id);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(400).json({
+      success: false,
+      message: "Invalid execution ID",
+    });
+
+    return;
+  }
+
+  const { nameBN, nameEng, descriptionBN, descriptionEng } = req.body as {
+    nameBN?: unknown;
+    nameEng?: unknown;
+    descriptionBN?: unknown;
+    descriptionEng?: unknown;
+  };
+
+  /**
+   * --------------------------------------------------
+   * Validate Bangla name
+   * --------------------------------------------------
+   */
+
+  if (typeof nameBN !== "string" || nameBN.trim().length === 0) {
+    res.status(400).json({
+      success: false,
+      message: "Bangla execution name is required",
+    });
+
+    return;
+  }
+
+  /**
+   * --------------------------------------------------
+   * Validate English name
+   * --------------------------------------------------
+   */
+
+  if (typeof nameEng !== "string" || nameEng.trim().length === 0) {
+    res.status(400).json({
+      success: false,
+      message: "English execution name is required",
+    });
+
+    return;
+  }
+
+  /**
+   * --------------------------------------------------
+   * Validate Bangla document
+   * --------------------------------------------------
+   */
+
+  const parsedDescriptionBN = parseExecutionDocument(descriptionBN);
+
+  if (parsedDescriptionBN === null) {
+    res.status(400).json({
+      success: false,
+      message: "Valid Bangla execution description is required",
+    });
+
+    return;
+  }
+
+  /**
+   * --------------------------------------------------
+   * Validate English document
+   * --------------------------------------------------
+   */
+
+  const parsedDescriptionEng = parseExecutionDocument(descriptionEng);
+
+  if (parsedDescriptionEng === null) {
+    res.status(400).json({
+      success: false,
+      message: "Valid English execution description is required",
+    });
+
+    return;
+  }
+
+  /**
+   * --------------------------------------------------
+   * Build update input
+   * --------------------------------------------------
+   */
+
+  const executionInput: UpdateExecutionInput = {
+    nameBN: nameBN.trim(),
+    nameEng: nameEng.trim(),
+    descriptionBN: parsedDescriptionBN,
+    descriptionEng: parsedDescriptionEng,
+  };
+
+  /**
+   * --------------------------------------------------
+   * Update Execution
+   * --------------------------------------------------
+   */
+
+  const execution = await updateExecution(id, executionInput);
+
+  if (!execution) {
+    res.status(404).json({
+      success: false,
+      message: "Execution not found",
+    });
+
+    return;
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Execution updated successfully",
+    data: execution,
+  });
+}
+
+/**
+ * ================================================================
+ * DELETE EXECUTION
+ * ================================================================
+ *
+ * DELETE /admin/executions/:id
+ *
+ * The service:
+ *
+ * 1. Finds the Execution.
+ * 2. Removes its reference from:
+ *
+ *      Concept.descriptionBN
+ *      Concept.descriptionEng
+ *
+ * 3. Deletes the Execution.
+ *
+ * CQ / MCQ records remain untouched.
+ */
 
 export async function deleteExecutionController(
   req: Request,

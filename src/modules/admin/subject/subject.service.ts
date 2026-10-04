@@ -5,6 +5,10 @@ export interface CreateSubjectInput {
   name: string;
 }
 
+export interface UpdateSubjectInput {
+  name: string;
+}
+
 export async function createSubject(data: CreateSubjectInput) {
   const educationLevel = await prisma.orm.public.EducationLevel.first({
     id: data.educationLevelId,
@@ -30,6 +34,20 @@ export async function getSubjects(educationLevelId?: number) {
   }
 
   return prisma.orm.public.Subject.orderBy((subject) => subject.id.asc()).all();
+}
+
+export async function updateSubject(id: number, data: UpdateSubjectInput) {
+  const subject = await prisma.orm.public.Subject.first({
+    id,
+  });
+
+  if (!subject) {
+    return null;
+  }
+
+  return prisma.orm.public.Subject.where({ id }).update({
+    name: data.name,
+  });
 }
 
 export async function deleteSubject(id: number) {

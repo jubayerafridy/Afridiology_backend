@@ -129,10 +129,13 @@ async function getCQKnowledgeLinkChapterId(
 async function getCQChapterId(cq: {
   quesKaLinkType: string | null;
   quesKaLinkId: number | null;
+
   quesKhaLinkType: string | null;
   quesKhaLinkId: number | null;
+
   quesGaLinkType: string | null;
   quesGaLinkId: number | null;
+
   quesGhaLinkType: string | null;
   quesGhaLinkId: number | null;
 }): Promise<number | null> {
@@ -141,14 +144,17 @@ async function getCQChapterId(cq: {
       type: cq.quesKaLinkType as KnowledgeLinkType | null,
       id: cq.quesKaLinkId,
     },
+
     {
       type: cq.quesKhaLinkType as KnowledgeLinkType | null,
       id: cq.quesKhaLinkId,
     },
+
     {
       type: cq.quesGaLinkType as KnowledgeLinkType | null,
       id: cq.quesGaLinkId,
     },
+
     {
       type: cq.quesGhaLinkType as KnowledgeLinkType | null,
       id: cq.quesGhaLinkId,
@@ -284,11 +290,41 @@ export async function getPaperCQs(paperId: number) {
     isActive: true,
   }).all();
 
-  cqs.sort((a, b) => a.qusNo - b.qusNo);
+  /*
+   * CQ ordering:
+   *
+   * 1. CQs with a qusNo come first.
+   * 2. Numbered CQs are sorted by qusNo ascending.
+   * 3. CQs without a qusNo come afterward.
+   * 4. Unnumbered CQs use id ascending so their
+   *    order remains deterministic.
+   *
+   * This is necessary because qusNo is nullable.
+   */
+  cqs.sort((a, b) => {
+    const aHasNumber = a.qusNo !== null && a.qusNo !== undefined;
+
+    const bHasNumber = b.qusNo !== null && b.qusNo !== undefined;
+
+    if (aHasNumber && !bHasNumber) {
+      return -1;
+    }
+
+    if (!aHasNumber && bHasNumber) {
+      return 1;
+    }
+
+    if (!aHasNumber && !bHasNumber) {
+      return a.id - b.id;
+    }
+
+    return (a.qusNo as number) - (b.qusNo as number);
+  });
 
   const questions = await Promise.all(
     cqs.map(async (cq) => ({
       id: cq.id,
+
       qusNo: cq.qusNo,
 
       chapterId: await getCQChapterId(cq),
@@ -300,6 +336,7 @@ export async function getPaperCQs(paperId: number) {
        * content for the CQ in BN and English.
        */
       descriptionBN: cq.descriptionBN,
+
       descriptionEng: cq.descriptionEng,
 
       stimulus: cq.quesUddipok,
@@ -362,7 +399,9 @@ export async function getPaperMCQs(paperId: number) {
     isActive: true,
   }).all();
 
-  mcqs.sort((a, b) => a.qusNo - b.qusNo);
+  mcqs.sort((a, b) => {
+    return a.qusNo - b.qusNo;
+  });
 
   return {
     paper: {
@@ -387,6 +426,7 @@ export async function getPaperMCQs(paperId: number) {
        * content for the MCQ in BN and English.
        */
       descriptionBN: mcq.descriptionBN,
+
       descriptionEng: mcq.descriptionEng,
 
       stimulus: mcq.quesUddipok,

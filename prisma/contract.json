@@ -689,6 +689,13 @@
                   "kind": "scalar"
                 }
               },
+              "point": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "quesGaBN": {
                 "nullable": false,
                 "type": {
@@ -718,14 +725,14 @@
                 }
               },
               "quesGhaBN": {
-                "nullable": false,
+                "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               },
               "quesGhaEng": {
-                "nullable": false,
+                "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
@@ -816,7 +823,7 @@
                 }
               },
               "qusNo": {
-                "nullable": false,
+                "nullable": true,
                 "type": {
                   "codecId": "pg/int4@1",
                   "kind": "scalar"
@@ -826,6 +833,13 @@
                 "nullable": false,
                 "type": {
                   "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              },
+              "ytLink": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               }
@@ -892,6 +906,9 @@
                 "isActive": {
                   "column": "isActive"
                 },
+                "point": {
+                  "column": "point"
+                },
                 "quesGaBN": {
                   "column": "quesGaBN"
                 },
@@ -951,6 +968,9 @@
                 },
                 "updatedAt": {
                   "column": "updatedAt"
+                },
+                "ytLink": {
+                  "column": "ytLink"
                 }
               },
               "namespaceId": "public",
@@ -2982,10 +3002,15 @@
                   "codecId": "pg/bool@1",
                   "default": {
                     "kind": "literal",
-                    "value": true
+                    "value": false
                   },
                   "nativeType": "bool",
                   "nullable": false
+                },
+                "point": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": true
                 },
                 "quesGaBN": {
                   "codecId": "pg/text@1",
@@ -3010,12 +3035,12 @@
                 "quesGhaBN": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
-                  "nullable": false
+                  "nullable": true
                 },
                 "quesGhaEng": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
-                  "nullable": false
+                  "nullable": true
                 },
                 "quesGhaLinkId": {
                   "codecId": "pg/int4@1",
@@ -3080,7 +3105,7 @@
                 "qusNo": {
                   "codecId": "pg/int4@1",
                   "nativeType": "int4",
-                  "nullable": false
+                  "nullable": true
                 },
                 "updatedAt": {
                   "codecId": "pg/timestamptz-temporal@1",
@@ -3090,6 +3115,11 @@
                   },
                   "nativeType": "timestamptz",
                   "nullable": false
+                },
+                "ytLink": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
                 }
               },
               "foreignKeys": [
@@ -4244,7 +4274,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "8f936467c018abeba35a33fdb21f633f74f74a49b770ac898b040bb3e2a83384"
+    "storageHash": "19d171ff260dfed096e346e4e435fabbfe2f7e6938b84c16e8841c94b3ec15cd"
   },
   "capabilities": {
     "postgres": {

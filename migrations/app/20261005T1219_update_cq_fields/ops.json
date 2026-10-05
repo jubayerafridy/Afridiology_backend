@@ -1,0 +1,257 @@
+[
+  {
+    "id": "column.public.cQ.point",
+    "label": "Add column \"point\" to \"cQ\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "point",
+        "table": "cQ"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"point\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "cQ",
+          "point"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"point\"",
+        "sql": "ALTER TABLE \"public\".\"cQ\" ADD COLUMN \"point\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"point\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "cQ",
+          "point"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.cQ.ytLink",
+    "label": "Add column \"ytLink\" to \"cQ\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "ytLink",
+        "table": "cQ"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"ytLink\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "cQ",
+          "ytLink"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"ytLink\"",
+        "sql": "ALTER TABLE \"public\".\"cQ\" ADD COLUMN \"ytLink\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"ytLink\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "cQ",
+          "ytLink"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "setDefault.cQ.isActive",
+    "label": "Set default on \"cQ\".\"isActive\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "isActive",
+        "table": "cQ"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"isActive\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "cQ",
+          "isActive"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "set default on \"isActive\"",
+        "sql": "ALTER TABLE \"public\".\"cQ\" ALTER COLUMN \"isActive\" SET DEFAULT false"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"isActive\" has a default",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"column_default\" IS NOT NULL)) AS \"result\"",
+        "params": [
+          "public",
+          "cQ",
+          "isActive"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.dropNotNull.cQ.qusNo",
+    "label": "Drop NOT NULL on \"cQ\".\"qusNo\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "qusNo",
+        "table": "cQ"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"qusNo\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "cQ",
+          "qusNo"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop NOT NULL on \"qusNo\"",
+        "sql": "ALTER TABLE \"public\".\"cQ\" ALTER COLUMN \"qusNo\" DROP NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"qusNo\" is nullable",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "cQ",
+          "qusNo",
+          "YES"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.dropNotNull.cQ.quesGhaBN",
+    "label": "Drop NOT NULL on \"cQ\".\"quesGhaBN\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "quesGhaBN",
+        "table": "cQ"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"quesGhaBN\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "cQ",
+          "quesGhaBN"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop NOT NULL on \"quesGhaBN\"",
+        "sql": "ALTER TABLE \"public\".\"cQ\" ALTER COLUMN \"quesGhaBN\" DROP NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"quesGhaBN\" is nullable",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "cQ",
+          "quesGhaBN",
+          "YES"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.dropNotNull.cQ.quesGhaEng",
+    "label": "Drop NOT NULL on \"cQ\".\"quesGhaEng\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "quesGhaEng",
+        "table": "cQ"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"quesGhaEng\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "cQ",
+          "quesGhaEng"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop NOT NULL on \"quesGhaEng\"",
+        "sql": "ALTER TABLE \"public\".\"cQ\" ALTER COLUMN \"quesGhaEng\" DROP NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"quesGhaEng\" is nullable",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "cQ",
+          "quesGhaEng",
+          "YES"
+        ]
+      }
+    ]
+  }
+]

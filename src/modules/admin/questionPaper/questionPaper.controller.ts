@@ -98,6 +98,7 @@ export async function createQuestionPaperController(
       success: false,
       message: "Class is required",
     });
+
     return;
   }
 
@@ -108,6 +109,7 @@ export async function createQuestionPaperController(
       success: false,
       message: "Valid subjectId is required",
     });
+
     return;
   }
 
@@ -116,6 +118,7 @@ export async function createQuestionPaperController(
       success: false,
       message: "Valid questionType is required",
     });
+
     return;
   }
 
@@ -124,6 +127,7 @@ export async function createQuestionPaperController(
       success: false,
       message: "Valid source is required",
     });
+
     return;
   }
 
@@ -139,6 +143,7 @@ export async function createQuestionPaperController(
       success: false,
       message: "Year must be a valid integer",
     });
+
     return;
   }
 
@@ -164,6 +169,7 @@ export async function createQuestionPaperController(
         success: false,
         message: error.message,
       });
+
       return;
     }
 
@@ -174,6 +180,7 @@ export async function createQuestionPaperController(
         success: false,
         message: validationMessage,
       });
+
       return;
     }
 
@@ -187,6 +194,16 @@ export async function getQuestionPapersController(
 ): Promise<void> {
   const subjectIdValue = req.query.subjectId;
 
+  const classValue = req.query.class;
+
+  const sourceValue = req.query.source;
+
+  const questionTypeValue = req.query.questionType;
+
+  const boardValue = req.query.board;
+
+  const yearValue = req.query.year;
+
   let subjectId: number | undefined;
 
   if (subjectIdValue !== undefined) {
@@ -197,11 +214,121 @@ export async function getQuestionPapersController(
         success: false,
         message: "Invalid subjectId",
       });
+
       return;
     }
   }
 
-  const questionPapers = await getQuestionPapers(subjectId);
+  let className: string | undefined;
+
+  if (classValue !== undefined) {
+    if (typeof classValue !== "string" || classValue.trim().length === 0) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid class",
+      });
+
+      return;
+    }
+
+    className = classValue.trim();
+  }
+
+  let source: (typeof QUESTION_SOURCES)[number] | undefined;
+
+  if (sourceValue !== undefined) {
+    if (!isQuestionSource(sourceValue)) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid source",
+      });
+
+      return;
+    }
+
+    source = sourceValue;
+  }
+
+  let questionType: (typeof QUESTION_TYPES)[number] | undefined;
+
+  if (questionTypeValue !== undefined) {
+    if (!isQuestionType(questionTypeValue)) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid questionType",
+      });
+
+      return;
+    }
+
+    questionType = questionTypeValue;
+  }
+
+  let board: string | undefined;
+
+  if (boardValue !== undefined) {
+    if (typeof boardValue !== "string" || boardValue.trim().length === 0) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid board",
+      });
+
+      return;
+    }
+
+    board = boardValue.trim();
+  }
+
+  const parsedYear = parseYear(yearValue);
+
+  if (
+    yearValue !== undefined &&
+    yearValue !== null &&
+    yearValue !== "" &&
+    parsedYear === undefined
+  ) {
+    res.status(400).json({
+      success: false,
+      message: "Invalid year",
+    });
+
+    return;
+  }
+
+  const filters: {
+    subjectId?: number;
+    class?: string;
+    source?: (typeof QUESTION_SOURCES)[number];
+    questionType?: (typeof QUESTION_TYPES)[number];
+    board?: string;
+    year?: number;
+  } = {};
+
+  if (subjectId !== undefined) {
+    filters.subjectId = subjectId;
+  }
+
+  if (className !== undefined) {
+    filters.class = className;
+  }
+
+  if (source !== undefined) {
+    filters.source = source;
+  }
+
+  if (questionType !== undefined) {
+    filters.questionType = questionType;
+  }
+
+  if (board !== undefined) {
+    filters.board = board;
+  }
+
+  if (parsedYear !== undefined) {
+    filters.year = parsedYear;
+  }
+
+  const questionPapers = await getQuestionPapers(filters);
 
   res.status(200).json({
     success: true,
@@ -220,6 +347,7 @@ export async function getQuestionPaperController(
       success: false,
       message: "Invalid question paper ID",
     });
+
     return;
   }
 
@@ -230,6 +358,7 @@ export async function getQuestionPaperController(
       success: false,
       message: "Question paper not found",
     });
+
     return;
   }
 
@@ -250,6 +379,7 @@ export async function updateQuestionPaperController(
       success: false,
       message: "Invalid question paper ID",
     });
+
     return;
   }
 
@@ -276,6 +406,7 @@ export async function updateQuestionPaperController(
       success: false,
       message: "Class is required",
     });
+
     return;
   }
 
@@ -286,6 +417,7 @@ export async function updateQuestionPaperController(
       success: false,
       message: "Valid subjectId is required",
     });
+
     return;
   }
 
@@ -294,6 +426,7 @@ export async function updateQuestionPaperController(
       success: false,
       message: "Valid questionType is required",
     });
+
     return;
   }
 
@@ -302,6 +435,7 @@ export async function updateQuestionPaperController(
       success: false,
       message: "Valid source is required",
     });
+
     return;
   }
 
@@ -317,17 +451,24 @@ export async function updateQuestionPaperController(
       success: false,
       message: "Year must be a valid integer",
     });
+
     return;
   }
 
   try {
     const questionPaper = await updateQuestionPaper(id, {
       class: classValue.trim(),
+
       subjectId: parsedSubjectId,
+
       questionType,
+
       source,
+
       board: typeof board === "string" ? board.trim() : null,
+
       institution: typeof institution === "string" ? institution.trim() : null,
+
       year: parsedYear ?? null,
     });
 
@@ -336,6 +477,7 @@ export async function updateQuestionPaperController(
         success: false,
         message: "Question paper not found",
       });
+
       return;
     }
 
@@ -350,6 +492,7 @@ export async function updateQuestionPaperController(
         success: false,
         message: error.message,
       });
+
       return;
     }
 
@@ -360,6 +503,7 @@ export async function updateQuestionPaperController(
         success: false,
         message: validationMessage,
       });
+
       return;
     }
 
@@ -378,6 +522,7 @@ export async function deleteQuestionPaperController(
       success: false,
       message: "Invalid question paper ID",
     });
+
     return;
   }
 
@@ -388,6 +533,7 @@ export async function deleteQuestionPaperController(
       success: false,
       message: "Question paper not found",
     });
+
     return;
   }
 

@@ -110,11 +110,12 @@ function validateSourceMetadata(
 }
 
 /**
- * Converts conditional fields into explicit database-safe values.
+ * Converts conditional fields into explicit
+ * database-safe values.
  *
- * We deliberately use null instead of undefined because the
- * PostgreSQL columns are nullable and exactOptionalPropertyTypes
- * is enabled in this project.
+ * We deliberately use null instead of undefined
+ * because the PostgreSQL columns are nullable and
+ * exactOptionalPropertyTypes is enabled.
  */
 function normalizeData(
   data: CreateQuestionPaperInput | UpdateQuestionPaperInput,
@@ -182,16 +183,66 @@ export async function createQuestionPaper(data: CreateQuestionPaperInput) {
   });
 }
 
-export async function getQuestionPapers(subjectId?: number) {
-  if (subjectId !== undefined) {
-    return prisma.orm.public.QuestionPaper.where({ subjectId })
-      .orderBy((questionPaper) => questionPaper.id.desc())
-      .all();
+/**
+ * Returns Question Papers using the supplied filters.
+ *
+ * CQ admin board flow can use:
+ *
+ *   subjectId
+ *   source = BOARD
+ *   questionType = CQ
+ *
+ * Optional filters are supported so the same
+ * function remains reusable for other Question
+ * Paper flows.
+ */
+export async function getQuestionPapers(filters?: {
+  subjectId?: number;
+  class?: string;
+  source?: QuestionSourceType;
+  questionType?: QuestionType;
+  board?: string;
+  year?: number;
+}) {
+  let query = prisma.orm.public.QuestionPaper;
+
+  if (filters?.subjectId !== undefined) {
+    query = query.where({
+      subjectId: filters.subjectId,
+    });
   }
 
-  return prisma.orm.public.QuestionPaper.orderBy((questionPaper) =>
-    questionPaper.id.desc(),
-  ).all();
+  if (filters?.class !== undefined) {
+    query = query.where({
+      class: filters.class.trim(),
+    });
+  }
+
+  if (filters?.source !== undefined) {
+    query = query.where({
+      source: filters.source,
+    });
+  }
+
+  if (filters?.questionType !== undefined) {
+    query = query.where({
+      questionType: filters.questionType,
+    });
+  }
+
+  if (filters?.board !== undefined) {
+    query = query.where({
+      board: filters.board.trim(),
+    });
+  }
+
+  if (filters?.year !== undefined) {
+    query = query.where({
+      year: filters.year,
+    });
+  }
+
+  return query.orderBy((questionPaper) => questionPaper.id.desc()).all();
 }
 
 export async function getQuestionPaper(id: number) {
@@ -226,15 +277,28 @@ export async function updateQuestionPaper(
 
   return prisma.orm.public.QuestionPaper.where({ id }).update({
     class: normalizedData.class,
+
     subjectId: normalizedData.subjectId,
+
     questionType: normalizedData.questionType,
+
     source: normalizedData.source,
+
     board: normalizedData.board,
+
     institution: normalizedData.institution,
+
     year: normalizedData.year,
   });
 }
 
+/**
+ * Deletes a Question Paper and all CQs
+ * belonging to that Question Paper.
+ *
+ * CQ rows are removed first because CQ has
+ * questionPaperId pointing to QuestionPaper.
+ */
 export async function deleteQuestionPaper(id: number) {
   const questionPaper = await prisma.orm.public.QuestionPaper.first({
     id,
@@ -244,5 +308,20 @@ export async function deleteQuestionPaper(id: number) {
     return null;
   }
 
+  /**
+   * Delete every CQ belonging to this
+   * Question Paper.
+   *
+   * This does not affect CQs belonging to
+   * any other Question Paper.
+   */
+  await prisma.orm.public.CQ.where({
+    questionPaperId: id,
+  }).delete();
+
+  /**
+   * Delete the Question Paper itself
+   * only after its CQs are removed.
+   */
   return prisma.orm.public.QuestionPaper.where({ id }).delete();
 }

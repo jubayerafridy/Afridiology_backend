@@ -83,7 +83,7 @@ export type LessonStructure = LessonDocument;
 
 export interface CreateLessonInput {
   chapterId: number;
-  lessonNo: string;
+  lessonNo?: string | null;
   nameBN: string;
   nameEng: string;
   descriptionBN: JsonValue;
@@ -91,7 +91,7 @@ export interface CreateLessonInput {
 }
 
 export interface UpdateLessonInput {
-  lessonNo: string;
+  lessonNo?: string | null;
   nameBN: string;
   nameEng: string;
   descriptionBN: JsonValue;
@@ -212,7 +212,7 @@ function getConceptId(item: LessonDocumentItem): number | null {
  */
 
 export async function createLesson(data: CreateLessonInput) {
-  /*
+  /**
    * --------------------------------------------------
    * Verify parent Chapter
    * --------------------------------------------------
@@ -226,24 +226,31 @@ export async function createLesson(data: CreateLessonInput) {
     throw new Error("Chapter not found");
   }
 
-  /*
+  /**
    * --------------------------------------------------
    * Verify Lesson serial uniqueness
    * --------------------------------------------------
    */
 
-  const existingLesson = await prisma.orm.public.Lesson.first({
-    chapterId: data.chapterId,
-    lessonNo: data.lessonNo,
-  });
+  const lessonNo =
+    typeof data.lessonNo === "string" && data.lessonNo.trim().length > 0
+      ? data.lessonNo.trim()
+      : null;
 
-  if (existingLesson) {
-    throw new Error(
-      "A lesson with this serial number already exists for this chapter",
-    );
+  if (lessonNo !== null) {
+    const existingLesson = await prisma.orm.public.Lesson.first({
+      chapterId: data.chapterId,
+      lessonNo,
+    });
+
+    if (existingLesson) {
+      throw new Error(
+        "A lesson with this serial number already exists for this chapter",
+      );
+    }
   }
 
-  /*
+  /**
    * --------------------------------------------------
    * Normalize Lesson documents
    * --------------------------------------------------
@@ -253,7 +260,7 @@ export async function createLesson(data: CreateLessonInput) {
 
   const descriptionEng = normalizeLessonDocument(data.descriptionEng);
 
-  /*
+  /**
    * --------------------------------------------------
    * Create Lesson
    * --------------------------------------------------
@@ -261,14 +268,14 @@ export async function createLesson(data: CreateLessonInput) {
 
   const lesson = await prisma.orm.public.Lesson.create({
     chapterId: data.chapterId,
-    lessonNo: data.lessonNo,
+    lessonNo,
     nameBN: data.nameBN,
     nameEng: data.nameEng,
     descriptionBN,
     descriptionEng,
   });
 
-  /*
+  /**
    * --------------------------------------------------
    * Add Lesson reference to parent Chapter
    * --------------------------------------------------
@@ -289,7 +296,7 @@ export async function createLesson(data: CreateLessonInput) {
   try {
     await appendLessonToChapterStructure(data.chapterId, lesson.id);
   } catch (error) {
-    /*
+    /**
      * The Lesson was created successfully, but the parent
      * Chapter document could not be updated.
      *
@@ -302,7 +309,7 @@ export async function createLesson(data: CreateLessonInput) {
         id: lesson.id,
       }).delete();
     } catch {
-      /*
+      /**
        * Preserve the original document-update error.
        */
     }
@@ -321,7 +328,6 @@ export async function createLesson(data: CreateLessonInput) {
  * Used for normal CRUD/listing operations.
  *
  * NOTE:
- *
  * Database ID ordering is only used here for ordinary listing.
  *
  * It does NOT determine the Lesson's position inside the
@@ -387,7 +393,7 @@ export async function getLesson(id: number) {
  */
 
 export async function updateLesson(id: number, data: UpdateLessonInput) {
-  /*
+  /**
    * --------------------------------------------------
    * Find existing Lesson
    * --------------------------------------------------
@@ -401,7 +407,7 @@ export async function updateLesson(id: number, data: UpdateLessonInput) {
     return null;
   }
 
-  /*
+  /**
    * --------------------------------------------------
    * Verify Lesson serial uniqueness
    * --------------------------------------------------
@@ -410,18 +416,25 @@ export async function updateLesson(id: number, data: UpdateLessonInput) {
    * current Chapter.
    */
 
-  const duplicate = await prisma.orm.public.Lesson.where({
-    chapterId: lesson.chapterId,
-    lessonNo: data.lessonNo,
-  }).first();
+  const lessonNo =
+    typeof data.lessonNo === "string" && data.lessonNo.trim().length > 0
+      ? data.lessonNo.trim()
+      : null;
 
-  if (duplicate && duplicate.id !== id) {
-    throw new Error(
-      "A lesson with this serial number already exists for this chapter",
-    );
+  if (lessonNo !== null) {
+    const duplicate = await prisma.orm.public.Lesson.where({
+      chapterId: lesson.chapterId,
+      lessonNo,
+    }).first();
+
+    if (duplicate && duplicate.id !== id) {
+      throw new Error(
+        "A lesson with this serial number already exists for this chapter",
+      );
+    }
   }
 
-  /*
+  /**
    * --------------------------------------------------
    * Normalize documents
    * --------------------------------------------------
@@ -431,7 +444,7 @@ export async function updateLesson(id: number, data: UpdateLessonInput) {
 
   const descriptionEng = normalizeLessonDocument(data.descriptionEng);
 
-  /*
+  /**
    * --------------------------------------------------
    * Update Lesson
    * --------------------------------------------------
@@ -440,10 +453,9 @@ export async function updateLesson(id: number, data: UpdateLessonInput) {
   return prisma.orm.public.Lesson.where({
     id,
   }).update({
-    lessonNo: data.lessonNo,
+    lessonNo,
     nameBN: data.nameBN,
     nameEng: data.nameEng,
-
     descriptionBN,
     descriptionEng,
   });
@@ -484,7 +496,7 @@ export async function setLessonStructure(
 
   const normalizedBN = normalizeLessonDocument(descriptionBN);
 
-  /*
+  /**
    * If English is not supplied, preserve the existing
    * English document instead of accidentally deleting it.
    */
@@ -541,7 +553,7 @@ export async function appendConceptToLessonStructure(
     throw new Error("Lesson not found");
   }
 
-  /*
+  /**
    * Verify that the Concept actually belongs to this Lesson.
    */
 
@@ -561,7 +573,7 @@ export async function appendConceptToLessonStructure(
 
   const descriptionEng = normalizeLessonDocument(lesson.descriptionEng);
 
-  /*
+  /**
    * Prevent duplicate Concept references.
    */
 
@@ -573,7 +585,7 @@ export async function appendConceptToLessonStructure(
     (item) => getConceptId(item) === conceptId,
   );
 
-  /*
+  /**
    * If both language documents already contain the
    * reference, there is nothing to do.
    */
@@ -582,7 +594,7 @@ export async function appendConceptToLessonStructure(
     return lesson;
   }
 
-  /*
+  /**
    * Keep BN and English documents synchronized.
    *
    * The new Concept is appended to the end of each
@@ -621,8 +633,8 @@ export async function appendConceptToLessonStructure(
  * Removes:
  *
  * {
- *   type: "concept",
- *   conceptID: conceptId
+ *   "type": "concept",
+ *   "conceptID": conceptId
  * }
  *
  * from BOTH:
@@ -660,7 +672,7 @@ export async function removeConceptFromLessonStructure(
     (item) => getConceptId(item) !== conceptId,
   );
 
-  /*
+  /**
    * Nothing changed.
    */
 
@@ -675,7 +687,6 @@ export async function removeConceptFromLessonStructure(
     id: lessonId,
   }).update({
     descriptionBN: nextDescriptionBN,
-
     descriptionEng: nextDescriptionEng,
   });
 }
@@ -698,7 +709,7 @@ export async function removeConceptFromLessonStructure(
  */
 
 export async function deleteLesson(id: number) {
-  /*
+  /**
    * --------------------------------------------------
    * Find Lesson
    * --------------------------------------------------
@@ -712,7 +723,7 @@ export async function deleteLesson(id: number) {
     return null;
   }
 
-  /*
+  /**
    * --------------------------------------------------
    * Remove Lesson reference from parent Chapter
    * --------------------------------------------------
@@ -723,7 +734,7 @@ export async function deleteLesson(id: number) {
 
   await removeLessonFromChapterStructure(lesson.chapterId, lesson.id);
 
-  /*
+  /**
    * --------------------------------------------------
    * Delete Lesson
    * --------------------------------------------------
@@ -734,6 +745,6 @@ export async function deleteLesson(id: number) {
    */
 
   return prisma.orm.public.Lesson.where({
-    id,
+    id: lesson.id,
   }).delete();
 }

@@ -1617,14 +1617,14 @@
               "explanationBN": {
                 "nullable": true,
                 "type": {
-                  "codecId": "pg/text@1",
+                  "codecId": "pg/json@1",
                   "kind": "scalar"
                 }
               },
               "explanationEng": {
                 "nullable": true,
                 "type": {
-                  "codecId": "pg/text@1",
+                  "codecId": "pg/json@1",
                   "kind": "scalar"
                 }
               },
@@ -1677,38 +1677,24 @@
                   "kind": "scalar"
                 }
               },
-              "quesUddipok": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
               "questionPaperId": {
-                "nullable": false,
+                "nullable": true,
                 "type": {
                   "codecId": "pg/int4@1",
                   "kind": "scalar"
                 }
               },
               "qusNo": {
-                "nullable": false,
+                "nullable": true,
                 "type": {
                   "codecId": "pg/int4@1",
                   "kind": "scalar"
                 }
               },
-              "rightAnsBN": {
+              "rightAns": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "rightAnsEng": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
+                  "codecId": "pg/int4@1",
                   "kind": "scalar"
                 }
               },
@@ -1718,12 +1704,19 @@
                   "codecId": "pg/timestamptz-temporal@1",
                   "kind": "scalar"
                 }
+              },
+              "ytLink": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
               }
             },
             "relations": {
               "questionPaper": {
                 "cardinality": "N:1",
-                "nullable": false,
+                "nullable": true,
                 "on": {
                   "localFields": [
                     "questionPaperId"
@@ -1776,23 +1769,20 @@
                 "optionsEng": {
                   "column": "optionsEng"
                 },
-                "quesUddipok": {
-                  "column": "quesUddipok"
-                },
                 "questionPaperId": {
                   "column": "questionPaperId"
                 },
                 "qusNo": {
                   "column": "qusNo"
                 },
-                "rightAnsBN": {
-                  "column": "rightAnsBN"
-                },
-                "rightAnsEng": {
-                  "column": "rightAnsEng"
+                "rightAns": {
+                  "column": "rightAns"
                 },
                 "updatedAt": {
                   "column": "updatedAt"
+                },
+                "ytLink": {
+                  "column": "ytLink"
                 }
               },
               "namespaceId": "public",
@@ -3708,13 +3698,13 @@
                   "nullable": false
                 },
                 "explanationBN": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
+                  "codecId": "pg/json@1",
+                  "nativeType": "json",
                   "nullable": true
                 },
                 "explanationEng": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
+                  "codecId": "pg/json@1",
+                  "nativeType": "json",
                   "nullable": true
                 },
                 "id": {
@@ -3735,7 +3725,7 @@
                   "codecId": "pg/bool@1",
                   "default": {
                     "kind": "literal",
-                    "value": true
+                    "value": false
                   },
                   "nativeType": "bool",
                   "nullable": false
@@ -3760,29 +3750,19 @@
                   "nativeType": "json",
                   "nullable": false
                 },
-                "quesUddipok": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": true
-                },
                 "questionPaperId": {
                   "codecId": "pg/int4@1",
                   "nativeType": "int4",
-                  "nullable": false
+                  "nullable": true
                 },
                 "qusNo": {
                   "codecId": "pg/int4@1",
                   "nativeType": "int4",
-                  "nullable": false
+                  "nullable": true
                 },
-                "rightAnsBN": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": false
-                },
-                "rightAnsEng": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
+                "rightAns": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
                   "nullable": false
                 },
                 "updatedAt": {
@@ -3793,6 +3773,11 @@
                   },
                   "nativeType": "timestamptz",
                   "nullable": false
+                },
+                "ytLink": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
                 }
               },
               "foreignKeys": [
@@ -4274,7 +4259,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "19d171ff260dfed096e346e4e435fabbfe2f7e6938b84c16e8841c94b3ec15cd"
+    "storageHash": "4ce825e3cd5eb77665e8594f0026242ab28668d40eee2e0cbae37c4e86bf9360"
   },
   "capabilities": {
     "postgres": {

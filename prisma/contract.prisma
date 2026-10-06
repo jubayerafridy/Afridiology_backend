@@ -281,34 +281,34 @@ model Execution {
 }
 
 model MCQ {
-  id              Int           @id(map: "mCQ_pkey") @default(autoincrement())
-  createdAt       Timestamptz   @default(now())
+  id              Int            @id(map: "mCQ_pkey") @default(autoincrement())
+  isActive        Boolean        @default(false)
+
+  imageUrl        String?
 
   descriptionBN   Json
   descriptionEng  Json
 
-  explanationBN   String?
-  explanationEng  String?
+  rightAns        Int
 
-  imageUrl        String?
-  isActive        Boolean       @default(true)
+  explanationBN   Json?
+  explanationEng  Json?
 
   linkId          Int?
   linkType        String?
 
+  questionPaperId Int?
+  qusNo           Int?
+
   optionsBN       Json
   optionsEng      Json
 
-  quesUddipok     String?
-  questionPaperId Int
-  qusNo           Int
+  ytLink          String?
 
-  rightAnsBN      String
-  rightAnsEng     String
+  createdAt       Timestamptz    @default(now())
+  updatedAt       Timestamptz    @default(now())
 
-  updatedAt       Timestamptz   @default(now())
-
-  questionPaper   QuestionPaper @relation(fields:[questionPaperId], references:[id], map: "mCQ_questionPaperId_fkey")
+  questionPaper   QuestionPaper? @relation(fields:[questionPaperId], references:[id], map: "mCQ_questionPaperId_fkey")
 
   @@index([linkType, linkId], name: "mCQ_linkType_linkId_idx")
   @@index([questionPaperId], name: "mCQ_questionPaperId_idx")

@@ -193,15 +193,10 @@ export async function getQuestionPapersController(
   res: Response,
 ): Promise<void> {
   const subjectIdValue = req.query.subjectId;
-
   const classValue = req.query.class;
-
   const sourceValue = req.query.source;
-
   const questionTypeValue = req.query.questionType;
-
   const boardValue = req.query.board;
-
   const yearValue = req.query.year;
 
   let subjectId: number | undefined;
@@ -249,6 +244,15 @@ export async function getQuestionPapersController(
     source = sourceValue;
   }
 
+  /**
+   * questionType is still accepted and validated so existing
+   * frontend requests remain compatible.
+   *
+   * It is intentionally NOT added to the service filters.
+   *
+   * A QuestionPaper created from CQ must also be visible
+   * from MCQ, and vice versa.
+   */
   let questionType: (typeof QUESTION_TYPES)[number] | undefined;
 
   if (questionTypeValue !== undefined) {
@@ -299,7 +303,6 @@ export async function getQuestionPapersController(
     subjectId?: number;
     class?: string;
     source?: (typeof QUESTION_SOURCES)[number];
-    questionType?: (typeof QUESTION_TYPES)[number];
     board?: string;
     year?: number;
   } = {};
@@ -316,10 +319,6 @@ export async function getQuestionPapersController(
     filters.source = source;
   }
 
-  if (questionType !== undefined) {
-    filters.questionType = questionType;
-  }
-
   if (board !== undefined) {
     filters.board = board;
   }
@@ -327,6 +326,15 @@ export async function getQuestionPapersController(
   if (parsedYear !== undefined) {
     filters.year = parsedYear;
   }
+
+  /**
+   * Do NOT pass questionType to getQuestionPapers().
+   *
+   * questionType remains part of the API request for
+   * backwards compatibility, but it must not restrict
+   * which QuestionPaper records are returned.
+   */
+  void questionType;
 
   const questionPapers = await getQuestionPapers(filters);
 
@@ -458,17 +466,11 @@ export async function updateQuestionPaperController(
   try {
     const questionPaper = await updateQuestionPaper(id, {
       class: classValue.trim(),
-
       subjectId: parsedSubjectId,
-
       questionType,
-
       source,
-
       board: typeof board === "string" ? board.trim() : null,
-
       institution: typeof institution === "string" ? institution.trim() : null,
-
       year: parsedYear ?? null,
     });
 

@@ -641,7 +641,6 @@ function normalizeData(data: MergedCQInput | CreateCQInput): NormalizedCQData {
 
 async function validateQuestionPaper(questionPaperId: number): Promise<{
   id: number;
-
   subjectId: number;
 }> {
   const questionPaper = await prisma.orm.public.QuestionPaper.first({
@@ -652,13 +651,8 @@ async function validateQuestionPaper(questionPaperId: number): Promise<{
     throw new Error("Question Paper not found");
   }
 
-  if (questionPaper.questionType !== "CQ") {
-    throw new Error("The selected Question Paper is not a CQ Question Paper");
-  }
-
   return {
     id: questionPaper.id,
-
     subjectId: questionPaper.subjectId,
   };
 }

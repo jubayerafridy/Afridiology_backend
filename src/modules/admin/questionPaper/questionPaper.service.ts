@@ -159,6 +159,34 @@ function normalizeData(
   }
 }
 
+/**
+ * Creates a QuestionPaper only when a matching
+ * QuestionPaper does not already exist.
+ *
+ * CQ and MCQ share the same QuestionPaper.
+ *
+ * questionType is retained in the QuestionPaper
+ * model for compatibility, but it does NOT decide
+ * whether the QuestionPaper can be used by CQ or MCQ.
+ *
+ * Matching is based on the actual QuestionPaper
+ * metadata:
+ *
+ *   class
+ *   subjectId
+ *   source
+ *   board
+ *   institution
+ *   year
+ *
+ * Therefore:
+ *
+ *   CQ creates Dhaka 2026 paper
+ *        ↓
+ *   MCQ requests Dhaka 2026 paper
+ *        ↓
+ *   same QuestionPaper ID is returned
+ */
 export async function createQuestionPaper(data: CreateQuestionPaperInput) {
   const subject = await prisma.orm.public.Subject.first({
     id: data.subjectId,
@@ -172,6 +200,64 @@ export async function createQuestionPaper(data: CreateQuestionPaperInput) {
 
   const normalizedData = normalizeData(data);
 
+  /**
+   * First look for an existing QuestionPaper
+   * with the same metadata.
+   *
+   * IMPORTANT:
+   * questionType is intentionally NOT part of
+   * this lookup.
+   *
+   * This is what allows CQ and MCQ to share
+   * one QuestionPaper.
+   */
+  let query = prisma.orm.public.QuestionPaper;
+
+  query = query.where({
+    class: normalizedData.class,
+  });
+
+  query = query.where({
+    subjectId: normalizedData.subjectId,
+  });
+
+  query = query.where({
+    source: normalizedData.source,
+  });
+
+  query = query.where({
+    board: normalizedData.board,
+  });
+
+  query = query.where({
+    institution: normalizedData.institution,
+  });
+
+  query = query.where({
+    year: normalizedData.year,
+  });
+
+  const existingQuestionPaper = await query
+    .orderBy((questionPaper) => questionPaper.id.asc())
+    .first();
+
+  /**
+   * If the QuestionPaper already exists,
+   * return it instead of creating another one.
+   *
+   * Its existing questionType is preserved.
+   */
+  if (existingQuestionPaper) {
+    return existingQuestionPaper;
+  }
+
+  /**
+   * No matching QuestionPaper exists,
+   * so create the first one.
+   *
+   * questionType is stored only as the type
+   * supplied when the paper was originally created.
+   */
   return prisma.orm.public.QuestionPaper.create({
     class: normalizedData.class,
     subjectId: normalizedData.subjectId,
@@ -186,15 +272,22 @@ export async function createQuestionPaper(data: CreateQuestionPaperInput) {
 /**
  * Returns Question Papers using the supplied filters.
  *
- * CQ admin board flow can use:
+ * questionType is intentionally NOT used as a database
+ * restriction.
+ *
+ * A QuestionPaper created from CQ must also be available
+ * to MCQ, and a QuestionPaper created from MCQ must also
+ * be available to CQ.
+ *
+ * Therefore both CQ and MCQ can request:
  *
  *   subjectId
- *   source = BOARD
- *   questionType = CQ
+ *   class
+ *   source
+ *   board
+ *   year
  *
- * Optional filters are supported so the same
- * function remains reusable for other Question
- * Paper flows.
+ * and receive the same QuestionPaper records.
  */
 export async function getQuestionPapers(filters?: {
   subjectId?: number;
@@ -224,12 +317,14 @@ export async function getQuestionPapers(filters?: {
     });
   }
 
-  if (filters?.questionType !== undefined) {
-    query = query.where({
-      questionType: filters.questionType,
-    });
-  }
-
+  /**
+   * questionType is deliberately ignored here.
+   *
+   * It remains in the function's input type so existing
+   * controller/frontend calls do not immediately break,
+   * but it must not prevent the other question type from
+   * seeing the same QuestionPaper.
+   */
   if (filters?.board !== undefined) {
     query = query.where({
       board: filters.board.trim(),
@@ -275,29 +370,35 @@ export async function updateQuestionPaper(
 
   const normalizedData = normalizeData(data);
 
+  /**
+   * questionType is retained and updated because it still
+   * exists in the database model.
+   *
+   * It does NOT control whether this QuestionPaper can
+   * contain or be used by CQ/MCQ.
+   */
   return prisma.orm.public.QuestionPaper.where({ id }).update({
     class: normalizedData.class,
-
     subjectId: normalizedData.subjectId,
-
     questionType: normalizedData.questionType,
-
     source: normalizedData.source,
-
     board: normalizedData.board,
-
     institution: normalizedData.institution,
-
     year: normalizedData.year,
   });
 }
 
 /**
- * Deletes a Question Paper and all CQs
- * belonging to that Question Paper.
+ * Deletes a QuestionPaper and ALL questions belonging
+ * to that QuestionPaper.
  *
- * CQ rows are removed first because CQ has
- * questionPaperId pointing to QuestionPaper.
+ * One QuestionPaper can contain both:
+ *
+ *   CQ
+ *   MCQ
+ *
+ * Therefore both tables must be cleared before the
+ * QuestionPaper itself is deleted.
  */
 export async function deleteQuestionPaper(id: number) {
   const questionPaper = await prisma.orm.public.QuestionPaper.first({
@@ -309,19 +410,22 @@ export async function deleteQuestionPaper(id: number) {
   }
 
   /**
-   * Delete every CQ belonging to this
-   * Question Paper.
-   *
-   * This does not affect CQs belonging to
-   * any other Question Paper.
+   * Delete all CQs belonging to this QuestionPaper.
    */
   await prisma.orm.public.CQ.where({
     questionPaperId: id,
   }).delete();
 
   /**
-   * Delete the Question Paper itself
-   * only after its CQs are removed.
+   * Delete all MCQs belonging to this QuestionPaper.
+   */
+  await prisma.orm.public.MCQ.where({
+    questionPaperId: id,
+  }).delete();
+
+  /**
+   * Delete the QuestionPaper only after both
+   * dependent question types have been removed.
    */
   return prisma.orm.public.QuestionPaper.where({ id }).delete();
 }

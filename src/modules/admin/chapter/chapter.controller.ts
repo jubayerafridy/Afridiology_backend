@@ -31,6 +31,20 @@ type JsonValue =
  * ================================================================
  */
 
+function parseUuid(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+
+  if (trimmed.length === 0) {
+    return null;
+  }
+
+  return trimmed;
+}
+
 function parsePositiveInteger(value: unknown): number | null {
   const number = Number(value);
 
@@ -87,7 +101,7 @@ function parseJsonValue(value: unknown, _fieldName: string): JsonValue | null {
  *   },
  *   {
  *     "type": "lesson",
- *     "lessonID": 45
+ *     "lessonID": "uuid"
  *   },
  *   {
  *     "type": "heading",
@@ -214,7 +228,7 @@ export async function createChapterController(
    * --------------------------------------------------
    */
 
-  const parsedSubjectId = parsePositiveInteger(subjectId);
+  const parsedSubjectId = parseUuid(subjectId);
 
   if (parsedSubjectId === null) {
     res.status(400).json({
@@ -398,7 +412,7 @@ export async function createChapterController(
  * GET CHAPTERS
  * ================================================================
  *
- * GET /admin/chapters?subjectId=123
+ * GET /admin/chapters?subjectId=UUID
  *
  * Returns Chapters belonging to the specified Subject.
  */
@@ -407,7 +421,7 @@ export async function getChaptersController(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const subjectId = parsePositiveInteger(req.query.subjectId);
+  const subjectId = parseUuid(req.query.subjectId);
 
   if (subjectId === null) {
     res.status(400).json({
@@ -450,7 +464,7 @@ export async function updateChapterController(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const id = parsePositiveInteger(req.params.id);
+  const id = parseUuid(req.params.id);
 
   if (id === null) {
     res.status(400).json({
@@ -639,7 +653,7 @@ export async function deleteChapterController(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const id = parsePositiveInteger(req.params.id);
+  const id = parseUuid(req.params.id);
 
   if (id === null) {
     res.status(400).json({

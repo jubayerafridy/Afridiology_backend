@@ -40,18 +40,15 @@ function badRequest(message: string): never {
 }
 
 /* ==================================================
- * POSITIVE INTEGER
+ * UUID / STRING ID
  * ================================================== */
 
-export function validatePositiveInteger(
-  value: unknown,
-  fieldName: string,
-): number {
-  if (typeof value !== "number" || !Number.isInteger(value) || value <= 0) {
-    badRequest(`${fieldName} must be a positive integer`);
+export function validateUuid(value: unknown, fieldName: string): string {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    badRequest(`${fieldName} must be a valid UUID`);
   }
 
-  return value;
+  return value.trim();
 }
 
 /* ==================================================
@@ -98,7 +95,7 @@ export function validateBookmarkStarRating(value: unknown): number {
  * COLLECTION ID LIST
  * ================================================== */
 
-export function validateCollectionIds(value: unknown): number[] {
+export function validateCollectionIds(value: unknown): string[] {
   if (!Array.isArray(value)) {
     badRequest("collectionIds must be an array");
   }
@@ -106,7 +103,7 @@ export function validateCollectionIds(value: unknown): number[] {
   const ids = value as unknown[];
 
   const normalized = ids.map((id, index) =>
-    validatePositiveInteger(id, `collectionIds[${index}]`),
+    validateUuid(id, `collectionIds[${index}]`),
   );
 
   const uniqueIds = [...new Set(normalized)];
@@ -210,7 +207,7 @@ export function validateCreateBookmarkInput(
 ): CreateBookmarkInput {
   validateBookmarkTargetType(input.targetType);
 
-  validatePositiveInteger(input.targetId, "targetId");
+  validateUuid(input.targetId, "targetId");
 
   if (input.starRating !== undefined) {
     validateBookmarkStarRating(input.starRating);

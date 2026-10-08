@@ -30,6 +30,26 @@ type JsonValue =
 
 /**
  * ================================================================
+ * UUID HELPERS
+ * ================================================================
+ */
+
+function parseUuid(value: unknown): string | null {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+/**
+ * ================================================================
  * JSON VALIDATION
  * ================================================================
  */
@@ -178,9 +198,9 @@ export async function createExecutionController(
    * --------------------------------------------------
    */
 
-  const parsedConceptId = Number(conceptId);
+  const parsedConceptId = parseUuid(conceptId);
 
-  if (!Number.isInteger(parsedConceptId) || parsedConceptId <= 0) {
+  if (parsedConceptId === null) {
     res.status(400).json({
       success: false,
       message: "Valid conceptId is required",
@@ -304,9 +324,9 @@ export async function createExecutionController(
  *
  * Returns all executions.
  *
- * GET /admin/executions?conceptId=123
+ * GET /admin/executions?conceptId=UUID
  *
- * Returns executions belonging to Concept 123.
+ * Returns executions belonging to Concept UUID.
  */
 
 export async function getExecutionsController(
@@ -315,12 +335,12 @@ export async function getExecutionsController(
 ): Promise<void> {
   const conceptIdValue = req.query.conceptId;
 
-  let conceptId: number | undefined;
+  let conceptId: string | undefined;
 
   if (conceptIdValue !== undefined) {
-    conceptId = Number(conceptIdValue);
+    const parsedConceptId = parseUuid(conceptIdValue);
 
-    if (!Number.isInteger(conceptId) || conceptId <= 0) {
+    if (parsedConceptId === null) {
       res.status(400).json({
         success: false,
         message: "Invalid conceptId",
@@ -328,6 +348,8 @@ export async function getExecutionsController(
 
       return;
     }
+
+    conceptId = parsedConceptId;
   }
 
   const executions = await getExecutions(conceptId);
@@ -364,9 +386,9 @@ export async function getExecutionController(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const id = Number(req.params.id);
+  const id = parseUuid(req.params.id);
 
-  if (!Number.isInteger(id) || id <= 0) {
+  if (id === null) {
     res.status(400).json({
       success: false,
       message: "Invalid execution ID",
@@ -413,9 +435,9 @@ export async function updateExecutionController(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const id = Number(req.params.id);
+  const id = parseUuid(req.params.id);
 
-  if (!Number.isInteger(id) || id <= 0) {
+  if (id === null) {
     res.status(400).json({
       success: false,
       message: "Invalid execution ID",
@@ -556,9 +578,9 @@ export async function deleteExecutionController(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const id = Number(req.params.id);
+  const id = parseUuid(req.params.id);
 
-  if (!Number.isInteger(id) || id <= 0) {
+  if (id === null) {
     res.status(400).json({
       success: false,
       message: "Invalid execution ID",

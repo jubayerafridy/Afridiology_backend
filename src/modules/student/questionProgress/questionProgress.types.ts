@@ -23,7 +23,7 @@ import type {
 export interface QuestionProgressTarget {
   targetType: QuestionProgressTargetType;
 
-  targetId: number;
+  targetId: string;
 }
 
 /* ==================================================
@@ -49,7 +49,7 @@ export interface QuestionProgressState {
 export interface SetQuestionProgressInput {
   targetType: QuestionProgressTargetType;
 
-  targetId: number;
+  targetId: string;
 
   status: QuestionProgressStatus;
 }
@@ -65,7 +65,7 @@ export interface SetQuestionProgressInput {
 export interface QuestionProgressStateLookupTarget {
   targetType: QuestionProgressTargetType;
 
-  targetId: number;
+  targetId: string;
 }
 
 export type QuestionProgressStateMap = Map<string, QuestionProgressState>;
@@ -76,7 +76,7 @@ export type QuestionProgressStateMap = Map<string, QuestionProgressState>;
 
 export function getQuestionProgressTargetKey(
   targetType: QuestionProgressTargetType,
-  targetId: number,
+  targetId: string,
 ): string {
   return `${targetType}:${targetId}`;
 }

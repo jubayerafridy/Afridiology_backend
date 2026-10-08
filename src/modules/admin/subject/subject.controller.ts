@@ -7,6 +7,20 @@ import {
   updateSubject,
 } from "./subject.service.js";
 
+function parseUuid(value: unknown): string | null {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 export async function createSubjectController(
   req: Request,
   res: Response,
@@ -16,12 +30,9 @@ export async function createSubjectController(
     name?: unknown;
   };
 
-  const parsedEducationLevelId = Number(educationLevelId);
+  const parsedEducationLevelId = parseUuid(educationLevelId);
 
-  if (
-    !Number.isInteger(parsedEducationLevelId) ||
-    parsedEducationLevelId <= 0
-  ) {
+  if (parsedEducationLevelId === null) {
     res.status(400).json({
       success: false,
       message: "Valid educationLevelId is required",
@@ -73,12 +84,12 @@ export async function getSubjectsController(
 ): Promise<void> {
   const educationLevelIdValue = req.query.educationLevelId;
 
-  let educationLevelId: number | undefined;
+  let educationLevelId: string | undefined;
 
   if (educationLevelIdValue !== undefined) {
-    educationLevelId = Number(educationLevelIdValue);
+    const parsedEducationLevelId = parseUuid(educationLevelIdValue);
 
-    if (!Number.isInteger(educationLevelId) || educationLevelId <= 0) {
+    if (parsedEducationLevelId === null) {
       res.status(400).json({
         success: false,
         message: "Invalid educationLevelId",
@@ -86,6 +97,8 @@ export async function getSubjectsController(
 
       return;
     }
+
+    educationLevelId = parsedEducationLevelId;
   }
 
   const subjects = await getSubjects(educationLevelId);
@@ -100,9 +113,9 @@ export async function updateSubjectController(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const id = Number(req.params.id);
+  const id = parseUuid(req.params.id);
 
-  if (!Number.isInteger(id) || id <= 0) {
+  if (id === null) {
     res.status(400).json({
       success: false,
       message: "Invalid subject ID",
@@ -148,9 +161,9 @@ export async function deleteSubjectController(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const id = Number(req.params.id);
+  const id = parseUuid(req.params.id);
 
-  if (!Number.isInteger(id) || id <= 0) {
+  if (id === null) {
     res.status(400).json({
       success: false,
       message: "Invalid subject ID",

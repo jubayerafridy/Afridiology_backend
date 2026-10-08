@@ -9,27 +9,27 @@ function getQueryParam(value: Request["query"]["subjectId"]): string | null {
   return value;
 }
 
-function parsePositiveInt(value: Request["query"]["subjectId"]): number | null {
+function parseUuid(value: Request["query"]["subjectId"]): string | null {
   const param = getQueryParam(value);
 
   if (param === null) {
     return null;
   }
 
-  const parsed = Number(param);
+  const trimmed = param.trim();
 
-  if (!Number.isInteger(parsed) || parsed <= 0) {
+  if (trimmed.length === 0) {
     return null;
   }
 
-  return parsed;
+  return trimmed;
 }
 
 export async function getChaptersController(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const subjectId = parsePositiveInt(req.query.subjectId);
+  const subjectId = parseUuid(req.query.subjectId);
 
   if (subjectId === null) {
     res.status(400).json({

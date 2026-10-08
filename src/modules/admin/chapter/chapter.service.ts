@@ -32,7 +32,7 @@ type JsonValue =
  *   },
  *   {
  *     "type": "lesson",
- *     "lessonID": 45
+ *     "lessonID": "uuid"
  *   },
  *   {
  *     "type": "heading",
@@ -40,7 +40,7 @@ type JsonValue =
  *   },
  *   {
  *     "type": "lesson",
- *     "lessonID": 46
+ *     "lessonID": "uuid"
  *   }
  * ]
  *
@@ -60,6 +60,7 @@ type JsonValue =
  *
  * CQs / MCQs are independent question records.
  * They are not hierarchy children.
+ *
  * ================================================================
  */
 
@@ -85,7 +86,7 @@ export type ChapterStructure = ChapterDocument;
  */
 
 export interface CreateChapterInput {
-  subjectId: number;
+  subjectId: string;
   chapterNo: number;
   nameBN: string;
   nameEng: string;
@@ -122,7 +123,7 @@ export interface UpdateChapterInput {
  *
  * {
  *   type: "lesson",
- *   lessonID: 45
+ *   lessonID: "uuid"
  * }
  */
 function normalizeChapterDocument(value: unknown): ChapterDocument {
@@ -162,29 +163,25 @@ function normalizeChapterDocument(value: unknown): ChapterDocument {
  */
 
 /**
- * Safely extracts a numeric Lesson ID from a document item.
+ * Safely extracts a string Lesson ID from a document item.
  *
  * Only items with:
  *
  * {
  *   type: "lesson",
- *   lessonID: number
+ *   lessonID: string
  * }
  *
  * are treated as Lesson references.
  */
-function getLessonId(item: ChapterDocumentItem): number | null {
+function getLessonId(item: ChapterDocumentItem): string | null {
   if (item.type !== "lesson") {
     return null;
   }
 
   const lessonId = item.lessonID;
 
-  if (
-    typeof lessonId !== "number" ||
-    !Number.isInteger(lessonId) ||
-    lessonId <= 0
-  ) {
+  if (typeof lessonId !== "string" || lessonId.trim().length === 0) {
     return null;
   }
 
@@ -200,6 +197,7 @@ function getLessonId(item: ChapterDocumentItem): number | null {
  * descriptionBN / descriptionEng document.
  *
  * No structure field is written.
+ *
  * ================================================================
  */
 
@@ -244,7 +242,7 @@ export async function createChapter(data: CreateChapterInput) {
  * ================================================================
  */
 
-export async function getChapters(subjectId: number) {
+export async function getChapters(subjectId: string) {
   return prisma.orm.public.Chapter.where({
     subjectId,
   })
@@ -258,7 +256,7 @@ export async function getChapters(subjectId: number) {
  * ================================================================
  */
 
-export async function getChapter(id: number) {
+export async function getChapter(id: string) {
   return prisma.orm.public.Chapter.first({
     id,
   });
@@ -277,10 +275,11 @@ export async function getChapter(id: number) {
  * Array order is preserved.
  *
  * No block IDs are generated or modified.
+ *
  * ================================================================
  */
 
-export async function updateChapter(id: number, data: UpdateChapterInput) {
+export async function updateChapter(id: string, data: UpdateChapterInput) {
   const chapter = await prisma.orm.public.Chapter.first({
     id,
   });
@@ -332,11 +331,12 @@ export async function updateChapter(id: number, data: UpdateChapterInput) {
  * when both are supplied.
  *
  * The preferred new caller should provide both documents.
+ *
  * ================================================================
  */
 
 export async function setChapterStructure(
-  chapterId: number,
+  chapterId: string,
   descriptionBN: ChapterDocument,
   descriptionEng?: ChapterDocument,
 ) {
@@ -350,7 +350,7 @@ export async function setChapterStructure(
 
   const normalizedBN = normalizeChapterDocument(descriptionBN);
 
-  /*
+  /**
    * If English is not supplied, preserve the existing
    * English document instead of accidentally deleting it.
    *
@@ -381,7 +381,7 @@ export async function setChapterStructure(
  *
  * {
  *   "type": "lesson",
- *   "lessonID": 45
+ *   "lessonID": "uuid"
  * }
  *
  * is appended to BOTH:
@@ -392,15 +392,17 @@ export async function setChapterStructure(
  * No block id is generated.
  *
  * Existing content is preserved.
+ *
  * Existing Lesson references are preserved.
  *
  * The new Lesson is appended to the end.
+ *
  * ================================================================
  */
 
 export async function appendLessonToChapterStructure(
-  chapterId: number,
-  lessonId: number,
+  chapterId: string,
+  lessonId: string,
 ) {
   const chapter = await prisma.orm.public.Chapter.first({
     id: chapterId,
@@ -410,7 +412,7 @@ export async function appendLessonToChapterStructure(
     throw new Error("Chapter not found");
   }
 
-  /*
+  /**
    * Make sure the referenced Lesson actually belongs
    * to this Chapter.
    */
@@ -430,13 +432,12 @@ export async function appendLessonToChapterStructure(
 
   const descriptionEng = normalizeChapterDocument(chapter.descriptionEng);
 
-  /*
+  /**
    * Prevent duplicate Lesson references independently
    * in each language document.
    *
    * Normally both documents should stay synchronized.
    */
-
   const bnAlreadyExists = descriptionBN.some(
     (item) => getLessonId(item) === lessonId,
   );
@@ -445,7 +446,7 @@ export async function appendLessonToChapterStructure(
     (item) => getLessonId(item) === lessonId,
   );
 
-  /*
+  /**
    * If the reference is already present in both documents,
    * there is nothing to do.
    */
@@ -453,7 +454,7 @@ export async function appendLessonToChapterStructure(
     return chapter;
   }
 
-  /*
+  /**
    * Keep BN and English documents synchronized.
    *
    * If one language already contains the reference,
@@ -506,12 +507,13 @@ export async function appendLessonToChapterStructure(
  *
  * There is no renumbering because content blocks have
  * no ids.
+ *
  * ================================================================
  */
 
 export async function removeLessonFromChapterStructure(
-  chapterId: number,
-  lessonId: number,
+  chapterId: string,
+  lessonId: string,
 ) {
   const chapter = await prisma.orm.public.Chapter.first({
     id: chapterId,
@@ -533,7 +535,7 @@ export async function removeLessonFromChapterStructure(
     (item) => getLessonId(item) !== lessonId,
   );
 
-  /*
+  /**
    * Nothing changed.
    */
   if (
@@ -547,7 +549,6 @@ export async function removeLessonFromChapterStructure(
     id: chapterId,
   }).update({
     descriptionBN: nextDescriptionBN,
-
     descriptionEng: nextDescriptionEng,
   });
 }
@@ -558,7 +559,7 @@ export async function removeLessonFromChapterStructure(
  * ================================================================
  */
 
-export async function deleteChapter(id: number) {
+export async function deleteChapter(id: string) {
   const chapter = await prisma.orm.public.Chapter.first({
     id,
   });

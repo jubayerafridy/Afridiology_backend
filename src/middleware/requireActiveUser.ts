@@ -5,7 +5,7 @@ import { AppError } from "../core/errors/AppError.js";
 
 interface AuthenticatedRequest extends Request {
   auth?: {
-    userId: number;
+    userId: string;
     role: string;
     sessionId: number;
   };

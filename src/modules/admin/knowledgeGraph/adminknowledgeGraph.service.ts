@@ -13,7 +13,8 @@ export type AdminKnowledgeItemType =
   | "lesson"
   | "concept"
   | "math"
-  | "cq";
+  | "cq"
+  | "mcq";
 
 export type QuestionSource =
   | "board"
@@ -40,7 +41,7 @@ export type QuestionSource =
  *   },
  *   {
  *     type: "lesson",
- *     lessonID: 15
+ *     lessonID: "15"
  *   },
  *   {
  *     type: "heading",
@@ -48,7 +49,7 @@ export type QuestionSource =
  *   },
  *   {
  *     type: "concept",
- *     conceptID: 23
+ *     conceptID: "23"
  *   }
  * ]
  *
@@ -60,6 +61,12 @@ export type QuestionSource =
  *   another relational entity.
  * - No flow.
  * - No structure.
+ */
+
+/*
+ * ==================================================
+ * DOCUMENT ITEM
+ * ==================================================
  */
 
 export interface AdminKnowledgeDocumentItem {
@@ -88,12 +95,27 @@ export interface AdminKnowledgeGraphItem {
   parentId?: string;
   side?: "left" | "right";
 
+  /*
+   * Question active state.
+   *
+   * This is intentionally returned for the ADMIN graph
+   * for both CQ and MCQ.
+   *
+   * The admin must be able to see both:
+   *
+   *   isActive: true
+   *   isActive: false
+   *
+   * Student-facing graph filtering is handled separately.
+   */
+  isActive?: boolean;
+
   questionMeta?: {
     sourceType: QuestionSource;
     board?: string;
     institution?: string;
     year?: number;
-    paperId: number;
+    paperId: string;
   };
 }
 
@@ -118,7 +140,7 @@ export interface AdminKnowledgeGraphRelation {
 
 export interface AdminKnowledgeGraphData {
   chapter: {
-    id: number;
+    id: string;
     chapterNo: number;
     nameBN: string;
     nameEng: string;
@@ -152,7 +174,7 @@ function slugify(value: string): string {
  * ==================================================
  */
 
-function getGraphId(type: KnowledgeLinkType, id: number): string {
+function getGraphId(type: KnowledgeLinkType, id: string): string {
   switch (type) {
     case "CHAPTER":
       return `chapter-${id}`;
@@ -193,7 +215,7 @@ function getGraphId(type: KnowledgeLinkType, id: number): string {
  *
  * {
  *   type: "lesson",
- *   lessonID: 15
+ *   lessonID: "15"
  * }
  *
  * Unknown additional properties are preserved.
@@ -237,7 +259,7 @@ function normalizeDocument(value: unknown): AdminKnowledgeDocument {
 
 interface QuestionMapping {
   type: KnowledgeLinkType;
-  id: number;
+  id: string;
 }
 
 function isKnowledgeLinkType(value: string | null): value is KnowledgeLinkType {
@@ -251,16 +273,16 @@ function isKnowledgeLinkType(value: string | null): value is KnowledgeLinkType {
 
 function getCQMappings(cq: {
   quesKaLinkType: string | null;
-  quesKaLinkId: number | null;
+  quesKaLinkId: string | null;
 
   quesKhaLinkType: string | null;
-  quesKhaLinkId: number | null;
+  quesKhaLinkId: string | null;
 
   quesGaLinkType: string | null;
-  quesGaLinkId: number | null;
+  quesGaLinkId: string | null;
 
   quesGhaLinkType: string | null;
-  quesGhaLinkId: number | null;
+  quesGhaLinkId: string | null;
 }): QuestionMapping[] {
   const mappings: QuestionMapping[] = [];
 
@@ -293,6 +315,37 @@ function getCQMappings(cq: {
   }
 
   return mappings;
+}
+
+/*
+ * ==================================================
+ * MCQ MAPPING
+ * ==================================================
+ *
+ * An MCQ has exactly one direct knowledge link.
+ *
+ * The link can point to:
+ *
+ * Chapter
+ * Lesson
+ * Concept
+ * Execution
+ *
+ * Ancestors are derived through the hierarchy.
+ */
+
+function getMCQMapping(mcq: {
+  linkType: string | null;
+  linkId: string | null;
+}): QuestionMapping | null {
+  if (mcq.linkId !== null && isKnowledgeLinkType(mcq.linkType)) {
+    return {
+      type: mcq.linkType,
+      id: mcq.linkId,
+    };
+  }
+
+  return null;
 }
 
 /*
@@ -407,7 +460,7 @@ function normalizeYear(year: number | null): number | undefined {
 }
 
 function buildQuestionMeta(questionPaper: {
-  id: number;
+  id: string;
   source: string;
   board: string | null;
   institution: string | null;
@@ -417,14 +470,14 @@ function buildQuestionMeta(questionPaper: {
   board?: string;
   institution?: string;
   year?: number;
-  paperId: number;
+  paperId: string;
 } {
   const meta: {
     sourceType: QuestionSource;
     board?: string;
     institution?: string;
     year?: number;
-    paperId: number;
+    paperId: string;
   } = {
     sourceType: getQuestionSourceType(questionPaper.source),
     paperId: questionPaper.id,
@@ -472,15 +525,6 @@ function buildQuestionMeta(questionPaper: {
  * The description arrays determine the visual/document
  * order inside each entity.
  *
- * Example Chapter.descriptionBN:
- *
- * [
- *   { type: "text", content: "..." },
- *   { type: "lesson", lessonID: 5 },
- *   { type: "heading", content: "..." },
- *   { type: "lesson", lessonID: 8 }
- * ]
- *
  * The graph does NOT reconstruct this order.
  *
  * It returns the description arrays exactly in their
@@ -488,7 +532,7 @@ function buildQuestionMeta(questionPaper: {
  */
 
 export async function getAdminChapterKnowledgeGraph(
-  chapterId: number,
+  chapterId: string,
 ): Promise<AdminKnowledgeGraphData | null> {
   /*
    * ==================================================
@@ -518,11 +562,6 @@ export async function getAdminChapterKnowledgeGraph(
    * ==================================================
    * CHAPTER ITEM
    * ==================================================
-   *
-   * The description arrays are returned exactly as
-   * stored.
-   *
-   * No child references are removed.
    */
 
   items.push({
@@ -597,21 +636,6 @@ export async function getAdminChapterKnowledgeGraph(
      * ==================================================
      * CHAPTER → LESSON
      * ==================================================
-     *
-     * This graph relation is separate from the document
-     * reference block.
-     *
-     * The document reference:
-     *
-     * {
-     *   type: "lesson",
-     *   lessonID: lesson.id
-     * }
-     *
-     * controls document position.
-     *
-     * This graph relation allows the graph UI to understand
-     * the relational hierarchy.
      */
 
     relations.push({
@@ -717,11 +741,6 @@ export async function getAdminChapterKnowledgeGraph(
          * ==================================================
          * EXECUTION / MATH ITEM
          * ==================================================
-         *
-         * Execution is the bottom relational hierarchy
-         * level.
-         *
-         * Its description arrays contain its own content.
          */
 
         items.push({
@@ -780,22 +799,24 @@ export async function getAdminChapterKnowledgeGraph(
    * CQs
    * ==================================================
    *
-   * CQ records remain completely independent from the
-   * curriculum hierarchy.
+   * ADMIN GRAPH RULE:
    *
-   * A CQ may connect to:
+   * Both active and inactive CQs are returned.
    *
-   * Chapter
-   * Lesson
-   * Concept
-   * Execution
+   * isActive is included on the graph item so the admin
+   * frontend can display and change the status.
    *
-   * Deleting a hierarchy entity does not delete CQ data.
+   * Student-facing filtering is NOT performed here.
+   *
+   * Each CQ part may have its own direct knowledge link:
+   *
+   * Chapter / Lesson / Concept / Execution.
+   *
+   * We store only those direct links. Ancestors are
+   * already represented by the hierarchy relations above.
    */
 
-  const cqRecords = await prisma.orm.public.CQ.where({
-    isActive: true,
-  }).all();
+  const cqRecords = await prisma.orm.public.CQ.all();
 
   let cqSideIndex = 0;
 
@@ -814,7 +835,19 @@ export async function getAdminChapterKnowledgeGraph(
       id: cq.questionPaperId,
     });
 
-    if (!questionPaper || !questionPaper.isActive) {
+    /*
+     * Question Paper must exist because its metadata is
+     * required to build the question node.
+     *
+     * IMPORTANT:
+     *
+     * We intentionally DO NOT check questionPaper.isActive.
+     *
+     * Admin graph must contain questions regardless of
+     * active/inactive status.
+     */
+
+    if (!questionPaper) {
       continue;
     }
 
@@ -830,6 +863,17 @@ export async function getAdminChapterKnowledgeGraph(
       title: buildQuestionTitle(questionPaper),
       slug: `cq-${cq.id}`,
 
+      /*
+       * Admin must know the current active state.
+       */
+
+      isActive: cq.isActive,
+
+      /*
+       * Keep the complete CQ document available to the
+       * admin graph.
+       */
+
       description: normalizeDocument(cq.descriptionBN),
 
       descriptionBN: normalizeDocument(cq.descriptionBN),
@@ -844,12 +888,14 @@ export async function getAdminChapterKnowledgeGraph(
     cqSideIndex += 1;
 
     /*
-     * ==================================================
-     * CQ → HIERARCHY RELATIONS
-     * ==================================================
+     * Only the CQ's actual direct links are connected.
      *
-     * A single CQ can connect to multiple hierarchy
-     * entities.
+     * If a CQ part is linked to an Execution, the existing
+     * Concept -> Execution -> ... hierarchy already gives
+     * the ancestry.
+     *
+     * We do NOT create duplicate CQ links to the Concept,
+     * Lesson, and Chapter.
      */
 
     for (const mapping of chapterMappings) {
@@ -857,7 +903,6 @@ export async function getAdminChapterKnowledgeGraph(
 
       relations.push({
         id: `question-cq-${cq.id}-${mapping.type}-${mapping.id}`,
-
         source: sourceId,
         target: questionGraphId,
         type: "question",
@@ -867,10 +912,164 @@ export async function getAdminChapterKnowledgeGraph(
 
   /*
    * ==================================================
-   * RESULT
+   * MCQs
    * ==================================================
    *
+   * ADMIN GRAPH RULE:
+   *
+   * Both active and inactive MCQs are returned.
+   *
+   * isActive is included on the graph item so the admin
+   * frontend can display and change the status.
+   *
+   * Student-facing filtering is NOT performed here.
+   *
+   * An MCQ has exactly one direct knowledge link:
+   *
+   * Chapter / Lesson / Concept / Execution
+   *
+   * We intentionally do NOT create ancestor links.
+   * The existing hierarchy relations already provide them.
+   *
    * IMPORTANT:
+   *
+   * MCQ.linkType + MCQ.linkId determine the MCQ's
+   * knowledge-graph position.
+   *
+   * MCQ.questionPaperId is used only to retrieve the
+   * QuestionPaper metadata for the graph item.
+   *
+   * QuestionPaper.questionType does NOT determine whether
+   * this MCQ belongs in the graph.
+   */
+
+  const mcqRecords = await prisma.orm.public.MCQ.all();
+
+  let mcqSideIndex = 0;
+
+  for (const mcq of mcqRecords) {
+    const mapping = getMCQMapping(mcq);
+
+    if (!mapping) {
+      continue;
+    }
+
+    const sourceId = getGraphId(mapping.type, mapping.id);
+
+    /*
+     * ==================================================
+     * CHAPTER FILTER
+     * ==================================================
+     *
+     * Only show the MCQ when its direct target belongs
+     * to the chapter currently being requested.
+     *
+     * This is a hierarchy filter, NOT an isActive filter.
+     */
+
+    if (!hierarchyIds.has(sourceId)) {
+      continue;
+    }
+
+    const questionPaper = await prisma.orm.public.QuestionPaper.first({
+      id: mcq.questionPaperId,
+    });
+
+    /*
+     * Question Paper must exist because its metadata is
+     * required to build the question node.
+     *
+     * IMPORTANT:
+     *
+     * We intentionally DO NOT check questionPaper.isActive.
+     *
+     * Admin graph must contain questions regardless of
+     * active/inactive status.
+     *
+     * We also intentionally DO NOT check
+     * questionPaper.questionType.
+     *
+     * The MCQ table itself already determines:
+     *
+     *   1. which QuestionPaper it belongs to
+     *      through questionPaperId
+     *
+     *   2. which knowledge node it belongs to
+     *      through linkType + linkId
+     *
+     * Therefore QuestionPaper.questionType is not a
+     * deciding factor for MCQ graph placement.
+     */
+
+    if (!questionPaper) {
+      continue;
+    }
+
+    const questionGraphId = `mcq-${mcq.id}`;
+
+    items.push({
+      id: questionGraphId,
+      type: "mcq",
+      title: buildQuestionTitle(questionPaper),
+      slug: `mcq-${mcq.id}`,
+
+      /*
+       * Admin must know the current active state.
+       */
+
+      isActive: mcq.isActive,
+
+      /*
+       * Keep the complete MCQ document available to the
+       * admin graph. The frontend can render the question
+       * and its content from the stored document.
+       */
+
+      description: normalizeDocument(mcq.descriptionBN),
+
+      descriptionBN: normalizeDocument(mcq.descriptionBN),
+
+      descriptionEng: normalizeDocument(mcq.descriptionEng),
+
+      side: mcqSideIndex % 2 === 0 ? "right" : "left",
+
+      questionMeta: buildQuestionMeta(questionPaper),
+    });
+
+    mcqSideIndex += 1;
+
+    /*
+     * IMPORTANT:
+     *
+     * Only one relation is created:
+     *
+     * direct target -> MCQ
+     *
+     * Example:
+     *
+     * Execution -> MCQ
+     *
+     * The frontend/backend can derive:
+     *
+     * Execution -> Concept -> Lesson -> Chapter
+     *
+     * from the existing hierarchy.
+     *
+     * No redundant ancestor question links are stored.
+     */
+
+    relations.push({
+      id: `question-mcq-${mcq.id}-${mapping.type}-${mapping.id}`,
+      source: sourceId,
+      target: questionGraphId,
+      type: "question",
+    });
+  }
+
+  /*
+   * ==================================================
+   * RESULT
+   * ==================================================
    *
    * The chapter document is returned directly from
    * descriptionBN / descriptionEng.

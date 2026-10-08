@@ -1,6 +1,6 @@
 import { prisma } from "../../../config/prisma.js";
 
-export async function getChaptersBySubject(subjectId: number) {
+export async function getChaptersBySubject(subjectId: string) {
   const subject = await prisma.orm.public.Subject.first({
     id: subjectId,
   });

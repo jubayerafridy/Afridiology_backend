@@ -1,6 +1,7 @@
 import { prisma } from "../../../config/prisma.js";
 
 import { getBookmarkStates } from "../bookmark/bookmark.service.js";
+
 import { getQuestionProgressStates } from "../questionProgress/questionProgress.service.js";
 
 import type {
@@ -9,9 +10,13 @@ import type {
 } from "../bookmark/bookmark.types.js";
 
 /*
+
  * ==================================================
+
  * TYPES
+
  * ==================================================
+
  */
 
 type KnowledgeLinkType = "CHAPTER" | "LESSON" | "CONCEPT" | "EXECUTION";
@@ -34,115 +39,191 @@ type QuestionSource =
 
 interface KnowledgeGraphItem {
   id: string;
+
   type: KnowledgeItemType;
+
   title: string;
+
   slug: string;
 
   /*
+
    * JSON content document.
+
    *
+
    * The Prisma ORM exposes JSON fields through its own
+
    * generated JSON type. We intentionally keep the public
+
    * service response type as unknown so the exact JSON
+
    * document is passed through without changing it or
+
    * fighting the generated ORM type.
+
    */
+
   description?: unknown;
+
   descriptionBN?: unknown;
+
   descriptionEng?: unknown;
 
   parentId?: string;
+
   side?: "left" | "right";
 
   /*
+
    * Personalization package is intentionally optional.
+
    *
+
    * It is only added for:
+
    * - concept
+
    * - math / execution
+
    * - cq
+
    * - mcq
+
    *
+
    * Chapter and lesson NEVER receive this field.
+
    *
+
    * For supported item types, the package contains both
+
    * bookmark information and QuestionProgress state.
+
    *
+
    * The bookmark package is returned even when the item
+
    * has no Bookmark row, because progress is independent
+
    * from bookmarking.
+
    */
+
   bookmark?: BookmarkState;
 
   questionMeta?: {
     sourceType: QuestionSource;
+
     board?: string;
+
     institution?: string;
+
     year?: number;
-    paperId?: number;
+
+    paperId?: string;
   };
 }
 
 interface KnowledgeGraphRelation {
   id: string;
+
   source: string;
+
   target: string;
+
   type: "contains" | "question";
 }
 
 export interface KnowledgeGraphData {
   chapter: {
-    id: number;
+    id: string;
+
     chapterNo: number;
+
     nameBN: string;
+
     nameEng: string;
+
     descriptionBN: unknown;
+
     descriptionEng: unknown;
   };
 
   /*
+
    * Bookmark collection definitions are sent ONCE
+
    * at graph level.
+
    *
+
    * Individual bookmark objects contain bookmark
+
    * information, collectionIds, and progress state.
+
    *
+
    * This prevents repeating:
+
    *
+
    *   name
+
    *   color
+
    *   type
+
    *
+
    * inside every bookmarked graph item.
+
    *
+
    * This field is only added for authenticated users
+
    * who have at least one bookmark collection.
+
    */
+
   bookmarkCollections?: BookmarkCollectionData[];
 
   items: KnowledgeGraphItem[];
+
   relations: KnowledgeGraphRelation[];
 }
 
 /*
+
  * ==================================================
+
  * HELPERS
+
  * ==================================================
+
  */
 
 function slugify(value: string): string {
   return value
+
     .trim()
+
     .toLowerCase()
+
     .replace(/\s+/g, "-")
+
     .replace(/[^a-z0-9\u0980-\u09ff-]/g, "")
+
     .replace(/-+/g, "-");
 }
 
 function buildQuestionTitle(questionPaper: {
   source: string;
+
   board: string | null;
+
   institution: string | null;
+
   year: number | null;
 }): string {
   switch (questionPaper.source) {
@@ -208,12 +289,16 @@ function normalizeYear(year: number | null): number | undefined {
 }
 
 /*
+
  * ==================================================
+
  * GRAPH ID HELPERS
+
  * ==================================================
+
  */
 
-function getGraphId(type: KnowledgeLinkType, id: number): string {
+function getGraphId(type: KnowledgeLinkType, id: string): string {
   switch (type) {
     case "CHAPTER":
       return `chapter-${id}`;
@@ -230,23 +315,35 @@ function getGraphId(type: KnowledgeLinkType, id: number): string {
 }
 
 /*
+
  * ==================================================
+
  * QUESTION MAPPING
+
  * ==================================================
+
  */
 
 interface QuestionMapping {
   type: KnowledgeLinkType;
-  id: number;
+
+  id: string;
 }
 
 /**
+
  * Prisma 8 RC currently exposes enum fields from generated
+
  * model rows as string values.
+
  *
+
  * We therefore validate the runtime value before treating it
+
  * as our stricter KnowledgeLinkType.
+
  */
+
 function isKnowledgeLinkType(value: string | null): value is KnowledgeLinkType {
   return (
     value === "CHAPTER" ||
@@ -258,34 +355,45 @@ function isKnowledgeLinkType(value: string | null): value is KnowledgeLinkType {
 
 function getCQMappings(cq: {
   quesKaLinkType: string | null;
-  quesKaLinkId: number | null;
+
+  quesKaLinkId: string | null;
 
   quesKhaLinkType: string | null;
-  quesKhaLinkId: number | null;
+
+  quesKhaLinkId: string | null;
 
   quesGaLinkType: string | null;
-  quesGaLinkId: number | null;
+
+  quesGaLinkId: string | null;
 
   quesGhaLinkType: string | null;
-  quesGhaLinkId: number | null;
+
+  quesGhaLinkId: string | null;
 }): QuestionMapping[] {
   const mappings: QuestionMapping[] = [];
 
   const links = [
     {
       type: cq.quesKaLinkType,
+
       id: cq.quesKaLinkId,
     },
+
     {
       type: cq.quesKhaLinkType,
+
       id: cq.quesKhaLinkId,
     },
+
     {
       type: cq.quesGaLinkType,
+
       id: cq.quesGaLinkId,
     },
+
     {
       type: cq.quesGhaLinkType,
+
       id: cq.quesGhaLinkId,
     },
   ];
@@ -294,6 +402,7 @@ function getCQMappings(cq: {
     if (link.id !== null && isKnowledgeLinkType(link.type)) {
       mappings.push({
         type: link.type,
+
         id: link.id,
       });
     }
@@ -304,7 +413,8 @@ function getCQMappings(cq: {
 
 function getMCQMappings(mcq: {
   linkType: string | null;
-  linkId: number | null;
+
+  linkId: string | null;
 }): QuestionMapping[] {
   if (mcq.linkId === null || !isKnowledgeLinkType(mcq.linkType)) {
     return [];
@@ -313,15 +423,20 @@ function getMCQMappings(mcq: {
   return [
     {
       type: mcq.linkType,
+
       id: mcq.linkId,
     },
   ];
 }
 
 /*
+
  * ==================================================
+
  * QUESTION SOURCE
+
  * ==================================================
+
  */
 
 function getQuestionSourceType(source: string): QuestionSource {
@@ -350,32 +465,49 @@ function getQuestionSourceType(source: string): QuestionSource {
 }
 
 /*
+
  * ==================================================
+
  * QUESTION META
+
  * ==================================================
+
  */
 
 function buildQuestionMeta(questionPaper: {
-  id: number;
+  id: string;
+
   source: string;
+
   board: string | null;
+
   institution: string | null;
+
   year: number | null;
 }): {
   sourceType: QuestionSource;
+
   board?: string;
+
   institution?: string;
+
   year?: number;
-  paperId: number;
+
+  paperId: string;
 } {
   const meta: {
     sourceType: QuestionSource;
+
     board?: string;
+
     institution?: string;
+
     year?: number;
-    paperId: number;
+
+    paperId: string;
   } = {
     sourceType: getQuestionSourceType(questionPaper.source),
+
     paperId: questionPaper.id,
   };
 
@@ -401,31 +533,49 @@ function buildQuestionMeta(questionPaper: {
 }
 
 /*
+
  * ==================================================
+
  * BOOKMARK / PROGRESS HELPERS
+
  * ==================================================
+
  */
 
 type PersonalizedGraphTargetType = "CONCEPT" | "EXECUTION" | "CQ" | "MCQ";
 
 interface PersonalizedGraphTarget {
   targetType: PersonalizedGraphTargetType;
-  targetId: number;
+
+  targetId: string;
 }
 
 /**
+
  * Convert a graph item into the corresponding
+
  * bookmark/progress target.
+
  *
+
  * Only these graph item types carry personalization:
+
  *
+
  *   concept -> CONCEPT
+
  *   math    -> EXECUTION
+
  *   cq      -> CQ
+
  *   mcq     -> MCQ
+
  *
+
  * Chapter and lesson intentionally return null.
+
  */
+
 function getPersonalizedTargetFromGraphItem(
   item: KnowledgeGraphItem,
 ): PersonalizedGraphTarget | null {
@@ -433,50 +583,71 @@ function getPersonalizedTargetFromGraphItem(
     case "concept":
       return {
         targetType: "CONCEPT",
-        targetId: Number(item.id.replace("concept-", "")),
+
+        targetId: item.id.replace("concept-", ""),
       };
 
     case "math":
       return {
         targetType: "EXECUTION",
-        targetId: Number(item.id.replace("math-", "")),
+
+        targetId: item.id.replace("math-", ""),
       };
 
     case "cq":
       return {
         targetType: "CQ",
-        targetId: Number(item.id.replace("cq-", "")),
+
+        targetId: item.id.replace("cq-", ""),
       };
 
     case "mcq":
       return {
         targetType: "MCQ",
-        targetId: Number(item.id.replace("mcq-", "")),
+
+        targetId: item.id.replace("mcq-", ""),
       };
 
     case "chapter":
+
     case "lesson":
       return null;
   }
 }
 
 /**
+
  * Enrich graph items with bookmark + progress state.
+
  *
+
  * Important rules:
+
  *
+
  * 1. Only concept/math/cq/mcq are enriched.
+
  * 2. Chapter/lesson never receive bookmark.
+
  * 3. Progress exists independently from Bookmark.
+
  * 4. If no Bookmark row exists, a default bookmark
+
  *    package is still returned so progress can travel
+
  *    through the existing graph personalization shape.
+
  * 5. Missing progress means NOT_STARTED.
+
  * 6. questionMeta remains completely separate.
+
  */
+
 function applyPersonalizationStates(
   items: KnowledgeGraphItem[],
+
   bookmarkStates: Map<string, BookmarkState>,
+
   progressStates: Map<
     string,
     { status: "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED" }
@@ -492,13 +663,18 @@ function applyPersonalizationStates(
     const key = `${target.targetType}:${target.targetId}`;
 
     const bookmarkState = bookmarkStates.get(key);
+
     const progressState = progressStates.get(key);
 
     item.bookmark = {
       bookmarked: bookmarkState?.bookmarked ?? false,
-      bookmarkId: bookmarkState?.bookmarkId ?? 0,
+
+      bookmarkId: bookmarkState?.bookmarkId ?? "",
+
       starRating: bookmarkState?.starRating ?? 0,
+
       collectionIds: bookmarkState?.collectionIds ?? [],
+
       progress: {
         status: progressState?.status ?? "NOT_STARTED",
       },
@@ -507,41 +683,62 @@ function applyPersonalizationStates(
 }
 
 /**
+
  * Convert database BookmarkCollection rows into the
+
  * public graph response shape.
+
  *
+
  * Collection definitions are sent once at the top level.
+
  */
+
 function buildBookmarkCollectionData(
   collections: Array<{
-    id: number;
+    id: string;
+
     name: string;
+
     color: string;
+
     type: string;
+
     defaultType: string | null;
+
     sortOrder: number;
   }>,
 ): BookmarkCollectionData[] {
   return collections.map((collection) => ({
     id: collection.id,
+
     name: collection.name,
+
     color: collection.color,
+
     type: collection.type as BookmarkCollectionData["type"],
+
     defaultType:
       collection.defaultType as BookmarkCollectionData["defaultType"],
+
     sortOrder: collection.sortOrder,
   }));
 }
 
 /*
+
  * ==================================================
+
  * CHAPTER GRAPH
+
  * ==================================================
+
  */
 
 export async function getChapterKnowledgeGraph(
-  chapterId: number,
-  userId?: number,
+  chapterId: string,
+
+  userId?: string,
 ): Promise<KnowledgeGraphData | null> {
   const chapter = await prisma.orm.public.Chapter.first({
     id: chapterId,
@@ -553,36 +750,54 @@ export async function getChapterKnowledgeGraph(
 
   const lessons = await prisma.orm.public.Lesson.where({
     chapterId,
+
     isActive: true,
   })
+
     .orderBy((lesson) => lesson.id.asc())
+
     .all();
 
   const items: KnowledgeGraphItem[] = [];
+
   const relations: KnowledgeGraphRelation[] = [];
 
   /*
+
    * --------------------------------------------------
+
    * CHAPTER
+
    * --------------------------------------------------
+
    */
 
   const chapterGraphId = `chapter-${chapter.id}`;
 
   items.push({
     id: chapterGraphId,
+
     type: "chapter",
+
     title: chapter.nameBN,
+
     slug: slugify(chapter.nameEng),
+
     description: chapter.descriptionBN,
+
     descriptionBN: chapter.descriptionBN,
+
     descriptionEng: chapter.descriptionEng,
   });
 
   /*
+
    * --------------------------------------------------
+
    * LESSONS
+
    * --------------------------------------------------
+
    */
 
   for (const lesson of lessons) {
@@ -595,33 +810,50 @@ export async function getChapterKnowledgeGraph(
 
     items.push({
       id: lessonGraphId,
+
       type: "lesson",
+
       title: lessonTitle,
+
       slug: slugify(lesson.nameEng),
+
       description: lesson.descriptionBN,
+
       descriptionBN: lesson.descriptionBN,
+
       descriptionEng: lesson.descriptionEng,
+
       parentId: chapterGraphId,
     });
 
     relations.push({
       id: `contains-chapter-${chapter.id}-lesson-${lesson.id}`,
+
       source: chapterGraphId,
+
       target: lessonGraphId,
+
       type: "contains",
     });
 
     /*
+
      * ------------------------------------------------
+
      * CONCEPTS
+
      * ------------------------------------------------
+
      */
 
     const concepts = await prisma.orm.public.Concept.where({
       lessonId: lesson.id,
+
       isActive: true,
     })
+
       .orderBy((concept) => concept.id.asc())
+
       .all();
 
     for (const concept of concepts) {
@@ -629,33 +861,50 @@ export async function getChapterKnowledgeGraph(
 
       items.push({
         id: conceptGraphId,
+
         type: "concept",
+
         title: concept.nameBN,
+
         slug: slugify(concept.nameEng),
+
         description: concept.descriptionBN,
+
         descriptionBN: concept.descriptionBN,
+
         descriptionEng: concept.descriptionEng,
+
         parentId: lessonGraphId,
       });
 
       relations.push({
         id: `contains-lesson-${lesson.id}-concept-${concept.id}`,
+
         source: lessonGraphId,
+
         target: conceptGraphId,
+
         type: "contains",
       });
 
       /*
+
        * ------------------------------------------------
+
        * EXECUTIONS
+
        * ------------------------------------------------
+
        */
 
       const executions = await prisma.orm.public.Execution.where({
         conceptId: concept.id,
+
         isActive: true,
       })
+
         .orderBy((execution) => execution.id.asc())
+
         .all();
 
       for (const execution of executions) {
@@ -663,19 +912,29 @@ export async function getChapterKnowledgeGraph(
 
         items.push({
           id: executionGraphId,
+
           type: "math",
+
           title: execution.nameBN,
+
           slug: slugify(execution.nameEng),
+
           description: execution.descriptionBN,
+
           descriptionBN: execution.descriptionBN,
+
           descriptionEng: execution.descriptionEng,
+
           parentId: conceptGraphId,
         });
 
         relations.push({
           id: `contains-concept-${concept.id}-execution-${execution.id}`,
+
           source: conceptGraphId,
+
           target: executionGraphId,
+
           type: "contains",
         });
       }
@@ -683,9 +942,13 @@ export async function getChapterKnowledgeGraph(
   }
 
   /*
+
    * ==================================================
+
    * HIERARCHY IDS
+
    * ==================================================
+
    */
 
   const hierarchyIds = new Set<string>();
@@ -702,9 +965,13 @@ export async function getChapterKnowledgeGraph(
   }
 
   /*
+
    * ==================================================
+
    * CQs
+
    * ==================================================
+
    */
 
   const cqRecords = await prisma.orm.public.CQ.where({
@@ -740,20 +1007,30 @@ export async function getChapterKnowledgeGraph(
 
     items.push({
       id: questionGraphId,
+
       type: "cq",
+
       title: buildQuestionTitle(questionPaper),
+
       slug: `cq-${cq.id}`,
+
       description: cq.descriptionBN,
+
       descriptionBN: cq.descriptionBN,
+
       descriptionEng: cq.descriptionEng,
+
       side: cqSideIndex % 2 === 0 ? "left" : "right",
+
       questionMeta: buildQuestionMeta(questionPaper),
     });
 
     cqSideIndex += 1;
 
     /*
+
      * A single CQ can have multiple hierarchy mappings.
+
      */
 
     for (const mapping of chapterMappings) {
@@ -761,17 +1038,24 @@ export async function getChapterKnowledgeGraph(
 
       relations.push({
         id: `question-cq-${cq.id}-${mapping.type}-${mapping.id}`,
+
         source: sourceId,
+
         target: questionGraphId,
+
         type: "question",
       });
     }
   }
 
   /*
+
    * ==================================================
+
    * MCQs
+
    * ==================================================
+
    */
 
   const mcqRecords = await prisma.orm.public.MCQ.where({
@@ -807,13 +1091,21 @@ export async function getChapterKnowledgeGraph(
 
     items.push({
       id: questionGraphId,
+
       type: "mcq",
+
       title: buildQuestionTitle(questionPaper),
+
       slug: `mcq-${mcq.id}`,
+
       description: mcq.descriptionBN,
+
       descriptionBN: mcq.descriptionBN,
+
       descriptionEng: mcq.descriptionEng,
+
       side: mcqSideIndex % 2 === 0 ? "left" : "right",
+
       questionMeta: buildQuestionMeta(questionPaper),
     });
 
@@ -824,68 +1116,111 @@ export async function getChapterKnowledgeGraph(
 
       relations.push({
         id: `question-mcq-${mcq.id}-${mapping.type}-${mapping.id}`,
+
         source: sourceId,
+
         target: questionGraphId,
+
         type: "question",
       });
     }
   }
 
   /*
+
    * ==================================================
+
    * OPTIONAL PERSONALIZATION ENRICHMENT
+
    * ==================================================
+
    *
+
    * This section is deliberately at the END of graph
+
    * construction.
+
    *
+
    * Therefore:
+
    *
+
    * - public graph requests can return normally
+
    * - no bookmark/progress query happens without userId
+
    * - chapter/lesson never receive personalization data
+
    * - only relevant component types are checked
+
    * - Bookmark and QuestionProgress remain separate in DB
+
    * - the response combines them into the existing
+
    *   bookmark package used by KnowledgeExplorer
+
    */
 
   let bookmarkCollections: BookmarkCollectionData[] | undefined;
 
   if (userId !== undefined) {
     /*
+
      * ------------------------------------------------
+
      * STEP 1
+
      * Load this user's collections.
+
      *
+
      * IMPORTANT:
+
      *
+
      * We do NOT call ensureDefaultBookmarkCollections().
+
      *
+
      * Viewing the graph must NEVER create bookmark
+
      * collections.
+
      * ------------------------------------------------
+
      */
 
     const collections = await prisma.orm.public.BookmarkCollection.where({
       userId,
     })
+
       .orderBy((collection) => collection.sortOrder.asc())
+
       .all();
 
     if (collections.length > 0) {
       /*
+
        * Send collection metadata ONCE at graph level.
+
        */
+
       bookmarkCollections = buildBookmarkCollectionData(collections);
     }
 
     /*
+
      * ------------------------------------------------
+
      * STEP 2
+
      * Collect only graph targets that support both
+
      * bookmark and progress personalization.
+
      * ------------------------------------------------
+
      */
 
     const targets: PersonalizedGraphTarget[] = [];
@@ -899,28 +1234,44 @@ export async function getChapterKnowledgeGraph(
     }
 
     /*
+
      * ------------------------------------------------
+
      * STEP 3
+
      * Load bookmark and progress state independently.
+
      *
+
      * Progress MUST NOT depend on bookmark collections.
+
      * A student can have progress without ever creating
+
      * or using a bookmark.
+
      * ------------------------------------------------
+
      */
 
     if (targets.length > 0) {
       const [bookmarkStates, progressStates] = await Promise.all([
         getBookmarkStates(userId, targets),
+
         getQuestionProgressStates(userId, targets),
       ]);
 
       /*
+
        * ------------------------------------------------
+
        * STEP 4
+
        * Merge both states into the existing bookmark
+
        * package consumed by KnowledgeExplorer.
+
        * ------------------------------------------------
+
        */
 
       applyPersonalizationStates(items, bookmarkStates, progressStates);
@@ -928,18 +1279,27 @@ export async function getChapterKnowledgeGraph(
   }
 
   /*
+
    * ==================================================
+
    * RESULT
+
    * ==================================================
+
    */
 
   const result: KnowledgeGraphData = {
     chapter: {
       id: chapter.id,
+
       chapterNo: chapter.chapterNo,
+
       nameBN: chapter.nameBN,
+
       nameEng: chapter.nameEng,
+
       descriptionBN: chapter.descriptionBN,
+
       descriptionEng: chapter.descriptionEng,
     },
 
@@ -949,13 +1309,21 @@ export async function getChapterKnowledgeGraph(
   };
 
   /*
+
    * Do not add bookmarkCollections for:
+
    *
+
    * - anonymous users
+
    * - authenticated users with no collections
+
    *
+
    * This keeps the public graph response free of
+
    * bookmark-specific data.
+
    */
 
   if (bookmarkCollections !== undefined) {
@@ -966,12 +1334,16 @@ export async function getChapterKnowledgeGraph(
 }
 
 /*
+
  * ==================================================
+
  * FULL CQ
+
  * ==================================================
+
  */
 
-export async function getCQDetail(id: number) {
+export async function getCQDetail(id: string) {
   const cq = await prisma.orm.public.CQ.first({
     id,
   });
@@ -990,32 +1362,44 @@ export async function getCQDetail(id: number) {
 
   return {
     id: cq.id,
+
     questionPaperId: cq.questionPaperId,
+
     qusNo: cq.qusNo,
 
     source: {
       type: questionPaper.source,
+
       board: questionPaper.board,
+
       institution: questionPaper.institution,
+
       year: questionPaper.year,
     },
 
     descriptionBN: cq.descriptionBN,
+
     descriptionEng: cq.descriptionEng,
 
     stimulus: cq.quesUddipok,
 
     questions: {
       a: cq.quesKaEng,
+
       b: cq.quesKhaEng,
+
       c: cq.quesGaEng,
+
       d: cq.quesGhaEng,
     },
 
     answers: {
       a: cq.ansKaEng,
+
       b: cq.ansKhaEng,
+
       c: cq.ansGaEng,
+
       d: cq.ansGhaEng,
     },
 
@@ -1024,12 +1408,16 @@ export async function getCQDetail(id: number) {
 }
 
 /*
+
  * ==================================================
+
  * FULL MCQ
+
  * ==================================================
+
  */
 
-export async function getMCQDetail(id: number) {
+export async function getMCQDetail(id: string) {
   const mcq = await prisma.orm.public.MCQ.first({
     id,
   });
@@ -1048,23 +1436,31 @@ export async function getMCQDetail(id: number) {
 
   return {
     id: mcq.id,
+
     questionPaperId: mcq.questionPaperId,
+
     qusNo: mcq.qusNo,
 
     source: {
       type: questionPaper.source,
+
       board: questionPaper.board,
+
       institution: questionPaper.institution,
+
       year: questionPaper.year,
     },
 
     descriptionBN: mcq.descriptionBN,
+
     descriptionEng: mcq.descriptionEng,
 
-    stimulus: mcq.quesUddipok,
+    stimulus: null,
 
     options: mcq.optionsEng,
-    rightAnswer: mcq.rightAnsEng,
+
+    rightAnswer: mcq.rightAns,
+
     explanation: mcq.explanationEng,
 
     imageUrl: mcq.imageUrl,

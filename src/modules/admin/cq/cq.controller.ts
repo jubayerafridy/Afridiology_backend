@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 
 import {
   createCQ,
+  createCQs,
   deleteCQ,
   getCQ,
   getCQs,
@@ -17,6 +18,22 @@ type JsonValue =
   | JsonPrimitive
   | JsonValue[]
   | { readonly [key: string]: JsonValue };
+
+function parseUuid(value: unknown, fieldName: string): string {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new Error(`${fieldName} must be a valid UUID`);
+  }
+
+  return value.trim();
+}
+
+function parseOptionalUuid(value: unknown, fieldName: string): string | null {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  return parseUuid(value, fieldName);
+}
 
 function parsePositiveInt(value: unknown, fieldName: string): number {
   const parsed = Number(value);
@@ -162,7 +179,7 @@ function buildLink(
 ) {
   return {
     type: parseKnowledgeLinkType(body[typeField]),
-    id: parseOptionalPositiveInt(body[idField], idField),
+    id: parseOptionalUuid(body[idField], idField),
   };
 }
 
@@ -188,7 +205,7 @@ function buildCreateInput(body: Record<string, unknown>): CreateCQInput {
   const ghaLink = buildLink(body, "quesGhaLinkType", "quesGhaLinkId");
 
   const data: CreateCQInput = {
-    questionPaperId: parsePositiveInt(body.questionPaperId, "questionPaperId"),
+    questionPaperId: parseUuid(body.questionPaperId, "questionPaperId"),
 
     qusNo: parseOptionalPositiveInt(body.qusNo, "qusNo"),
 
@@ -294,10 +311,7 @@ function buildUpdateInput(body: Record<string, unknown>): UpdateCQInput {
   const data: UpdateCQInput = {};
 
   if (hasOwn(body, "questionPaperId")) {
-    data.questionPaperId = parsePositiveInt(
-      body.questionPaperId,
-      "questionPaperId",
-    );
+    data.questionPaperId = parseUuid(body.questionPaperId, "questionPaperId");
   }
 
   if (hasOwn(body, "qusNo")) {
@@ -362,10 +376,7 @@ function buildUpdateInput(body: Record<string, unknown>): UpdateCQInput {
   }
 
   if (hasOwn(body, "quesKaLinkId")) {
-    data.quesKaLinkId = parseOptionalPositiveInt(
-      body.quesKaLinkId,
-      "quesKaLinkId",
-    );
+    data.quesKaLinkId = parseOptionalUuid(body.quesKaLinkId, "quesKaLinkId");
   }
 
   if (hasOwn(body, "ansKaBN")) {
@@ -390,10 +401,7 @@ function buildUpdateInput(body: Record<string, unknown>): UpdateCQInput {
   }
 
   if (hasOwn(body, "quesKhaLinkId")) {
-    data.quesKhaLinkId = parseOptionalPositiveInt(
-      body.quesKhaLinkId,
-      "quesKhaLinkId",
-    );
+    data.quesKhaLinkId = parseOptionalUuid(body.quesKhaLinkId, "quesKhaLinkId");
   }
 
   if (hasOwn(body, "ansKhaBN")) {
@@ -418,10 +426,7 @@ function buildUpdateInput(body: Record<string, unknown>): UpdateCQInput {
   }
 
   if (hasOwn(body, "quesGaLinkId")) {
-    data.quesGaLinkId = parseOptionalPositiveInt(
-      body.quesGaLinkId,
-      "quesGaLinkId",
-    );
+    data.quesGaLinkId = parseOptionalUuid(body.quesGaLinkId, "quesGaLinkId");
   }
 
   if (hasOwn(body, "ansGaBN")) {
@@ -446,10 +451,7 @@ function buildUpdateInput(body: Record<string, unknown>): UpdateCQInput {
   }
 
   if (hasOwn(body, "quesGhaLinkId")) {
-    data.quesGhaLinkId = parseOptionalPositiveInt(
-      body.quesGhaLinkId,
-      "quesGhaLinkId",
-    );
+    data.quesGhaLinkId = parseOptionalUuid(body.quesGhaLinkId, "quesGhaLinkId");
   }
 
   if (hasOwn(body, "ansGhaBN")) {
@@ -471,6 +473,224 @@ function getRequestBody(req: Request): Record<string, unknown> {
   return req.body as Record<string, unknown>;
 }
 
+/**
+ * Convert one nested CQ question into the internal
+ * CreateCQInput-compatible flat structure.
+ *
+ * External bulk JSON format:
+ *
+ * ka: {
+ *   bn,
+ *   eng,
+ *   link: {
+ *     id,
+ *     type
+ *   }
+ * }
+ *
+ * Internal service format:
+ *
+ * quesKaBN
+ * quesKaEng
+ * quesKaLinkId
+ * quesKaLinkType
+ */
+function normalizeBulkQuestion(
+  question: Record<string, unknown>,
+  index: number,
+): Record<string, unknown> {
+  const ka =
+    question.ka &&
+    typeof question.ka === "object" &&
+    !Array.isArray(question.ka)
+      ? (question.ka as Record<string, unknown>)
+      : null;
+
+  const kha =
+    question.kha &&
+    typeof question.kha === "object" &&
+    !Array.isArray(question.kha)
+      ? (question.kha as Record<string, unknown>)
+      : null;
+
+  const ga =
+    question.ga &&
+    typeof question.ga === "object" &&
+    !Array.isArray(question.ga)
+      ? (question.ga as Record<string, unknown>)
+      : null;
+
+  const gha =
+    question.gha &&
+    typeof question.gha === "object" &&
+    !Array.isArray(question.gha)
+      ? (question.gha as Record<string, unknown>)
+      : null;
+
+  if (!ka) {
+    throw new Error(`questions[${index}].ka is required`);
+  }
+
+  if (!kha) {
+    throw new Error(`questions[${index}].kha is required`);
+  }
+
+  if (!ga) {
+    throw new Error(`questions[${index}].ga is required`);
+  }
+
+  const kaLink =
+    ka.link && typeof ka.link === "object" && !Array.isArray(ka.link)
+      ? (ka.link as Record<string, unknown>)
+      : null;
+
+  const khaLink =
+    kha.link && typeof kha.link === "object" && !Array.isArray(kha.link)
+      ? (kha.link as Record<string, unknown>)
+      : null;
+
+  const gaLink =
+    ga.link && typeof ga.link === "object" && !Array.isArray(ga.link)
+      ? (ga.link as Record<string, unknown>)
+      : null;
+
+  const ghaLink =
+    gha && gha.link && typeof gha.link === "object" && !Array.isArray(gha.link)
+      ? (gha.link as Record<string, unknown>)
+      : null;
+
+  const normalized: Record<string, unknown> = {
+    questionPaperId: question.questionPaperId,
+
+    qusNo: question.qusNo,
+
+    point: question.point,
+
+    isActive: question.isActive,
+
+    descriptionBN: question.descriptionBN,
+
+    descriptionEng: question.descriptionEng,
+
+    quesUddipok: question.quesUddipok,
+
+    imageUrl: question.imageUrl,
+
+    // ক
+    quesKaBN: ka.bn,
+
+    quesKaEng: ka.eng,
+
+    quesKaLinkType: kaLink?.type ?? null,
+
+    quesKaLinkId: kaLink?.id ?? null,
+
+    ansKaBN: ka.answerBN,
+
+    ansKaEng: ka.answerEng,
+
+    // খ
+    quesKhaBN: kha.bn,
+
+    quesKhaEng: kha.eng,
+
+    quesKhaLinkType: khaLink?.type ?? null,
+
+    quesKhaLinkId: khaLink?.id ?? null,
+
+    ansKhaBN: kha.answerBN,
+
+    ansKhaEng: kha.answerEng,
+
+    // গ
+    quesGaBN: ga.bn,
+
+    quesGaEng: ga.eng,
+
+    quesGaLinkType: gaLink?.type ?? null,
+
+    quesGaLinkId: gaLink?.id ?? null,
+
+    ansGaBN: ga.answerBN,
+
+    ansGaEng: ga.answerEng,
+
+    // ঘ — optional
+    quesGhaBN: gha?.bn ?? null,
+
+    quesGhaEng: gha?.eng ?? null,
+
+    quesGhaLinkType: ghaLink?.type ?? null,
+
+    quesGhaLinkId: ghaLink?.id ?? null,
+
+    ansGhaBN: gha?.answerBN ?? null,
+
+    ansGhaEng: gha?.answerEng ?? null,
+  };
+
+  return normalized;
+}
+
+/**
+ * Build all CQ inputs for bulk creation.
+ *
+ * Bulk JSON uses the nested CQ format:
+ *
+ * {
+ *   "questions": [
+ *     {
+ *       "questionPaperId": "...",
+ *       "qusNo": 1,
+ *       "descriptionBN": [],
+ *       "descriptionEng": [],
+ *       "imageUrl": null,
+ *       "ka": {
+ *         "bn": "...",
+ *         "eng": "...",
+ *         "link": {
+ *           "id": "...",
+ *           "type": "CHAPTER"
+ *         },
+ *         "answerBN": null,
+ *         "answerEng": null
+ *       },
+ *       "kha": {},
+ *       "ga": {},
+ *       "gha": null
+ *     }
+ *   ]
+ * }
+ *
+ * Each nested question is converted into the existing
+ * internal CreateCQInput format and then passed through
+ * the existing validation.
+ */
+function buildBulkCreateInputs(body: Record<string, unknown>): CreateCQInput[] {
+  const questions = body.questions;
+
+  if (!Array.isArray(questions)) {
+    throw new Error("questions must be an array");
+  }
+
+  if (questions.length === 0) {
+    throw new Error("questions must contain at least one CQ");
+  }
+
+  return questions.map((question, index) => {
+    if (!question || typeof question !== "object" || Array.isArray(question)) {
+      throw new Error(`questions[${index}] must be an object`);
+    }
+
+    const normalizedQuestion = normalizeBulkQuestion(
+      question as Record<string, unknown>,
+      index,
+    );
+
+    return buildCreateInput(normalizedQuestion);
+  });
+}
+
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
@@ -483,6 +703,35 @@ export async function createCQController(req: Request, res: Response) {
   try {
     const body = getRequestBody(req);
 
+    /**
+     * Bulk creation:
+     *
+     * {
+     *   "questions": [
+     *     { ...nested CQ 1... },
+     *     { ...nested CQ 2... }
+     *   ]
+     * }
+     */
+    if (Object.prototype.hasOwnProperty.call(body, "questions")) {
+      const data = buildBulkCreateInputs(body);
+
+      const cqs = await createCQs(data);
+
+      res.status(201).json({
+        success: true,
+        data: cqs,
+      });
+
+      return;
+    }
+
+    /**
+     * Existing single CQ creation remains unchanged.
+     *
+     * Single creation continues to use the existing
+     * flat request structure expected by the admin UI.
+     */
     const data = buildCreateInput(body);
 
     const cq = await createCQ(data);
@@ -505,7 +754,7 @@ export async function getCQsController(req: Request, res: Response) {
   try {
     const questionPaperId =
       req.query.questionPaperId !== undefined
-        ? parsePositiveInt(req.query.questionPaperId, "questionPaperId")
+        ? parseUuid(req.query.questionPaperId, "questionPaperId")
         : undefined;
 
     const cqs = await getCQs(questionPaperId);
@@ -526,7 +775,7 @@ export async function getCQsController(req: Request, res: Response) {
 
 export async function getCQController(req: Request, res: Response) {
   try {
-    const id = parsePositiveInt(req.params.id, "id");
+    const id = parseUuid(req.params.id, "id");
 
     const cq = await getCQ(id);
 
@@ -555,7 +804,7 @@ export async function getCQController(req: Request, res: Response) {
 
 export async function updateCQController(req: Request, res: Response) {
   try {
-    const id = parsePositiveInt(req.params.id, "id");
+    const id = parseUuid(req.params.id, "id");
 
     const body = getRequestBody(req);
 
@@ -588,7 +837,7 @@ export async function updateCQController(req: Request, res: Response) {
 
 export async function deleteCQController(req: Request, res: Response) {
   try {
-    const id = parsePositiveInt(req.params.id, "id");
+    const id = parseUuid(req.params.id, "id");
 
     const cq = await deleteCQ(id);
 

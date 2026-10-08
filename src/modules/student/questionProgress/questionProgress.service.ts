@@ -10,8 +10,6 @@ import { getQuestionProgressTargetKey } from "./questionProgress.types.js";
 
 import { validateSetQuestionProgressInput } from "./questionProgress.validation.js";
 
-import { validatePositiveInteger } from "../bookmark/bookmark.validation.js";
-
 /*
  * ==================================================
  * QUESTION PROGRESS SERVICE
@@ -70,7 +68,7 @@ function createError(name: string, message: string): Error {
  * CONCEPT
  * ================================================== */
 
-async function ensureConceptExists(targetId: number): Promise<void> {
+async function ensureConceptExists(targetId: string): Promise<void> {
   const concept = await prisma.orm.public.Concept.first({
     id: targetId,
   });
@@ -84,7 +82,7 @@ async function ensureConceptExists(targetId: number): Promise<void> {
  * EXECUTION
  * ================================================== */
 
-async function ensureExecutionExists(targetId: number): Promise<void> {
+async function ensureExecutionExists(targetId: string): Promise<void> {
   const execution = await prisma.orm.public.Execution.first({
     id: targetId,
   });
@@ -98,7 +96,7 @@ async function ensureExecutionExists(targetId: number): Promise<void> {
  * CQ
  * ================================================== */
 
-async function ensureCQExists(targetId: number): Promise<void> {
+async function ensureCQExists(targetId: string): Promise<void> {
   const cq = await prisma.orm.public.CQ.first({
     id: targetId,
   });
@@ -112,7 +110,7 @@ async function ensureCQExists(targetId: number): Promise<void> {
  * MCQ
  * ================================================== */
 
-async function ensureMCQExists(targetId: number): Promise<void> {
+async function ensureMCQExists(targetId: string): Promise<void> {
   const mcq = await prisma.orm.public.MCQ.first({
     id: targetId,
   });
@@ -128,7 +126,7 @@ async function ensureMCQExists(targetId: number): Promise<void> {
 
 async function ensureTargetExists(
   targetType: SetQuestionProgressInput["targetType"],
-  targetId: number,
+  targetId: string,
 ): Promise<void> {
   switch (targetType) {
     case "CONCEPT":
@@ -164,14 +162,10 @@ async function ensureTargetExists(
  */
 
 export async function getQuestionProgress(
-  userId: number,
+  userId: string,
   targetType: SetQuestionProgressInput["targetType"],
-  targetId: number,
+  targetId: string,
 ): Promise<QuestionProgressState> {
-  validatePositiveInteger(userId, "userId");
-
-  validatePositiveInteger(targetId, "targetId");
-
   const progress = await prisma.orm.public.QuestionProgress.first({
     userId,
     targetType,
@@ -204,11 +198,9 @@ export async function getQuestionProgress(
  */
 
 export async function setQuestionProgress(
-  userId: number,
+  userId: string,
   input: SetQuestionProgressInput,
 ): Promise<QuestionProgressState> {
-  validatePositiveInteger(userId, "userId");
-
   /*
    * This is an assertion function.
    *
@@ -292,11 +284,9 @@ export async function setQuestionProgress(
  */
 
 export async function getQuestionProgressStates(
-  userId: number,
+  userId: string,
   targets: QuestionProgressStateLookupTarget[],
 ): Promise<Map<string, QuestionProgressState>> {
-  validatePositiveInteger(userId, "userId");
-
   /* --------------------------------------------------
    * STEP 1
    * Deduplicate valid targets.
@@ -306,7 +296,10 @@ export async function getQuestionProgressStates(
   const uniqueTargets = new Map<string, QuestionProgressStateLookupTarget>();
 
   for (const target of targets) {
-    if (!Number.isInteger(target.targetId) || target.targetId <= 0) {
+    if (
+      typeof target.targetId !== "string" ||
+      target.targetId.trim().length === 0
+    ) {
       continue;
     }
 

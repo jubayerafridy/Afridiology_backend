@@ -29,7 +29,7 @@ type JsonValue =
  *   },
  *   {
  *     "type": "concept",
- *     "conceptID": 101
+ *     "conceptID": "uuid"
  *   },
  *   {
  *     "type": "heading",
@@ -82,7 +82,7 @@ export type LessonStructure = LessonDocument;
  */
 
 export interface CreateLessonInput {
-  chapterId: number;
+  chapterId: string;
   lessonNo?: string | null;
   nameBN: string;
   nameEng: string;
@@ -119,7 +119,7 @@ export interface UpdateLessonInput {
  *
  * {
  *   type: "concept",
- *   conceptID: 101
+ *   conceptID: "uuid"
  * }
  */
 function normalizeLessonDocument(value: unknown): LessonDocument {
@@ -159,29 +159,25 @@ function normalizeLessonDocument(value: unknown): LessonDocument {
  */
 
 /**
- * Safely extracts a numeric Concept ID from a document item.
+ * Safely extracts a string Concept ID from a document item.
  *
  * Only items with:
  *
  * {
  *   type: "concept",
- *   conceptID: number
+ *   conceptID: string
  * }
  *
  * are treated as Concept references.
  */
-function getConceptId(item: LessonDocumentItem): number | null {
+function getConceptId(item: LessonDocumentItem): string | null {
   if (item.type !== "concept") {
     return null;
   }
 
   const conceptId = item.conceptID;
 
-  if (
-    typeof conceptId !== "number" ||
-    !Number.isInteger(conceptId) ||
-    conceptId <= 0
-  ) {
+  if (typeof conceptId !== "string" || conceptId.trim().length === 0) {
     return null;
   }
 
@@ -204,7 +200,7 @@ function getConceptId(item: LessonDocumentItem): number | null {
  *
  * {
  *   "type": "lesson",
- *   "lessonID": 45
+ *   "lessonID": "uuid"
  * }
  *
  * No block id is generated.
@@ -338,7 +334,7 @@ export async function createLesson(data: CreateLessonInput) {
  * ================================================================
  */
 
-export async function getLessons(chapterId?: number) {
+export async function getLessons(chapterId?: string) {
   if (chapterId !== undefined) {
     return prisma.orm.public.Lesson.where({
       chapterId,
@@ -356,7 +352,7 @@ export async function getLessons(chapterId?: number) {
  * ================================================================
  */
 
-export async function getLesson(id: number) {
+export async function getLesson(id: string) {
   return prisma.orm.public.Lesson.first({
     id,
   });
@@ -374,7 +370,7 @@ export async function getLesson(id: number) {
  *
  * {
  *   type: "lesson",
- *   lessonID: 45
+ *   lessonID: "uuid"
  * }
  *
  * Therefore changing:
@@ -392,7 +388,7 @@ export async function getLesson(id: number) {
  * ================================================================
  */
 
-export async function updateLesson(id: number, data: UpdateLessonInput) {
+export async function updateLesson(id: string, data: UpdateLessonInput) {
   /**
    * --------------------------------------------------
    * Find existing Lesson
@@ -482,7 +478,7 @@ export async function updateLesson(id: number, data: UpdateLessonInput) {
  */
 
 export async function setLessonStructure(
-  lessonId: number,
+  lessonId: string,
   descriptionBN: LessonDocument,
   descriptionEng?: LessonDocument,
 ) {
@@ -526,7 +522,7 @@ export async function setLessonStructure(
  *
  * {
  *   "type": "concept",
- *   "conceptID": 101
+ *   "conceptID": "uuid"
  * }
  *
  * is appended to BOTH:
@@ -542,8 +538,8 @@ export async function setLessonStructure(
  */
 
 export async function appendConceptToLessonStructure(
-  lessonId: number,
-  conceptId: number,
+  lessonId: string,
+  conceptId: string,
 ) {
   const lesson = await prisma.orm.public.Lesson.first({
     id: lessonId,
@@ -649,8 +645,8 @@ export async function appendConceptToLessonStructure(
  */
 
 export async function removeConceptFromLessonStructure(
-  lessonId: number,
-  conceptId: number,
+  lessonId: string,
+  conceptId: string,
 ) {
   const lesson = await prisma.orm.public.Lesson.first({
     id: lessonId,
@@ -708,7 +704,7 @@ export async function removeConceptFromLessonStructure(
  * ================================================================
  */
 
-export async function deleteLesson(id: number) {
+export async function deleteLesson(id: string) {
   /**
    * --------------------------------------------------
    * Find Lesson

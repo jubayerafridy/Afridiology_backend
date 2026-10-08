@@ -1,7 +1,7 @@
 import { prisma } from "../../../config/prisma.js";
 
 export interface CreateSubjectInput {
-  educationLevelId: number;
+  educationLevelId: string;
   name: string;
 }
 
@@ -24,7 +24,7 @@ export async function createSubject(data: CreateSubjectInput) {
   });
 }
 
-export async function getSubjects(educationLevelId?: number) {
+export async function getSubjects(educationLevelId?: string) {
   if (educationLevelId !== undefined) {
     return prisma.orm.public.Subject.where({
       educationLevelId,
@@ -36,7 +36,7 @@ export async function getSubjects(educationLevelId?: number) {
   return prisma.orm.public.Subject.orderBy((subject) => subject.id.asc()).all();
 }
 
-export async function updateSubject(id: number, data: UpdateSubjectInput) {
+export async function updateSubject(id: string, data: UpdateSubjectInput) {
   const subject = await prisma.orm.public.Subject.first({
     id,
   });
@@ -50,7 +50,7 @@ export async function updateSubject(id: number, data: UpdateSubjectInput) {
   });
 }
 
-export async function deleteSubject(id: number) {
+export async function deleteSubject(id: string) {
   const subject = await prisma.orm.public.Subject.first({
     id,
   });

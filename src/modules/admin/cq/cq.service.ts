@@ -12,30 +12,22 @@ export type KnowledgeLinkType = "CHAPTER" | "LESSON" | "CONCEPT" | "EXECUTION";
 export interface KnowledgeLinkInput {
   linkType?: KnowledgeLinkType | null;
 
-  linkId?: number | null;
+  linkId?: string | null;
 }
 
 /**
-
  * Data required when creating a CQ.
-
  *
-
  * qusNo and point are optional.
+ *
  * New CQs are inactive by default; isActive can be explicitly set.
-
  *
-
- * Ka, Kha and Ga must always have a chapter ID.
-
+ * Ka, Kha and Ga must always have a direct knowledge link.
  *
-
  * Gha is optional.
-
  */
-
 export interface CreateCQInput {
-  questionPaperId: number;
+  questionPaperId: string;
 
   qusNo?: number | null;
 
@@ -59,7 +51,7 @@ export interface CreateCQInput {
 
   quesKaLinkType?: KnowledgeLinkType | null;
 
-  quesKaLinkId?: number | null;
+  quesKaLinkId?: string | null;
 
   ansKaBN?: string | null;
 
@@ -73,7 +65,7 @@ export interface CreateCQInput {
 
   quesKhaLinkType?: KnowledgeLinkType | null;
 
-  quesKhaLinkId?: number | null;
+  quesKhaLinkId?: string | null;
 
   ansKhaBN?: string | null;
 
@@ -87,7 +79,7 @@ export interface CreateCQInput {
 
   quesGaLinkType?: KnowledgeLinkType | null;
 
-  quesGaLinkId?: number | null;
+  quesGaLinkId?: string | null;
 
   ansGaBN?: string | null;
 
@@ -101,7 +93,7 @@ export interface CreateCQInput {
 
   quesGhaLinkType?: KnowledgeLinkType | null;
 
-  quesGhaLinkId?: number | null;
+  quesGhaLinkId?: string | null;
 
   ansGhaBN?: string | null;
 
@@ -109,28 +101,24 @@ export interface CreateCQInput {
 }
 
 /**
-
  * Partial update.
-
  *
-
  * undefined = do not change.
-
+ *
  * null = clear a nullable field.
+ *
  * isActive = true/false controls this CQ independently.
-
  */
-
 export type UpdateCQInput = Partial<CreateCQInput>;
 
 interface NormalizedLink {
-  type: "CHAPTER";
+  type: KnowledgeLinkType;
 
-  id: number;
+  id: string;
 }
 
 interface NormalizedCQData {
-  questionPaperId: number;
+  questionPaperId: string;
 
   qusNo: number | null;
 
@@ -152,9 +140,9 @@ interface NormalizedCQData {
 
   quesKaEng: string;
 
-  quesKaLinkType: "CHAPTER";
+  quesKaLinkType: KnowledgeLinkType;
 
-  quesKaLinkId: number;
+  quesKaLinkId: string;
 
   ansKaBN: string | null;
 
@@ -166,9 +154,9 @@ interface NormalizedCQData {
 
   quesKhaEng: string;
 
-  quesKhaLinkType: "CHAPTER";
+  quesKhaLinkType: KnowledgeLinkType;
 
-  quesKhaLinkId: number;
+  quesKhaLinkId: string;
 
   ansKhaBN: string | null;
 
@@ -180,9 +168,9 @@ interface NormalizedCQData {
 
   quesGaEng: string;
 
-  quesGaLinkType: "CHAPTER";
+  quesGaLinkType: KnowledgeLinkType;
 
-  quesGaLinkId: number;
+  quesGaLinkId: string;
 
   ansGaBN: string | null;
 
@@ -194,9 +182,9 @@ interface NormalizedCQData {
 
   quesGhaEng: string | null;
 
-  quesGhaLinkType: "CHAPTER" | null;
+  quesGhaLinkType: KnowledgeLinkType | null;
 
-  quesGhaLinkId: number | null;
+  quesGhaLinkId: string | null;
 
   ansGhaBN: string | null;
 
@@ -204,27 +192,17 @@ interface NormalizedCQData {
 }
 
 /**
-
  * Internal type used while merging an existing database row
-
  * with a partial update.
-
  *
-
  * Database link types are intentionally represented as string
-
  * because the generated ORM model exposes them as string | null.
-
  *
-
  * normalizeLinkType() validates them before they enter the
-
  * normalized application type.
-
  */
-
 interface MergedCQInput {
-  questionPaperId: number;
+  questionPaperId: string;
 
   qusNo: number | null;
 
@@ -248,7 +226,7 @@ interface MergedCQInput {
 
   quesKaLinkType: string | null;
 
-  quesKaLinkId: number | null;
+  quesKaLinkId: string | null;
 
   ansKaBN: string | null;
 
@@ -262,7 +240,7 @@ interface MergedCQInput {
 
   quesKhaLinkType: string | null;
 
-  quesKhaLinkId: number | null;
+  quesKhaLinkId: string | null;
 
   ansKhaBN: string | null;
 
@@ -276,7 +254,7 @@ interface MergedCQInput {
 
   quesGaLinkType: string | null;
 
-  quesGaLinkId: number | null;
+  quesGaLinkId: string | null;
 
   ansGaBN: string | null;
 
@@ -290,7 +268,7 @@ interface MergedCQInput {
 
   quesGhaLinkType: string | null;
 
-  quesGhaLinkId: number | null;
+  quesGhaLinkId: string | null;
 
   ansGhaBN: string | null;
 
@@ -358,13 +336,9 @@ function normalizeIsActive(value?: boolean): boolean {
 }
 
 /**
-
  * Converts a value coming from the database into the
-
  * application's KnowledgeLinkType.
-
  */
-
 function normalizeLinkType(
   value: string | KnowledgeLinkType | null | undefined,
 ): KnowledgeLinkType | null {
@@ -385,111 +359,227 @@ function normalizeLinkType(
 }
 
 /**
-
- * Ka / Kha / Ga must always point to a Chapter.
-
+ * Normalizes one direct knowledge link.
+ *
+ * A CQ part may directly point to:
+ *
+ * CHAPTER
+ * LESSON
+ * CONCEPT
+ * EXECUTION
+ *
+ * Only this direct target is stored.
+ * Ancestors are derived from the existing hierarchy.
  */
-
-function normalizeRequiredChapterLink(
+function normalizeKnowledgeLink(
   linkType: KnowledgeLinkType | string | null | undefined,
-
-  linkId: number | null | undefined,
-
+  linkId: string | null | undefined,
   fieldName: string,
-): NormalizedLink {
-  if (linkId === undefined || linkId === null) {
-    throw new Error(`${fieldName} chapter ID is required`);
+  required: boolean,
+): NormalizedLink | null {
+  if (linkType === undefined && linkId === undefined) {
+    if (required) {
+      throw new Error(`${fieldName} link ID is required`);
+    }
+
+    return null;
   }
 
-  if (!Number.isInteger(linkId) || linkId <= 0) {
-    throw new Error(`${fieldName} chapter ID must be a positive integer`);
+  if (linkId === undefined || linkId === null) {
+    if (required) {
+      throw new Error(`${fieldName} link ID is required`);
+    }
+
+    return null;
+  }
+
+  if (typeof linkId !== "string" || linkId.trim().length === 0) {
+    throw new Error(`${fieldName} link ID is required`);
   }
 
   const normalizedType = normalizeLinkType(linkType);
 
-  if (normalizedType !== null && normalizedType !== "CHAPTER") {
-    throw new Error(`${fieldName} must be linked to a CHAPTER`);
+  if (normalizedType === null) {
+    throw new Error(`${fieldName} link type is required`);
   }
 
   return {
-    type: "CHAPTER",
+    type: normalizedType,
 
-    id: linkId,
+    id: linkId.trim(),
   };
 }
 
 /**
-
  * Gha is optional.
-
  *
-
- * If Gha has question text, it must have a chapter.
-
+ * If Gha has question text, its direct knowledge link is required.
+ * If Gha is not provided, its link may remain null.
  */
-
 function normalizeOptionalGhaLink(
   linkType: KnowledgeLinkType | string | null | undefined,
-
-  linkId: number | null | undefined,
+  linkId: string | null | undefined,
 ): NormalizedLink | null {
-  if (linkType === undefined && linkId === undefined) {
-    return null;
-  }
-
-  if (linkType === null && linkId === null) {
-    return null;
-  }
-
-  if (linkId === undefined || linkId === null) {
-    throw new Error("quesGhaLinkId is required when Gha is provided");
-  }
-
-  if (!Number.isInteger(linkId) || linkId <= 0) {
-    throw new Error("quesGhaLinkId must be a positive integer");
-  }
-
-  const normalizedType = normalizeLinkType(linkType);
-
-  if (normalizedType !== null && normalizedType !== "CHAPTER") {
-    throw new Error("Gha must be linked to a CHAPTER");
-  }
-
-  return {
-    type: "CHAPTER",
-
-    id: linkId,
-  };
+  return normalizeKnowledgeLink(linkType, linkId, "quesGha", false);
 }
 
-async function validateChapter(
-  questionPaperSubjectId: number,
-
-  chapterId: number,
-
+/**
+ * Validates that a direct knowledge target belongs to the same subject
+ * as the Question Paper.
+ *
+ * Only the direct target is stored. Ancestors are derived from the
+ * existing Chapter -> Lesson -> Concept -> Execution hierarchy.
+ */
+async function validateKnowledgeLink(
+  questionPaperSubjectId: string,
+  link: NormalizedLink,
   fieldName: string,
 ): Promise<void> {
-  const chapter = await prisma.orm.public.Chapter.first({
-    id: chapterId,
-  });
+  switch (link.type) {
+    case "CHAPTER": {
+      const chapter = await prisma.orm.public.Chapter.first({
+        id: link.id,
+      });
 
-  if (!chapter) {
-    throw new Error(`${fieldName} chapter with ID ${chapterId} was not found`);
-  }
+      if (!chapter) {
+        throw new Error(
+          `${fieldName} chapter with ID ${link.id} was not found`,
+        );
+      }
 
-  if (chapter.subjectId !== questionPaperSubjectId) {
-    throw new Error(
-      `${fieldName} chapter with ID ${chapterId} does not belong to the Question Paper subject`,
-    );
+      if (chapter.subjectId !== questionPaperSubjectId) {
+        throw new Error(
+          `${fieldName} chapter with ID ${link.id} does not belong to the Question Paper subject`,
+        );
+      }
+
+      return;
+    }
+
+    case "LESSON": {
+      const lesson = await prisma.orm.public.Lesson.first({
+        id: link.id,
+      });
+
+      if (!lesson) {
+        throw new Error(`${fieldName} lesson with ID ${link.id} was not found`);
+      }
+
+      const chapter = await prisma.orm.public.Chapter.first({
+        id: lesson.chapterId,
+      });
+
+      if (!chapter) {
+        throw new Error(
+          `${fieldName} lesson with ID ${link.id} has no valid chapter`,
+        );
+      }
+
+      if (chapter.subjectId !== questionPaperSubjectId) {
+        throw new Error(
+          `${fieldName} lesson with ID ${link.id} does not belong to the Question Paper subject`,
+        );
+      }
+
+      return;
+    }
+
+    case "CONCEPT": {
+      const concept = await prisma.orm.public.Concept.first({
+        id: link.id,
+      });
+
+      if (!concept) {
+        throw new Error(
+          `${fieldName} concept with ID ${link.id} was not found`,
+        );
+      }
+
+      const lesson = await prisma.orm.public.Lesson.first({
+        id: concept.lessonId,
+      });
+
+      if (!lesson) {
+        throw new Error(
+          `${fieldName} concept with ID ${link.id} has no valid lesson`,
+        );
+      }
+
+      const chapter = await prisma.orm.public.Chapter.first({
+        id: lesson.chapterId,
+      });
+
+      if (!chapter) {
+        throw new Error(
+          `${fieldName} concept with ID ${link.id} has no valid chapter`,
+        );
+      }
+
+      if (chapter.subjectId !== questionPaperSubjectId) {
+        throw new Error(
+          `${fieldName} concept with ID ${link.id} does not belong to the Question Paper subject`,
+        );
+      }
+
+      return;
+    }
+
+    case "EXECUTION": {
+      const execution = await prisma.orm.public.Execution.first({
+        id: link.id,
+      });
+
+      if (!execution) {
+        throw new Error(
+          `${fieldName} execution with ID ${link.id} was not found`,
+        );
+      }
+
+      const concept = await prisma.orm.public.Concept.first({
+        id: execution.conceptId,
+      });
+
+      if (!concept) {
+        throw new Error(
+          `${fieldName} execution with ID ${link.id} has no valid concept`,
+        );
+      }
+
+      const lesson = await prisma.orm.public.Lesson.first({
+        id: concept.lessonId,
+      });
+
+      if (!lesson) {
+        throw new Error(
+          `${fieldName} execution with ID ${link.id} has no valid lesson`,
+        );
+      }
+
+      const chapter = await prisma.orm.public.Chapter.first({
+        id: lesson.chapterId,
+      });
+
+      if (!chapter) {
+        throw new Error(
+          `${fieldName} execution with ID ${link.id} has no valid chapter`,
+        );
+      }
+
+      if (chapter.subjectId !== questionPaperSubjectId) {
+        throw new Error(
+          `${fieldName} execution with ID ${link.id} does not belong to the Question Paper subject`,
+        );
+      }
+
+      return;
+    }
   }
 }
 
-async function validateAllChapterLinks(
-  questionPaperSubjectId: number,
-
+async function validateAllKnowledgeLinks(
+  questionPaperSubjectId: string,
   links: Array<{
     fieldName: string;
-
     link: NormalizedLink | null;
   }>,
 ): Promise<void> {
@@ -498,33 +588,34 @@ async function validateAllChapterLinks(
       continue;
     }
 
-    await validateChapter(questionPaperSubjectId, item.link.id, item.fieldName);
+    await validateKnowledgeLink(
+      questionPaperSubjectId,
+      item.link,
+      item.fieldName,
+    );
   }
 }
 
 function normalizeData(data: MergedCQInput | CreateCQInput): NormalizedCQData {
-  const kaLink = normalizeRequiredChapterLink(
+  const kaLink = normalizeKnowledgeLink(
     data.quesKaLinkType,
-
     data.quesKaLinkId,
-
     "quesKa",
+    true,
   );
 
-  const khaLink = normalizeRequiredChapterLink(
+  const khaLink = normalizeKnowledgeLink(
     data.quesKhaLinkType,
-
     data.quesKhaLinkId,
-
     "quesKha",
+    true,
   );
 
-  const gaLink = normalizeRequiredChapterLink(
+  const gaLink = normalizeKnowledgeLink(
     data.quesGaLinkType,
-
     data.quesGaLinkId,
-
     "quesGa",
+    true,
   );
 
   const normalizedGhaBN = normalizeOptionalText(data.quesGhaBN);
@@ -535,7 +626,6 @@ function normalizeData(data: MergedCQInput | CreateCQInput): NormalizedCQData {
 
   const normalizedGhaLink = normalizeOptionalGhaLink(
     data.quesGhaLinkType,
-
     data.quesGhaLinkId,
   );
 
@@ -560,7 +650,7 @@ function normalizeData(data: MergedCQInput | CreateCQInput): NormalizedCQData {
       normalizeOptionalText(data.ansGhaEng) !== null)
   ) {
     throw new Error(
-      "Gha question must be provided before Gha answer or chapter link",
+      "Gha question must be provided before Gha answer or knowledge link",
     );
   }
 
@@ -587,9 +677,9 @@ function normalizeData(data: MergedCQInput | CreateCQInput): NormalizedCQData {
 
     quesKaEng: normalizeRequiredText(data.quesKaEng, "quesKaEng"),
 
-    quesKaLinkType: kaLink.type,
+    quesKaLinkType: kaLink!.type,
 
-    quesKaLinkId: kaLink.id,
+    quesKaLinkId: kaLink!.id,
 
     ansKaBN: normalizeOptionalText(data.ansKaBN),
 
@@ -601,9 +691,9 @@ function normalizeData(data: MergedCQInput | CreateCQInput): NormalizedCQData {
 
     quesKhaEng: normalizeRequiredText(data.quesKhaEng, "quesKhaEng"),
 
-    quesKhaLinkType: khaLink.type,
+    quesKhaLinkType: khaLink!.type,
 
-    quesKhaLinkId: khaLink.id,
+    quesKhaLinkId: khaLink!.id,
 
     ansKhaBN: normalizeOptionalText(data.ansKhaBN),
 
@@ -615,9 +705,9 @@ function normalizeData(data: MergedCQInput | CreateCQInput): NormalizedCQData {
 
     quesGaEng: normalizeRequiredText(data.quesGaEng, "quesGaEng"),
 
-    quesGaLinkType: gaLink.type,
+    quesGaLinkType: gaLink!.type,
 
-    quesGaLinkId: gaLink.id,
+    quesGaLinkId: gaLink!.id,
 
     ansGaBN: normalizeOptionalText(data.ansGaBN),
 
@@ -639,9 +729,9 @@ function normalizeData(data: MergedCQInput | CreateCQInput): NormalizedCQData {
   };
 }
 
-async function validateQuestionPaper(questionPaperId: number): Promise<{
-  id: number;
-  subjectId: number;
+async function validateQuestionPaper(questionPaperId: string): Promise<{
+  id: string;
+  subjectId: string;
 }> {
   const questionPaper = await prisma.orm.public.QuestionPaper.first({
     id: questionPaperId,
@@ -653,16 +743,15 @@ async function validateQuestionPaper(questionPaperId: number): Promise<{
 
   return {
     id: questionPaper.id,
+
     subjectId: questionPaper.subjectId,
   };
 }
 
 async function validateQuestionNumber(
-  questionPaperId: number,
-
+  questionPaperId: string,
   qusNo: number | null,
-
-  currentCQId?: number,
+  currentCQId?: string,
 ): Promise<void> {
   if (qusNo === null) {
     return;
@@ -683,8 +772,7 @@ async function validateQuestionNumber(
 
 function sortCQsByQuestionNumber<
   T extends {
-    id: number;
-
+    id: string;
     qusNo: number | null;
   },
 >(cqs: T[]): T[] {
@@ -698,7 +786,7 @@ function sortCQsByQuestionNumber<
     }
 
     if (a.qusNo === null && b.qusNo === null) {
-      return a.id - b.id;
+      return a.id.localeCompare(b.id);
     }
 
     return (a.qusNo as number) - (b.qusNo as number);
@@ -706,87 +794,62 @@ function sortCQsByQuestionNumber<
 }
 
 /**
-
  * ORM JSON values use a generated JSON type that is not
-
  * identical to our local JsonValue type.
-
  *
-
  * This conversion is only at the service boundary.
-
  */
-
 function normalizeExistingJson(value: unknown): JsonValue {
   return value as JsonValue;
 }
 
 function mergeCQData(
   existingCQ: {
-    questionPaperId: number;
-
+    questionPaperId: string;
     qusNo: number | null;
-
     point: number | null;
     isActive: boolean;
-
     descriptionBN: unknown;
-
     descriptionEng: unknown;
-
     quesUddipok: string | null;
-
     imageUrl: string | null;
 
+    // ক
+
     quesKaBN: string;
-
     quesKaEng: string;
-
     quesKaLinkType: string | null;
-
-    quesKaLinkId: number | null;
-
+    quesKaLinkId: string | null;
     ansKaBN: string | null;
-
     ansKaEng: string | null;
 
+    // খ
+
     quesKhaBN: string;
-
     quesKhaEng: string;
-
     quesKhaLinkType: string | null;
-
-    quesKhaLinkId: number | null;
-
+    quesKhaLinkId: string | null;
     ansKhaBN: string | null;
-
     ansKhaEng: string | null;
 
+    // গ
+
     quesGaBN: string;
-
     quesGaEng: string;
-
     quesGaLinkType: string | null;
-
-    quesGaLinkId: number | null;
-
+    quesGaLinkId: string | null;
     ansGaBN: string | null;
-
     ansGaEng: string | null;
 
+    // ঘ
+
     quesGhaBN: string | null;
-
     quesGhaEng: string | null;
-
     quesGhaLinkType: string | null;
-
-    quesGhaLinkId: number | null;
-
+    quesGhaLinkId: string | null;
     ansGhaBN: string | null;
-
     ansGhaEng: string | null;
   },
-
   data: UpdateCQInput,
 ): MergedCQInput {
   return {
@@ -906,37 +969,30 @@ function mergeCQData(
 }
 
 async function validateNormalizedCQ(
-  questionPaperSubjectId: number,
-
+  questionPaperSubjectId: string,
   normalizedData: NormalizedCQData,
 ): Promise<void> {
-  await validateAllChapterLinks(questionPaperSubjectId, [
+  await validateAllKnowledgeLinks(questionPaperSubjectId, [
     {
       fieldName: "quesKa",
-
       link: {
         type: normalizedData.quesKaLinkType,
-
         id: normalizedData.quesKaLinkId,
       },
     },
 
     {
       fieldName: "quesKha",
-
       link: {
         type: normalizedData.quesKhaLinkType,
-
         id: normalizedData.quesKhaLinkId,
       },
     },
 
     {
       fieldName: "quesGa",
-
       link: {
         type: normalizedData.quesGaLinkType,
-
         id: normalizedData.quesGaLinkId,
       },
     },
@@ -945,10 +1001,10 @@ async function validateNormalizedCQ(
       fieldName: "quesGha",
 
       link:
-        normalizedData.quesGhaLinkId !== null
+        normalizedData.quesGhaLinkId !== null &&
+        normalizedData.quesGhaLinkType !== null
           ? {
-              type: "CHAPTER",
-
+              type: normalizedData.quesGhaLinkType,
               id: normalizedData.quesGhaLinkId,
             }
           : null,
@@ -956,6 +1012,11 @@ async function validateNormalizedCQ(
   ]);
 }
 
+/**
+ * Create one CQ.
+ *
+ * This remains the normal single-CQ creation function.
+ */
 export async function createCQ(data: CreateCQInput) {
   const questionPaper = await validateQuestionPaper(data.questionPaperId);
 
@@ -1040,7 +1101,80 @@ export async function createCQ(data: CreateCQInput) {
   });
 }
 
-export async function getCQs(questionPaperId?: number) {
+/**
+ * Create multiple CQs for one or more Question Papers.
+ *
+ * The same validation used by createCQ() is applied to every CQ.
+ *
+ * This function is intentionally kept separate from createCQ()
+ * so the existing single-CQ admin flow continues to work.
+ *
+ * Before creating anything, duplicate question numbers inside
+ * the same Question Paper are detected.
+ */
+export async function createCQs(data: CreateCQInput[]) {
+  if (!Array.isArray(data) || data.length === 0) {
+    throw new Error("At least one CQ is required");
+  }
+
+  /**
+   * Detect duplicate question numbers inside the incoming batch
+   * before any database rows are created.
+   *
+   * This prevents a batch such as:
+   *
+   * CQ 1 -> qusNo 1
+   * CQ 2 -> qusNo 1
+   *
+   * from partially creating the batch.
+   */
+  const questionNumbers = new Map<string, Set<number>>();
+
+  for (const item of data) {
+    const normalizedQuestionNumber = normalizeOptionalQuestionNumber(
+      item.qusNo,
+    );
+
+    if (normalizedQuestionNumber === null) {
+      continue;
+    }
+
+    let paperNumbers = questionNumbers.get(item.questionPaperId);
+
+    if (!paperNumbers) {
+      paperNumbers = new Set<number>();
+
+      questionNumbers.set(item.questionPaperId, paperNumbers);
+    }
+
+    if (paperNumbers.has(normalizedQuestionNumber)) {
+      throw new Error(
+        `Question number ${normalizedQuestionNumber} appears more than once in the same Question Paper`,
+      );
+    }
+
+    paperNumbers.add(normalizedQuestionNumber);
+  }
+
+  /**
+   * Create sequentially.
+   *
+   * We deliberately reuse createCQ() so that bulk creation
+   * follows exactly the same validation and database mapping
+   * as single-CQ creation.
+   */
+  const createdCQs = [];
+
+  for (const item of data) {
+    const cq = await createCQ(item);
+
+    createdCQs.push(cq);
+  }
+
+  return sortCQsByQuestionNumber(createdCQs);
+}
+
+export async function getCQs(questionPaperId?: string) {
   if (questionPaperId !== undefined) {
     const cqs = await prisma.orm.public.CQ.where({
       questionPaperId,
@@ -1052,13 +1186,13 @@ export async function getCQs(questionPaperId?: number) {
   return prisma.orm.public.CQ.orderBy((cq) => cq.id.desc()).all();
 }
 
-export async function getCQ(id: number) {
+export async function getCQ(id: string) {
   return prisma.orm.public.CQ.first({
     id,
   });
 }
 
-export async function updateCQ(id: number, data: UpdateCQInput) {
+export async function updateCQ(id: string, data: UpdateCQInput) {
   const existingCQ = await prisma.orm.public.CQ.first({
     id,
   });
@@ -1075,9 +1209,7 @@ export async function updateCQ(id: number, data: UpdateCQInput) {
 
   await validateQuestionNumber(
     normalizedData.questionPaperId,
-
     normalizedData.qusNo,
-
     id,
   );
 
@@ -1158,7 +1290,7 @@ export async function updateCQ(id: number, data: UpdateCQInput) {
   });
 }
 
-export async function deleteCQ(id: number) {
+export async function deleteCQ(id: string) {
   const existingCQ = await prisma.orm.public.CQ.first({
     id,
   });

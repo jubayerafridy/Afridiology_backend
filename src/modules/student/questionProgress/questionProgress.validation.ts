@@ -59,13 +59,9 @@ export function isQuestionProgressStatus(
 
 export function validateQuestionProgressTargetId(
   targetId: unknown,
-): asserts targetId is number {
-  if (
-    typeof targetId !== "number" ||
-    !Number.isInteger(targetId) ||
-    targetId <= 0
-  ) {
-    throw new Error("targetId must be a positive integer");
+): asserts targetId is string {
+  if (typeof targetId !== "string" || targetId.trim().length === 0) {
+    throw new Error("targetId must be a valid UUID");
   }
 }
 

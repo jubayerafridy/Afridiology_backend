@@ -110,7 +110,7 @@ export type ExecutionStructure = ExecutionDocument;
  */
 
 export interface CreateExecutionInput {
-  conceptId: number;
+  conceptId: string;
   nameBN: string;
   nameEng: string;
 
@@ -314,7 +314,7 @@ export async function createExecution(data: CreateExecutionInput) {
  *   Concept.descriptionEng
  */
 
-export async function getExecutions(conceptId?: number) {
+export async function getExecutions(conceptId?: string) {
   if (conceptId !== undefined) {
     return prisma.orm.public.Execution.where({
       conceptId,
@@ -334,7 +334,7 @@ export async function getExecutions(conceptId?: number) {
  * ================================================================
  */
 
-export async function getExecution(id: number) {
+export async function getExecution(id: string) {
   return prisma.orm.public.Execution.first({
     id,
   });
@@ -358,7 +358,7 @@ export async function getExecution(id: number) {
  * parent's document ordering.
  */
 
-export async function updateExecution(id: number, data: UpdateExecutionInput) {
+export async function updateExecution(id: string, data: UpdateExecutionInput) {
   /**
    * --------------------------------------------------
    * Find Execution
@@ -418,7 +418,7 @@ export async function updateExecution(id: number, data: UpdateExecutionInput) {
  */
 
 export async function setExecutionStructure(
-  executionId: number,
+  executionId: string,
   descriptionBN: ExecutionDocument,
   descriptionEng?: ExecutionDocument,
 ) {
@@ -481,7 +481,7 @@ export async function setExecutionStructure(
  * Questions are connected records rather than hierarchy children.
  */
 
-export async function deleteExecution(id: number) {
+export async function deleteExecution(id: string) {
   /**
    * --------------------------------------------------
    * Find Execution

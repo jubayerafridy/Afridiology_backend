@@ -11,26 +11,16 @@ import {
  * HELPERS
  * ========================================================= */
 
-function parseId(value: unknown, fieldName: string): number {
-  if (typeof value !== "string") {
-    const error = new Error(`${fieldName} must be a positive integer`);
+function parseId(value: unknown, fieldName: string): string {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    const error = new Error(`${fieldName} must be a valid UUID`);
 
     error.name = "BAD_REQUEST";
 
     throw error;
   }
 
-  const id = Number(value);
-
-  if (!Number.isInteger(id) || id <= 0) {
-    const error = new Error(`${fieldName} must be a positive integer`);
-
-    error.name = "BAD_REQUEST";
-
-    throw error;
-  }
-
-  return id;
+  return value.trim();
 }
 
 function getQueryString(value: unknown, fieldName: string): string {

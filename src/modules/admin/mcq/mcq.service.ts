@@ -11,7 +11,7 @@ export type KnowledgeLinkType = "CHAPTER" | "LESSON" | "CONCEPT" | "EXECUTION";
 
 export interface KnowledgeLinkInput {
   linkType?: KnowledgeLinkType | null;
-  linkId?: number | null;
+  linkId?: string | null;
 }
 
 /**
@@ -28,7 +28,6 @@ export interface KnowledgeLinkInput {
  */
 export interface CreateMCQInput {
   isActive?: boolean;
-
   imageUrl?: string | null;
 
   descriptionBN: JsonValue;
@@ -39,10 +38,10 @@ export interface CreateMCQInput {
   explanationBN?: JsonValue | null;
   explanationEng?: JsonValue | null;
 
-  linkId?: number | null;
+  linkId?: string | null;
   linkType?: KnowledgeLinkType | null;
 
-  questionPaperId?: number | null;
+  questionPaperId?: string | null;
   qusNo?: number | null;
 
   optionsBN: JsonValue;
@@ -63,7 +62,6 @@ export type UpdateMCQInput = Partial<CreateMCQInput>;
 
 interface NormalizedMCQData {
   isActive: boolean;
-
   imageUrl: string | null;
 
   descriptionBN: JsonValue;
@@ -74,10 +72,10 @@ interface NormalizedMCQData {
   explanationBN: JsonValue | null;
   explanationEng: JsonValue | null;
 
-  linkId: number | null;
+  linkId: string | null;
   linkType: KnowledgeLinkType | null;
 
-  questionPaperId: number | null;
+  questionPaperId: string | null;
   qusNo: number | null;
 
   optionsBN: JsonValue;
@@ -88,7 +86,6 @@ interface NormalizedMCQData {
 
 interface MergedMCQInput {
   isActive: boolean;
-
   imageUrl: string | null;
 
   descriptionBN: JsonValue;
@@ -99,10 +96,10 @@ interface MergedMCQInput {
   explanationBN: JsonValue | null;
   explanationEng: JsonValue | null;
 
-  linkId: number | null;
+  linkId: string | null;
   linkType: string | null;
 
-  questionPaperId: number | null;
+  questionPaperId: string | null;
   qusNo: number | null;
 
   optionsBN: JsonValue;
@@ -113,8 +110,8 @@ interface MergedMCQInput {
 
 interface KnowledgeTarget {
   linkType: KnowledgeLinkType;
-  linkId: number;
-  subjectId: number;
+  linkId: string;
+  subjectId: string;
 }
 
 function normalizeOptionalText(value?: string | null): string | null {
@@ -180,10 +177,10 @@ function normalizeLinkType(
 
 function normalizeLink(
   linkType: string | KnowledgeLinkType | null | undefined,
-  linkId: number | null | undefined,
+  linkId: string | null | undefined,
 ): {
   linkType: KnowledgeLinkType | null;
-  linkId: number | null;
+  linkId: string | null;
 } {
   const normalizedType = normalizeLinkType(linkType);
 
@@ -206,8 +203,8 @@ function normalizeLink(
     throw new Error("linkId is required when linkType is provided");
   }
 
-  if (!Number.isInteger(linkId) || linkId <= 0) {
-    throw new Error("linkId must be a positive integer");
+  if (typeof linkId !== "string" || linkId.trim().length === 0) {
+    throw new Error("linkId is required");
   }
 
   return {
@@ -278,9 +275,9 @@ function normalizeOptionalJsonValue(
   return value;
 }
 
-async function validateQuestionPaper(questionPaperId: number): Promise<{
-  id: number;
-  subjectId: number;
+async function validateQuestionPaper(questionPaperId: string): Promise<{
+  id: string;
+  subjectId: string;
 }> {
   const questionPaper = await prisma.orm.public.QuestionPaper.first({
     id: questionPaperId,
@@ -314,7 +311,7 @@ async function validateQuestionPaper(questionPaperId: number): Promise<{
  */
 async function resolveKnowledgeTarget(
   linkType: KnowledgeLinkType,
-  linkId: number,
+  linkId: string,
 ): Promise<KnowledgeTarget> {
   if (linkType === "CHAPTER") {
     const chapter = await prisma.orm.public.Chapter.first({
@@ -418,7 +415,7 @@ async function resolveKnowledgeTarget(
 
   if (!lesson) {
     throw new Error(
-      `Lesson with ID ${concept.lessonId} for Execution ${linkId} was not found`,
+      `Lesson with ID ${concept.lessonId} for Concept ${execution.conceptId} was not found`,
     );
   }
 
@@ -428,7 +425,7 @@ async function resolveKnowledgeTarget(
 
   if (!chapter) {
     throw new Error(
-      `Chapter with ID ${lesson.chapterId} for Execution ${linkId} was not found`,
+      `Chapter with ID ${lesson.chapterId} for Lesson ${concept.lessonId} was not found`,
     );
   }
 
@@ -441,8 +438,8 @@ async function resolveKnowledgeTarget(
 
 async function validateKnowledgeLink(
   linkType: KnowledgeLinkType | null,
-  linkId: number | null,
-  questionPaperSubjectId?: number,
+  linkId: string | null,
+  questionPaperSubjectId?: string,
 ): Promise<void> {
   if (linkType === null && linkId === null) {
     return;
@@ -465,9 +462,9 @@ async function validateKnowledgeLink(
 }
 
 async function validateQuestionNumber(
-  questionPaperId: number | null,
+  questionPaperId: string | null,
   qusNo: number | null,
-  currentMCQId?: number,
+  currentMCQId?: string,
 ): Promise<void> {
   if (qusNo === null) {
     return;
@@ -491,7 +488,7 @@ async function validateQuestionNumber(
 
 function sortMCQsByQuestionNumber<
   T extends {
-    id: number;
+    id: string;
     qusNo: number | null;
   },
 >(mcqs: T[]): T[] {
@@ -505,7 +502,7 @@ function sortMCQsByQuestionNumber<
     }
 
     if (a.qusNo === null && b.qusNo === null) {
-      return a.id - b.id;
+      return a.id.localeCompare(b.id);
     }
 
     return (a.qusNo as number) - (b.qusNo as number);
@@ -556,9 +553,11 @@ function normalizeData(
     ),
 
     linkId: link.linkId,
+
     linkType: link.linkType,
 
     questionPaperId,
+
     qusNo,
 
     optionsBN: normalizeRequiredJsonValue(data.optionsBN, "optionsBN"),
@@ -576,7 +575,6 @@ function normalizeExistingJson(value: unknown): JsonValue {
 function mergeMCQData(
   existingMCQ: {
     isActive: boolean;
-
     imageUrl: string | null;
 
     descriptionBN: unknown;
@@ -587,10 +585,10 @@ function mergeMCQData(
     explanationBN: unknown;
     explanationEng: unknown;
 
-    linkId: number | null;
+    linkId: string | null;
     linkType: string | null;
 
-    questionPaperId: number | null;
+    questionPaperId: string | null;
     qusNo: number | null;
 
     optionsBN: unknown;
@@ -640,6 +638,7 @@ function mergeMCQData(
           : normalizeExistingJson(existingMCQ.explanationEng),
 
     linkId,
+
     linkType,
 
     questionPaperId:
@@ -665,7 +664,7 @@ function mergeMCQData(
 
 async function validateNormalizedMCQ(
   normalizedData: NormalizedMCQData,
-  questionPaperSubjectId?: number,
+  questionPaperSubjectId?: string,
 ): Promise<void> {
   await validateKnowledgeLink(
     normalizedData.linkType,
@@ -675,7 +674,7 @@ async function validateNormalizedMCQ(
 }
 
 export async function createMCQ(data: CreateMCQInput) {
-  let questionPaperSubjectId: number | undefined;
+  let questionPaperSubjectId: string | undefined;
 
   if (data.questionPaperId !== undefined && data.questionPaperId !== null) {
     const questionPaper = await validateQuestionPaper(data.questionPaperId);
@@ -698,27 +697,63 @@ export async function createMCQ(data: CreateMCQInput) {
     imageUrl: normalizedData.imageUrl,
 
     descriptionBN: normalizedData.descriptionBN as any,
+
     descriptionEng: normalizedData.descriptionEng as any,
 
     rightAns: normalizedData.rightAns,
 
     explanationBN: normalizedData.explanationBN as any,
+
     explanationEng: normalizedData.explanationEng as any,
 
     linkId: normalizedData.linkId,
+
     linkType: normalizedData.linkType,
 
     questionPaperId: normalizedData.questionPaperId,
+
     qusNo: normalizedData.qusNo,
 
     optionsBN: normalizedData.optionsBN as any,
+
     optionsEng: normalizedData.optionsEng as any,
 
     ytLink: normalizedData.ytLink,
   });
 }
 
-export async function getMCQs(questionPaperId?: number) {
+/**
+ * Create multiple MCQs sequentially.
+ *
+ * Every MCQ goes through the exact same validation
+ * as createMCQ().
+ *
+ * Bulk request format:
+ *
+ * {
+ *   "questions": [
+ *     { ...MCQ 1... },
+ *     { ...MCQ 2... }
+ *   ]
+ * }
+ */
+export async function createMCQs(data: CreateMCQInput[]) {
+  if (!Array.isArray(data) || data.length === 0) {
+    throw new Error("questions must contain at least one MCQ");
+  }
+
+  const createdMCQs = [];
+
+  for (const mcqData of data) {
+    const createdMCQ = await createMCQ(mcqData);
+
+    createdMCQs.push(createdMCQ);
+  }
+
+  return createdMCQs;
+}
+
+export async function getMCQs(questionPaperId?: string) {
   if (questionPaperId !== undefined) {
     const mcqs = await prisma.orm.public.MCQ.where({
       questionPaperId,
@@ -730,13 +765,13 @@ export async function getMCQs(questionPaperId?: number) {
   return prisma.orm.public.MCQ.orderBy((mcq) => mcq.id.desc()).all();
 }
 
-export async function getMCQ(id: number) {
+export async function getMCQ(id: string) {
   return prisma.orm.public.MCQ.first({
     id,
   });
 }
 
-export async function updateMCQ(id: number, data: UpdateMCQInput) {
+export async function updateMCQ(id: string, data: UpdateMCQInput) {
   const existingMCQ = await prisma.orm.public.MCQ.first({
     id,
   });
@@ -747,7 +782,7 @@ export async function updateMCQ(id: number, data: UpdateMCQInput) {
 
   const mergedData = mergeMCQData(existingMCQ, data);
 
-  let questionPaperSubjectId: number | undefined;
+  let questionPaperSubjectId: string | undefined;
 
   if (
     mergedData.questionPaperId !== undefined &&
@@ -776,27 +811,32 @@ export async function updateMCQ(id: number, data: UpdateMCQInput) {
     imageUrl: normalizedData.imageUrl,
 
     descriptionBN: normalizedData.descriptionBN as any,
+
     descriptionEng: normalizedData.descriptionEng as any,
 
     rightAns: normalizedData.rightAns,
 
     explanationBN: normalizedData.explanationBN as any,
+
     explanationEng: normalizedData.explanationEng as any,
 
     linkId: normalizedData.linkId,
+
     linkType: normalizedData.linkType,
 
     questionPaperId: normalizedData.questionPaperId,
+
     qusNo: normalizedData.qusNo,
 
     optionsBN: normalizedData.optionsBN as any,
+
     optionsEng: normalizedData.optionsEng as any,
 
     ytLink: normalizedData.ytLink,
   });
 }
 
-export async function deleteMCQ(id: number) {
+export async function deleteMCQ(id: string) {
   const existingMCQ = await prisma.orm.public.MCQ.first({
     id,
   });

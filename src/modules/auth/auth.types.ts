@@ -24,7 +24,7 @@ export interface RefreshInput {
 }
 
 export interface AuthenticatedUser {
-  id: number;
+  id: string;
   name: string;
   email: string;
   role: UserRole;
@@ -33,22 +33,22 @@ export interface AuthenticatedUser {
 }
 
 export interface AuthSessionData {
-  id: number;
-  userId: number;
+  id: string;
+  userId: string;
   tokenHash: string;
   expiresAt: Date;
   revokedAt: Date | null;
 }
 
 export interface AccessTokenData {
-  userId: number;
+  userId: string;
   role: UserRole;
-  sessionId: number;
+  sessionId: string;
 }
 
 export interface RefreshTokenData {
-  userId: number;
-  sessionId: number;
+  userId: string;
+  sessionId: string;
 }
 
 export interface AuthTokens {

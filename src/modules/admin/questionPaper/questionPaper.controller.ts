@@ -12,10 +12,15 @@ const QUESTION_TYPES = ["CQ", "MCQ"] as const;
 
 const QUESTION_SOURCES = [
   "BOARD",
+
   "TEST_PAPER",
+
   "MODEL_TEST",
+
   "GAME",
+
   "QUIZ",
+
   "EXTRA",
 ] as const;
 
@@ -35,6 +40,20 @@ function isQuestionSource(
     typeof value === "string" &&
     QUESTION_SOURCES.includes(value as (typeof QUESTION_SOURCES)[number])
   );
+}
+
+function parseUuid(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const uuid = value.trim();
+
+  if (uuid.length === 0) {
+    return undefined;
+  }
+
+  return uuid;
 }
 
 function parseYear(value: unknown): number | undefined {
@@ -58,13 +77,21 @@ function getValidationMessage(error: unknown): string | null {
 
   const messages = [
     "Board is required for BOARD source",
+
     "Institution is not allowed for BOARD source",
+
     "Year is required for BOARD source",
+
     "Institution is required for TEST_PAPER source",
+
     "Board is not allowed for TEST_PAPER source",
+
     "Year is required for TEST_PAPER source",
+
     "Board is not allowed for this source",
+
     "Institution is not allowed for this source",
+
     "Year is not allowed for this source",
   ];
 
@@ -73,40 +100,55 @@ function getValidationMessage(error: unknown): string | null {
 
 export async function createQuestionPaperController(
   req: Request,
+
   res: Response,
 ): Promise<void> {
   const {
     class: classValue,
+
     subjectId,
+
     questionType,
+
     source,
+
     board,
+
     institution,
+
     year: yearValue,
   } = req.body as {
     class?: unknown;
+
     subjectId?: unknown;
+
     questionType?: unknown;
+
     source?: unknown;
+
     board?: unknown;
+
     institution?: unknown;
+
     year?: unknown;
   };
 
   if (typeof classValue !== "string" || classValue.trim().length === 0) {
     res.status(400).json({
       success: false,
+
       message: "Class is required",
     });
 
     return;
   }
 
-  const parsedSubjectId = Number(subjectId);
+  const parsedSubjectId = parseUuid(subjectId);
 
-  if (!Number.isInteger(parsedSubjectId) || parsedSubjectId <= 0) {
+  if (!parsedSubjectId) {
     res.status(400).json({
       success: false,
+
       message: "Valid subjectId is required",
     });
 
@@ -116,6 +158,7 @@ export async function createQuestionPaperController(
   if (!isQuestionType(questionType)) {
     res.status(400).json({
       success: false,
+
       message: "Valid questionType is required",
     });
 
@@ -125,6 +168,7 @@ export async function createQuestionPaperController(
   if (!isQuestionSource(source)) {
     res.status(400).json({
       success: false,
+
       message: "Valid source is required",
     });
 
@@ -141,6 +185,7 @@ export async function createQuestionPaperController(
   ) {
     res.status(400).json({
       success: false,
+
       message: "Year must be a valid integer",
     });
 
@@ -150,23 +195,32 @@ export async function createQuestionPaperController(
   try {
     const questionPaper = await createQuestionPaper({
       class: classValue.trim(),
+
       subjectId: parsedSubjectId,
+
       questionType,
+
       source,
+
       board: typeof board === "string" ? board.trim() : null,
+
       institution: typeof institution === "string" ? institution.trim() : null,
+
       year: parsedYear ?? null,
     });
 
     res.status(201).json({
       success: true,
+
       message: "Question paper created successfully",
+
       data: questionPaper,
     });
   } catch (error) {
     if (error instanceof Error && error.message === "Subject not found") {
       res.status(404).json({
         success: false,
+
         message: error.message,
       });
 
@@ -178,6 +232,7 @@ export async function createQuestionPaperController(
     if (validationMessage) {
       res.status(400).json({
         success: false,
+
         message: validationMessage,
       });
 
@@ -190,23 +245,30 @@ export async function createQuestionPaperController(
 
 export async function getQuestionPapersController(
   req: Request,
+
   res: Response,
 ): Promise<void> {
   const subjectIdValue = req.query.subjectId;
+
   const classValue = req.query.class;
+
   const sourceValue = req.query.source;
+
   const questionTypeValue = req.query.questionType;
+
   const boardValue = req.query.board;
+
   const yearValue = req.query.year;
 
-  let subjectId: number | undefined;
+  let subjectId: string | undefined;
 
   if (subjectIdValue !== undefined) {
-    subjectId = Number(subjectIdValue);
+    subjectId = parseUuid(subjectIdValue);
 
-    if (!Number.isInteger(subjectId) || subjectId <= 0) {
+    if (!subjectId) {
       res.status(400).json({
         success: false,
+
         message: "Invalid subjectId",
       });
 
@@ -220,6 +282,7 @@ export async function getQuestionPapersController(
     if (typeof classValue !== "string" || classValue.trim().length === 0) {
       res.status(400).json({
         success: false,
+
         message: "Invalid class",
       });
 
@@ -235,6 +298,7 @@ export async function getQuestionPapersController(
     if (!isQuestionSource(sourceValue)) {
       res.status(400).json({
         success: false,
+
         message: "Invalid source",
       });
 
@@ -245,20 +309,30 @@ export async function getQuestionPapersController(
   }
 
   /**
+
    * questionType is still accepted and validated so existing
+
    * frontend requests remain compatible.
+
    *
+
    * It is intentionally NOT added to the service filters.
+
    *
+
    * A QuestionPaper created from CQ must also be visible
+
    * from MCQ, and vice versa.
+
    */
+
   let questionType: (typeof QUESTION_TYPES)[number] | undefined;
 
   if (questionTypeValue !== undefined) {
     if (!isQuestionType(questionTypeValue)) {
       res.status(400).json({
         success: false,
+
         message: "Invalid questionType",
       });
 
@@ -274,6 +348,7 @@ export async function getQuestionPapersController(
     if (typeof boardValue !== "string" || boardValue.trim().length === 0) {
       res.status(400).json({
         success: false,
+
         message: "Invalid board",
       });
 
@@ -293,6 +368,7 @@ export async function getQuestionPapersController(
   ) {
     res.status(400).json({
       success: false,
+
       message: "Invalid year",
     });
 
@@ -300,10 +376,14 @@ export async function getQuestionPapersController(
   }
 
   const filters: {
-    subjectId?: number;
+    subjectId?: string;
+
     class?: string;
+
     source?: (typeof QUESTION_SOURCES)[number];
+
     board?: string;
+
     year?: number;
   } = {};
 
@@ -328,31 +408,41 @@ export async function getQuestionPapersController(
   }
 
   /**
+
    * Do NOT pass questionType to getQuestionPapers().
+
    *
+
    * questionType remains part of the API request for
+
    * backwards compatibility, but it must not restrict
+
    * which QuestionPaper records are returned.
+
    */
+
   void questionType;
 
   const questionPapers = await getQuestionPapers(filters);
 
   res.status(200).json({
     success: true,
+
     data: questionPapers,
   });
 }
 
 export async function getQuestionPaperController(
   req: Request,
+
   res: Response,
 ): Promise<void> {
-  const id = Number(req.params.id);
+  const id = parseUuid(req.params.id);
 
-  if (!Number.isInteger(id) || id <= 0) {
+  if (!id) {
     res.status(400).json({
       success: false,
+
       message: "Invalid question paper ID",
     });
 
@@ -364,6 +454,7 @@ export async function getQuestionPaperController(
   if (!questionPaper) {
     res.status(404).json({
       success: false,
+
       message: "Question paper not found",
     });
 
@@ -372,19 +463,22 @@ export async function getQuestionPaperController(
 
   res.status(200).json({
     success: true,
+
     data: questionPaper,
   });
 }
 
 export async function updateQuestionPaperController(
   req: Request,
+
   res: Response,
 ): Promise<void> {
-  const id = Number(req.params.id);
+  const id = parseUuid(req.params.id);
 
-  if (!Number.isInteger(id) || id <= 0) {
+  if (!id) {
     res.status(400).json({
       success: false,
+
       message: "Invalid question paper ID",
     });
 
@@ -393,36 +487,50 @@ export async function updateQuestionPaperController(
 
   const {
     class: classValue,
+
     subjectId,
+
     questionType,
+
     source,
+
     board,
+
     institution,
+
     year: yearValue,
   } = req.body as {
     class?: unknown;
+
     subjectId?: unknown;
+
     questionType?: unknown;
+
     source?: unknown;
+
     board?: unknown;
+
     institution?: unknown;
+
     year?: unknown;
   };
 
   if (typeof classValue !== "string" || classValue.trim().length === 0) {
     res.status(400).json({
       success: false,
+
       message: "Class is required",
     });
 
     return;
   }
 
-  const parsedSubjectId = Number(subjectId);
+  const parsedSubjectId = parseUuid(subjectId);
 
-  if (!Number.isInteger(parsedSubjectId) || parsedSubjectId <= 0) {
+  if (!parsedSubjectId) {
     res.status(400).json({
       success: false,
+
       message: "Valid subjectId is required",
     });
 
@@ -432,6 +540,7 @@ export async function updateQuestionPaperController(
   if (!isQuestionType(questionType)) {
     res.status(400).json({
       success: false,
+
       message: "Valid questionType is required",
     });
 
@@ -441,6 +550,7 @@ export async function updateQuestionPaperController(
   if (!isQuestionSource(source)) {
     res.status(400).json({
       success: false,
+
       message: "Valid source is required",
     });
 
@@ -457,6 +567,7 @@ export async function updateQuestionPaperController(
   ) {
     res.status(400).json({
       success: false,
+
       message: "Year must be a valid integer",
     });
 
@@ -466,17 +577,24 @@ export async function updateQuestionPaperController(
   try {
     const questionPaper = await updateQuestionPaper(id, {
       class: classValue.trim(),
+
       subjectId: parsedSubjectId,
+
       questionType,
+
       source,
+
       board: typeof board === "string" ? board.trim() : null,
+
       institution: typeof institution === "string" ? institution.trim() : null,
+
       year: parsedYear ?? null,
     });
 
     if (!questionPaper) {
       res.status(404).json({
         success: false,
+
         message: "Question paper not found",
       });
 
@@ -485,13 +603,16 @@ export async function updateQuestionPaperController(
 
     res.status(200).json({
       success: true,
+
       message: "Question paper updated successfully",
+
       data: questionPaper,
     });
   } catch (error) {
     if (error instanceof Error && error.message === "Subject not found") {
       res.status(404).json({
         success: false,
+
         message: error.message,
       });
 
@@ -503,6 +624,7 @@ export async function updateQuestionPaperController(
     if (validationMessage) {
       res.status(400).json({
         success: false,
+
         message: validationMessage,
       });
 
@@ -515,13 +637,15 @@ export async function updateQuestionPaperController(
 
 export async function deleteQuestionPaperController(
   req: Request,
+
   res: Response,
 ): Promise<void> {
-  const id = Number(req.params.id);
+  const id = parseUuid(req.params.id);
 
-  if (!Number.isInteger(id) || id <= 0) {
+  if (!id) {
     res.status(400).json({
       success: false,
+
       message: "Invalid question paper ID",
     });
 
@@ -533,6 +657,7 @@ export async function deleteQuestionPaperController(
   if (!deletedQuestionPaper) {
     res.status(404).json({
       success: false,
+
       message: "Question paper not found",
     });
 
@@ -541,7 +666,9 @@ export async function deleteQuestionPaperController(
 
   res.status(200).json({
     success: true,
+
     message: "Question paper deleted successfully",
+
     data: deletedQuestionPaper,
   });
 }

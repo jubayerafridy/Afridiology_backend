@@ -25,7 +25,7 @@ import type { QuestionProgressState } from "../questionProgress/questionProgress
 export interface BookmarkTarget {
   targetType: BookmarkTargetType;
 
-  targetId: number;
+  targetId: string;
 }
 
 /* ==================================================
@@ -61,11 +61,11 @@ export interface BookmarkProgressState {
 export interface BookmarkState {
   bookmarked: boolean;
 
-  bookmarkId: number;
+  bookmarkId: string;
 
   starRating: number;
 
-  collectionIds: number[];
+  collectionIds: string[];
 
   progress: BookmarkProgressState;
 }
@@ -75,7 +75,7 @@ export interface BookmarkState {
  * ================================================== */
 
 export interface BookmarkCollectionData {
-  id: number;
+  id: string;
 
   name: string;
 
@@ -95,11 +95,11 @@ export interface BookmarkCollectionData {
 export interface CreateBookmarkInput {
   targetType: BookmarkTargetType;
 
-  targetId: number;
+  targetId: string;
 
   starRating?: number;
 
-  collectionIds?: number[];
+  collectionIds?: string[];
 }
 
 /* ==================================================
@@ -121,7 +121,7 @@ export interface CreateBookmarkInput {
 export interface UpdateBookmarkInput {
   starRating?: number;
 
-  collectionIds?: number[];
+  collectionIds?: string[];
 }
 
 /* ==================================================
@@ -157,7 +157,7 @@ export interface UpdateBookmarkCollectionInput {
 export interface BookmarkStateLookupTarget {
   targetType: BookmarkTargetType;
 
-  targetId: number;
+  targetId: string;
 }
 
 export type BookmarkStateMap = Map<string, BookmarkState>;
@@ -169,7 +169,7 @@ export type BookmarkStateMap = Map<string, BookmarkState>;
 
 export function getBookmarkTargetKey(
   targetType: BookmarkTargetType,
-  targetId: number,
+  targetId: string,
 ): string {
   return `${targetType}:${targetId}`;
 }

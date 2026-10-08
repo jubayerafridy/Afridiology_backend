@@ -17,9 +17,9 @@ import type { SetQuestionProgressInput } from "./questionProgress.types.js";
 
 interface AuthenticatedRequest extends Request {
   auth?: {
-    userId: number;
+    userId: string;
     role: string;
-    sessionId: number;
+    sessionId: string;
   };
 }
 
@@ -41,7 +41,7 @@ interface AuthenticatedRequest extends Request {
  *   sessionId,
  * }
  */
-function getAuthenticatedUserId(req: Request): number {
+function getAuthenticatedUserId(req: Request): string {
   const authenticatedRequest = req as AuthenticatedRequest;
 
   if (!authenticatedRequest.auth) {
@@ -72,21 +72,19 @@ function getRequiredParam(
 }
 
 /**
- * Convert a route parameter into a positive integer.
+ * Convert a route parameter into a UUID string.
  */
-function getPositiveIntegerParam(
+function getUuidParam(
   value: string | string[] | undefined,
   name: string,
-): number {
-  const normalizedValue = getRequiredParam(value, name);
+): string {
+  const normalizedValue = getRequiredParam(value, name).trim();
 
-  const parsed = Number(normalizedValue);
-
-  if (!Number.isInteger(parsed) || parsed <= 0) {
-    throw new Error(`${name} must be a positive integer`);
+  if (normalizedValue.length === 0) {
+    throw new Error(`${name} must be a valid UUID`);
   }
 
-  return parsed;
+  return normalizedValue;
 }
 
 /**
@@ -140,7 +138,7 @@ export async function getQuestionProgressController(
 
   const targetType = getTargetTypeParam(req.params.targetType);
 
-  const targetId = getPositiveIntegerParam(req.params.targetId, "targetId");
+  const targetId = getUuidParam(req.params.targetId, "targetId");
 
   const progress = await getQuestionProgress(userId, targetType, targetId);
 

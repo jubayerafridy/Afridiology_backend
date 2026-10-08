@@ -1,18 +1,23 @@
 import { Temporal } from "@js-temporal/polyfill";
 
 import { prisma } from "../../config/prisma.js";
+
 import { AppError } from "../../core/errors/AppError.js";
+
 import { hashPassword, verifyPassword } from "../../core/security/password.js";
+
 import {
   createAccessToken,
   createRefreshToken,
   verifyRefreshToken,
 } from "../../core/security/jwt.js";
+
 import {
   generateToken,
   hashToken,
   tokensMatch,
 } from "../../core/security/token.js";
+
 import { AUTH_CONSTANTS } from "./auth.constants.js";
 
 import type {
@@ -51,7 +56,7 @@ function instantFromMilliseconds(milliseconds: number): Temporal.Instant {
 }
 
 function toAuthenticatedUser(user: {
-  id: number;
+  id: string;
   name: string;
   email: string;
   role: string;
@@ -107,7 +112,7 @@ function assertActiveUser(status: string): void {
  */
 
 async function createSessionAndTokens(user: {
-  id: number;
+  id: string;
   role: string;
 }): Promise<{
   accessToken: string;
@@ -464,7 +469,7 @@ export async function refresh(refreshToken: string): Promise<AuthResult> {
  * Revoke the current authentication session.
  */
 
-export async function logout(sessionId: number, userId: number): Promise<void> {
+export async function logout(sessionId: string, userId: string): Promise<void> {
   await prisma.orm.public.AuthSession.where({
     id: sessionId,
     userId,
@@ -483,7 +488,7 @@ export async function logout(sessionId: number, userId: number): Promise<void> {
  * to the user.
  */
 
-export async function logoutAll(userId: number): Promise<void> {
+export async function logoutAll(userId: string): Promise<void> {
   await prisma.orm.public.AuthSession.where({
     userId,
     revokedAt: null,
@@ -500,7 +505,7 @@ export async function logoutAll(userId: number): Promise<void> {
  * Return the currently authenticated user.
  */
 
-export async function getMe(userId: number): Promise<AuthenticatedUser> {
+export async function getMe(userId: string): Promise<AuthenticatedUser> {
   const user = await prisma.orm.public.User.first({
     id: userId,
   });

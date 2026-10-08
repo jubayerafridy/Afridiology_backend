@@ -23,9 +23,9 @@ import {
 
 interface AuthenticatedRequest extends Request {
   auth?: {
-    userId: number;
+    userId: string;
     role: string;
-    sessionId: number;
+    sessionId: string;
   };
 }
 
@@ -51,7 +51,7 @@ interface AuthenticatedRequest extends Request {
  * Request type so Express 5 route-handler typing remains
  * compatible.
  */
-function getAuthenticatedUserId(req: Request): number {
+function getAuthenticatedUserId(req: Request): string {
   const authenticatedRequest = req as AuthenticatedRequest;
 
   if (!authenticatedRequest.auth) {
@@ -68,20 +68,20 @@ function getAuthenticatedUserId(req: Request): number {
  *
  * Normalize that into a single string before parsing.
  */
-function getPositiveIntegerParam(
+function getUuidParam(
   value: string | string[] | undefined,
   name: string,
-): number {
+): string {
   const normalizedValue = Array.isArray(value) ? value[0] : value;
 
   if (!normalizedValue) {
     throw new Error(`${name} is required`);
   }
 
-  const parsed = Number(normalizedValue);
+  const parsed = normalizedValue.trim();
 
-  if (!Number.isInteger(parsed) || parsed <= 0) {
-    throw new Error(`${name} must be a positive integer`);
+  if (parsed.length === 0) {
+    throw new Error(`${name} must be a valid UUID`);
   }
 
   return parsed;
@@ -102,10 +102,7 @@ export async function getBookmarkController(
 ): Promise<void> {
   const userId = getAuthenticatedUserId(req);
 
-  const bookmarkId = getPositiveIntegerParam(
-    req.params.bookmarkId,
-    "bookmarkId",
-  );
+  const bookmarkId = getUuidParam(req.params.bookmarkId, "bookmarkId");
 
   const bookmark = await getBookmark(userId, bookmarkId);
 
@@ -141,10 +138,7 @@ export async function updateBookmarkController(
 ): Promise<void> {
   const userId = getAuthenticatedUserId(req);
 
-  const bookmarkId = getPositiveIntegerParam(
-    req.params.bookmarkId,
-    "bookmarkId",
-  );
+  const bookmarkId = getUuidParam(req.params.bookmarkId, "bookmarkId");
 
   const bookmark = await updateBookmark(userId, bookmarkId, req.body);
 
@@ -179,10 +173,7 @@ export async function deleteBookmarkController(
 ): Promise<void> {
   const userId = getAuthenticatedUserId(req);
 
-  const bookmarkId = getPositiveIntegerParam(
-    req.params.bookmarkId,
-    "bookmarkId",
-  );
+  const bookmarkId = getUuidParam(req.params.bookmarkId, "bookmarkId");
 
   /*
    * deleteBookmark() returns void.
@@ -228,10 +219,7 @@ export async function getBookmarkCollectionController(
 ): Promise<void> {
   const userId = getAuthenticatedUserId(req);
 
-  const collectionId = getPositiveIntegerParam(
-    req.params.collectionId,
-    "collectionId",
-  );
+  const collectionId = getUuidParam(req.params.collectionId, "collectionId");
 
   const collection = await getBookmarkCollection(userId, collectionId);
 
@@ -276,10 +264,7 @@ export async function updateBookmarkCollectionController(
 ): Promise<void> {
   const userId = getAuthenticatedUserId(req);
 
-  const collectionId = getPositiveIntegerParam(
-    req.params.collectionId,
-    "collectionId",
-  );
+  const collectionId = getUuidParam(req.params.collectionId, "collectionId");
 
   const collection = await updateBookmarkCollection(
     userId,
@@ -311,10 +296,7 @@ export async function deleteBookmarkCollectionController(
 ): Promise<void> {
   const userId = getAuthenticatedUserId(req);
 
-  const collectionId = getPositiveIntegerParam(
-    req.params.collectionId,
-    "collectionId",
-  );
+  const collectionId = getUuidParam(req.params.collectionId, "collectionId");
 
   /*
    * deleteBookmarkCollection() returns void.

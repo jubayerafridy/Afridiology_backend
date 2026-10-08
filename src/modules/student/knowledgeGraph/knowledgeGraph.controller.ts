@@ -14,9 +14,9 @@ import {
 
 interface AuthenticatedRequest extends Request {
   auth?: {
-    userId: number;
+    userId: string;
     role: string;
-    sessionId: number;
+    sessionId: string;
   };
 }
 
@@ -34,16 +34,16 @@ function getParam(value: string | string[] | undefined): string | null {
   return value;
 }
 
-function parsePositiveInt(value: string | string[] | undefined): number | null {
+function parseUuid(value: string | string[] | undefined): string | null {
   const param = getParam(value);
 
   if (param === null) {
     return null;
   }
 
-  const parsed = Number(param);
+  const parsed = param.trim();
 
-  if (!Number.isInteger(parsed) || parsed <= 0) {
+  if (parsed.length === 0) {
     return null;
   }
 
@@ -84,7 +84,7 @@ function parsePositiveInt(value: string | string[] | undefined): number | null {
  * bookmark-aware graph
  */
 
-function getOptionalAuthenticatedUserId(req: Request): number | undefined {
+function getOptionalAuthenticatedUserId(req: Request): string | undefined {
   const authenticatedRequest = req as AuthenticatedRequest;
 
   const auth = authenticatedRequest.auth;
@@ -93,7 +93,7 @@ function getOptionalAuthenticatedUserId(req: Request): number | undefined {
     return undefined;
   }
 
-  if (!Number.isInteger(auth.userId) || auth.userId <= 0) {
+  if (typeof auth.userId !== "string" || auth.userId.trim().length === 0) {
     return undefined;
   }
 
@@ -111,7 +111,7 @@ export async function getChapterKnowledgeGraphController(
   res: Response,
 ): Promise<void> {
   try {
-    const chapterId = parsePositiveInt(req.params.chapterId);
+    const chapterId = parseUuid(req.params.chapterId);
 
     if (chapterId === null) {
       res.status(400).json({
@@ -172,7 +172,7 @@ export async function getCQDetailController(
   res: Response,
 ): Promise<void> {
   try {
-    const id = parsePositiveInt(req.params.id);
+    const id = parseUuid(req.params.id);
 
     if (id === null) {
       res.status(400).json({
@@ -219,7 +219,7 @@ export async function getMCQDetailController(
   res: Response,
 ): Promise<void> {
   try {
-    const id = parsePositiveInt(req.params.id);
+    const id = parseUuid(req.params.id);
 
     if (id === null) {
       res.status(400).json({

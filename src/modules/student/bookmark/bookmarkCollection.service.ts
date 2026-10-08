@@ -61,7 +61,7 @@ function createError(name: string, message: string): Error {
  */
 
 export async function ensureDefaultBookmarkCollections(
-  userId: number,
+  userId: string,
 ): Promise<void> {
   const existingCollection = await prisma.orm.public.BookmarkCollection.first({
     userId,
@@ -109,7 +109,7 @@ export async function ensureDefaultBookmarkCollections(
  * GET USER COLLECTIONS
  * ================================================== */
 
-export async function getBookmarkCollections(userId: number) {
+export async function getBookmarkCollections(userId: string) {
   const collections = await prisma.orm.public.BookmarkCollection.where({
     userId,
   }).all();
@@ -119,7 +119,7 @@ export async function getBookmarkCollections(userId: number) {
       return a.sortOrder - b.sortOrder;
     }
 
-    return a.id - b.id;
+    return a.id.localeCompare(b.id);
   });
 
   return collections.map((collection) => ({
@@ -137,8 +137,8 @@ export async function getBookmarkCollections(userId: number) {
  * ================================================== */
 
 export async function getBookmarkCollection(
-  userId: number,
-  collectionId: number,
+  userId: string,
+  collectionId: string,
 ) {
   const collection = await prisma.orm.public.BookmarkCollection.first({
     id: collectionId,
@@ -164,7 +164,7 @@ export async function getBookmarkCollection(
  * ================================================== */
 
 export async function createBookmarkCollection(
-  userId: number,
+  userId: string,
   input: CreateBookmarkCollectionInput,
 ) {
   const validated = validateCreateBookmarkCollectionInput(input);
@@ -207,8 +207,8 @@ export async function createBookmarkCollection(
  */
 
 export async function updateBookmarkCollection(
-  userId: number,
-  collectionId: number,
+  userId: string,
+  collectionId: string,
   input: UpdateBookmarkCollectionInput,
 ) {
   const validated = validateUpdateBookmarkCollectionInput(input);
@@ -279,8 +279,8 @@ export async function updateBookmarkCollection(
  */
 
 export async function deleteBookmarkCollection(
-  userId: number,
-  collectionId: number,
+  userId: string,
+  collectionId: string,
 ): Promise<void> {
   const existing = await prisma.orm.public.BookmarkCollection.first({
     id: collectionId,

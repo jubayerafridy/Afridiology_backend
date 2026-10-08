@@ -3,14 +3,14 @@ import { SignJWT, jwtVerify, type JWTPayload } from "jose";
 import { env } from "../../config/env.js";
 
 export type AccessTokenPayload = {
-  userId: number;
+  userId: string;
   role: string;
-  sessionId: number;
+  sessionId: string;
 };
 
 export type RefreshTokenPayload = {
-  userId: number;
-  sessionId: number;
+  userId: string;
+  sessionId: string;
 };
 
 function getAccessSecret(): Uint8Array {
@@ -37,7 +37,7 @@ export async function createAccessToken(
       typ: "JWT",
     })
     .setIssuedAt()
-    .setSubject(String(payload.userId))
+    .setSubject(payload.userId)
     .setExpirationTime(env.JWT_ACCESS_EXPIRES_IN)
     .sign(getAccessSecret());
 }
@@ -60,7 +60,7 @@ export async function createRefreshToken(
       typ: "JWT",
     })
     .setIssuedAt()
-    .setSubject(String(payload.userId))
+    .setSubject(payload.userId)
     .setExpirationTime(env.JWT_REFRESH_EXPIRES_IN)
     .sign(getRefreshSecret());
 }
@@ -93,9 +93,8 @@ export async function verifyRefreshToken(
 
 function parseAccessPayload(payload: JWTPayload): AccessTokenPayload {
   if (
-    typeof payload.userId !== "number" ||
-    !Number.isInteger(payload.userId) ||
-    payload.userId <= 0
+    typeof payload.userId !== "string" ||
+    payload.userId.trim().length === 0
   ) {
     throw new Error("Invalid access token userId");
   }
@@ -105,9 +104,8 @@ function parseAccessPayload(payload: JWTPayload): AccessTokenPayload {
   }
 
   if (
-    typeof payload.sessionId !== "number" ||
-    !Number.isInteger(payload.sessionId) ||
-    payload.sessionId <= 0
+    typeof payload.sessionId !== "string" ||
+    payload.sessionId.trim().length === 0
   ) {
     throw new Error("Invalid access token sessionId");
   }
@@ -121,17 +119,15 @@ function parseAccessPayload(payload: JWTPayload): AccessTokenPayload {
 
 function parseRefreshPayload(payload: JWTPayload): RefreshTokenPayload {
   if (
-    typeof payload.userId !== "number" ||
-    !Number.isInteger(payload.userId) ||
-    payload.userId <= 0
+    typeof payload.userId !== "string" ||
+    payload.userId.trim().length === 0
   ) {
     throw new Error("Invalid refresh token userId");
   }
 
   if (
-    typeof payload.sessionId !== "number" ||
-    !Number.isInteger(payload.sessionId) ||
-    payload.sessionId <= 0
+    typeof payload.sessionId !== "string" ||
+    payload.sessionId.trim().length === 0
   ) {
     throw new Error("Invalid refresh token sessionId");
   }

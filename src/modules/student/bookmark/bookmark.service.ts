@@ -10,7 +10,6 @@ import { getBookmarkTargetKey } from "./bookmark.types.js";
 
 import {
   validateCreateBookmarkInput,
-  validatePositiveInteger,
   validateUpdateBookmarkInput,
 } from "./bookmark.validation.js";
 
@@ -61,8 +60,8 @@ function createError(name: string, message: string): Error {
  */
 
 async function validateUserCollections(
-  userId: number,
-  collectionIds: number[],
+  userId: string,
+  collectionIds: string[],
 ): Promise<void> {
   if (collectionIds.length === 0) {
     return;
@@ -79,6 +78,7 @@ async function validateUserCollections(
   if (invalidIds.length > 0) {
     throw createError(
       "BAD_REQUEST",
+
       "One or more bookmark collections do not belong to the current user",
     );
   }
@@ -88,11 +88,10 @@ async function validateUserCollections(
  * GET BOOKMARK
  * ================================================== */
 
-export async function getBookmark(userId: number, bookmarkId: number) {
-  validatePositiveInteger(bookmarkId, "bookmarkId");
-
+export async function getBookmark(userId: string, bookmarkId: string) {
   const bookmark = await prisma.orm.public.Bookmark.first({
     id: bookmarkId,
+
     userId,
   });
 
@@ -106,11 +105,17 @@ export async function getBookmark(userId: number, bookmarkId: number) {
 
   return {
     id: bookmark.id,
+
     targetType: bookmark.targetType,
+
     targetId: bookmark.targetId,
+
     starRating: bookmark.starRating,
+
     collectionIds: collectionItems.map((item) => item.collectionId),
+
     createdAt: bookmark.createdAt,
+
     updatedAt: bookmark.updatedAt,
   };
 }
@@ -128,18 +133,26 @@ export async function getBookmark(userId: number, bookmarkId: number) {
  */
 
 export async function createBookmark(
-  userId: number,
+  userId: string,
+
   input: CreateBookmarkInput,
 ) {
   const validated = validateCreateBookmarkInput(input);
 
   /*
+
    * Lazy initialization.
+
    *
+
    * The first bookmark-related operation initializes
+
    * the four predefined collections if the user has
+
    * no collections yet.
+
    */
+
   await ensureDefaultBookmarkCollections(userId);
 
   const collectionIds = validated.collectionIds ?? [];
@@ -150,41 +163,57 @@ export async function createBookmark(
 
   const existing = await prisma.orm.public.Bookmark.first({
     userId,
+
     targetType: validated.targetType,
+
     targetId: validated.targetId,
   });
 
   if (existing) {
     return updateExistingBookmark(userId, existing.id, {
       starRating: requestedStarRating,
+
       collectionIds,
     });
   }
 
   const bookmark = await prisma.orm.public.Bookmark.create({
     userId,
+
     targetType: validated.targetType,
+
     targetId: validated.targetId,
+
     starRating: requestedStarRating,
   });
 
   /*
+
    * Add requested collection memberships.
+
    */
+
   for (const collectionId of collectionIds) {
     await prisma.orm.public.BookmarkCollectionItem.create({
       bookmarkId: bookmark.id,
+
       collectionId,
     });
   }
 
   return {
     id: bookmark.id,
+
     targetType: bookmark.targetType,
+
     targetId: bookmark.targetId,
+
     starRating: bookmark.starRating,
+
     collectionIds,
+
     createdAt: bookmark.createdAt,
+
     updatedAt: bookmark.updatedAt,
   };
 }
@@ -194,16 +223,17 @@ export async function createBookmark(
  * ================================================== */
 
 export async function updateBookmark(
-  userId: number,
-  bookmarkId: number,
+  userId: string,
+
+  bookmarkId: string,
+
   input: UpdateBookmarkInput,
 ) {
-  validatePositiveInteger(bookmarkId, "bookmarkId");
-
   const validated = validateUpdateBookmarkInput(input);
 
   const existing = await prisma.orm.public.Bookmark.first({
     id: bookmarkId,
+
     userId,
   });
 
@@ -223,12 +253,15 @@ export async function updateBookmark(
  * ================================================== */
 
 async function updateExistingBookmark(
-  userId: number,
-  bookmarkId: number,
+  userId: string,
+
+  bookmarkId: string,
+
   input: UpdateBookmarkInput,
 ) {
   const existing = await prisma.orm.public.Bookmark.first({
     id: bookmarkId,
+
     userId,
   });
 
@@ -237,12 +270,19 @@ async function updateExistingBookmark(
   }
 
   /*
+
    * Update star rating if supplied.
+
    *
+
    * The Contract API is:
+
    *
+
    *   Bookmark.where({ id }).update(...)
+
    */
+
   if (input.starRating !== undefined) {
     await prisma.orm.public.Bookmark.where({
       id: bookmarkId,
@@ -252,12 +292,19 @@ async function updateExistingBookmark(
   }
 
   /*
+
    * Update collection memberships only when
+
    * collectionIds was explicitly supplied.
+
    *
+
    * collectionIds represents the COMPLETE desired
+
    * membership set.
+
    */
+
   if (input.collectionIds !== undefined) {
     const currentItems = await prisma.orm.public.BookmarkCollectionItem.where({
       bookmarkId,
@@ -268,8 +315,11 @@ async function updateExistingBookmark(
     const currentIds = new Set(currentItems.map((item) => item.collectionId));
 
     /*
+
      * Remove memberships that are no longer desired.
+
      */
+
     for (const item of currentItems) {
       if (!desiredIds.has(item.collectionId)) {
         await prisma.orm.public.BookmarkCollectionItem.where({
@@ -279,12 +329,16 @@ async function updateExistingBookmark(
     }
 
     /*
+
      * Add newly requested memberships.
+
      */
+
     for (const collectionId of input.collectionIds) {
       if (!currentIds.has(collectionId)) {
         await prisma.orm.public.BookmarkCollectionItem.create({
           bookmarkId,
+
           collectionId,
         });
       }
@@ -292,10 +346,14 @@ async function updateExistingBookmark(
   }
 
   /*
+
    * Re-read the Bookmark after all mutations.
+
    */
+
   const bookmark = await prisma.orm.public.Bookmark.first({
     id: bookmarkId,
+
     userId,
   });
 
@@ -304,8 +362,11 @@ async function updateExistingBookmark(
   }
 
   /*
+
    * Refresh membership list.
+
    */
+
   const collectionItems = await prisma.orm.public.BookmarkCollectionItem.where({
     bookmarkId,
   }).all();
@@ -313,14 +374,23 @@ async function updateExistingBookmark(
   const collectionIds = collectionItems.map((item) => item.collectionId);
 
   /*
+
    * Important cleanup rule:
+
    *
+
    * starRating === 0
+
    * AND
+
    * no collection memberships
+
    *
+
    * => delete Bookmark completely.
+
    */
+
   if (bookmark.starRating === 0 && collectionIds.length === 0) {
     await prisma.orm.public.Bookmark.where({
       id: bookmarkId,
@@ -331,11 +401,17 @@ async function updateExistingBookmark(
 
   return {
     id: bookmark.id,
+
     targetType: bookmark.targetType,
+
     targetId: bookmark.targetId,
+
     starRating: bookmark.starRating,
+
     collectionIds,
+
     createdAt: bookmark.createdAt,
+
     updatedAt: bookmark.updatedAt,
   };
 }
@@ -352,13 +428,13 @@ async function updateExistingBookmark(
  */
 
 export async function deleteBookmark(
-  userId: number,
-  bookmarkId: number,
-): Promise<void> {
-  validatePositiveInteger(bookmarkId, "bookmarkId");
+  userId: string,
 
+  bookmarkId: string,
+): Promise<void> {
   const existing = await prisma.orm.public.Bookmark.first({
     id: bookmarkId,
+
     userId,
   });
 
@@ -418,20 +494,29 @@ export async function deleteBookmark(
  */
 
 export async function getBookmarkStates(
-  userId: number,
+  userId: string,
+
   targets: BookmarkStateLookupTarget[],
 ) {
   /*
+
    * --------------------------------------------------
+
    * STEP 1
+
    * Deduplicate and validate requested targets.
+
    * --------------------------------------------------
+
    */
 
   const uniqueTargets = new Map<string, BookmarkStateLookupTarget>();
 
   for (const target of targets) {
-    if (!Number.isInteger(target.targetId) || target.targetId <= 0) {
+    if (
+      typeof target.targetId !== "string" ||
+      target.targetId.trim().length === 0
+    ) {
       continue;
     }
 
@@ -445,30 +530,55 @@ export async function getBookmarkStates(
   }
 
   /*
+
    * --------------------------------------------------
+
    * STEP 2
+
    * Find ONLY the requested bookmarks.
+
    *
+
    * Previously this method did:
+
    *
+
    *   Bookmark.where({ userId }).all()
+
    *
+
    * which loaded every bookmark belonging to the
+
    * student and then filtered in memory.
+
    *
+
    * That becomes increasingly expensive as a student
+
    * accumulates bookmarks.
+
    *
+
    * Now every query is scoped by:
+
    *
+
    *   userId
+
    *   targetType
+
    *   targetId
+
    *
+
    * which matches the unique database constraint:
+
    *
+
    *   (userId, targetType, targetId)
+
    * --------------------------------------------------
+
    */
 
   const targetList = Array.from(uniqueTargets.values());
@@ -477,15 +587,20 @@ export async function getBookmarkStates(
     targetList.map((target) =>
       prisma.orm.public.Bookmark.first({
         userId,
+
         targetType: target.targetType,
+
         targetId: target.targetId,
       }),
     ),
   );
 
   /*
+
    * Keep only bookmarks that actually exist.
+
    */
+
   const relevantBookmarks = bookmarkResults.filter(
     (bookmark): bookmark is NonNullable<typeof bookmark> =>
       bookmark !== null && bookmark !== undefined,
@@ -496,20 +611,35 @@ export async function getBookmarkStates(
   }
 
   /*
+
    * --------------------------------------------------
+
    * STEP 3
+
    * Fetch collection memberships ONLY for the
+
    * bookmarks found above.
+
    *
+
    * We deliberately do not call:
+
    *
+
    *   BookmarkCollectionItem.all()
+
    *
+
    * because that would scan the entire membership
+
    * table across every user.
+
    *
+
    * Each query below is scoped to one known bookmark.
+
    * --------------------------------------------------
+
    */
 
   const membershipResults = await Promise.all(
@@ -521,36 +651,50 @@ export async function getBookmarkStates(
 
       return {
         bookmarkId: bookmark.id,
+
         collectionIds: collectionItems.map((item) => item.collectionId),
       };
     }),
   );
 
   /*
+
    * Convert membership results into:
+
    *
+
    * bookmarkId -> collectionIds[]
+
    */
-  const collectionMap = new Map<number, number[]>();
+
+  const collectionMap = new Map<string, string[]>();
 
   for (const membership of membershipResults) {
     collectionMap.set(membership.bookmarkId, membership.collectionIds);
   }
 
   /*
+
    * --------------------------------------------------
+
    * STEP 4
+
    * Build the final target-keyed state map.
+
    * --------------------------------------------------
+
    */
 
   const result = new Map<
     string,
     {
       bookmarked: true;
-      bookmarkId: number;
+
+      bookmarkId: string;
+
       starRating: number;
-      collectionIds: number[];
+
+      collectionIds: string[];
     }
   >();
 
@@ -562,8 +706,11 @@ export async function getBookmarkStates(
 
     result.set(key, {
       bookmarked: true,
+
       bookmarkId: bookmark.id,
+
       starRating: bookmark.starRating,
+
       collectionIds: collectionMap.get(bookmark.id) ?? [],
     });
   }

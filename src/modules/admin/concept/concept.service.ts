@@ -37,7 +37,7 @@ type JsonValue =
  *   },
  *   {
  *     "type": "execution",
- *     "executionID": 51
+ *     "executionID": "uuid"
  *   },
  *   {
  *     "type": "heading",
@@ -73,7 +73,7 @@ type JsonValue =
  *
  * {
  *   type: "execution",
- *   executionID: 51
+ *   executionID: "uuid"
  * }
  */
 export interface ConceptDocumentItem {
@@ -102,7 +102,7 @@ export type ConceptStructure = ConceptDocument;
  */
 
 export interface CreateConceptInput {
-  lessonId: number;
+  lessonId: string;
   nameBN: string;
   nameEng: string;
   descriptionBN: JsonValue;
@@ -173,22 +173,17 @@ function normalizeConceptDocument(value: unknown): ConceptDocument {
  *
  * {
  *   type: "execution",
- *   executionID: 51
+ *   executionID: "uuid"
  * }
  */
-
-function getExecutionId(item: ConceptDocumentItem): number | null {
+function getExecutionId(item: ConceptDocumentItem): string | null {
   if (item.type !== "execution") {
     return null;
   }
 
   const executionId = item.executionID;
 
-  if (
-    typeof executionId !== "number" ||
-    !Number.isInteger(executionId) ||
-    executionId <= 0
-  ) {
+  if (typeof executionId !== "string" || executionId.trim().length === 0) {
     return null;
   }
 
@@ -210,7 +205,7 @@ function getExecutionId(item: ConceptDocumentItem): number | null {
  *
  * {
  *   type: "execution",
- *   executionID: 51
+ *   executionID: "uuid"
  * }
  *
  * The same reference is added to:
@@ -220,10 +215,10 @@ function getExecutionId(item: ConceptDocumentItem): number | null {
  */
 
 export async function appendExecutionToConceptStructure(
-  conceptId: number,
-  executionId: number,
+  conceptId: string,
+  executionId: string,
 ) {
-  /*
+  /**
    * --------------------------------------------------
    * Find parent Concept
    * --------------------------------------------------
@@ -237,7 +232,7 @@ export async function appendExecutionToConceptStructure(
     throw new Error("Concept not found");
   }
 
-  /*
+  /**
    * --------------------------------------------------
    * Verify Execution exists
    * --------------------------------------------------
@@ -254,7 +249,7 @@ export async function appendExecutionToConceptStructure(
     throw new Error("Execution not found");
   }
 
-  /*
+  /**
    * --------------------------------------------------
    * Verify relational ownership
    * --------------------------------------------------
@@ -267,7 +262,7 @@ export async function appendExecutionToConceptStructure(
     throw new Error("Execution does not belong to this Concept");
   }
 
-  /*
+  /**
    * --------------------------------------------------
    * Normalize both language documents
    * --------------------------------------------------
@@ -277,7 +272,7 @@ export async function appendExecutionToConceptStructure(
 
   const descriptionEng = normalizeConceptDocument(concept.descriptionEng);
 
-  /*
+  /**
    * --------------------------------------------------
    * Prevent duplicate references
    * --------------------------------------------------
@@ -291,7 +286,7 @@ export async function appendExecutionToConceptStructure(
     (item) => getExecutionId(item) === executionId,
   );
 
-  /*
+  /**
    * If both already contain the reference,
    * there is nothing to do.
    */
@@ -300,7 +295,7 @@ export async function appendExecutionToConceptStructure(
     return concept;
   }
 
-  /*
+  /**
    * --------------------------------------------------
    * Append the Execution reference
    * --------------------------------------------------
@@ -322,7 +317,7 @@ export async function appendExecutionToConceptStructure(
     });
   }
 
-  /*
+  /**
    * --------------------------------------------------
    * Persist both language documents
    * --------------------------------------------------
@@ -350,10 +345,10 @@ export async function appendExecutionToConceptStructure(
  */
 
 export async function removeExecutionFromConceptStructure(
-  conceptId: number,
-  executionId: number,
+  conceptId: string,
+  executionId: string,
 ) {
-  /*
+  /**
    * --------------------------------------------------
    * Find parent Concept
    * --------------------------------------------------
@@ -367,7 +362,7 @@ export async function removeExecutionFromConceptStructure(
     return null;
   }
 
-  /*
+  /**
    * --------------------------------------------------
    * Normalize both language documents
    * --------------------------------------------------
@@ -377,7 +372,7 @@ export async function removeExecutionFromConceptStructure(
 
   const descriptionEng = normalizeConceptDocument(concept.descriptionEng);
 
-  /*
+  /**
    * --------------------------------------------------
    * Remove matching Execution reference
    * --------------------------------------------------
@@ -391,7 +386,7 @@ export async function removeExecutionFromConceptStructure(
     (item) => getExecutionId(item) !== executionId,
   );
 
-  /*
+  /**
    * --------------------------------------------------
    * Nothing changed
    * --------------------------------------------------
@@ -404,7 +399,7 @@ export async function removeExecutionFromConceptStructure(
     return concept;
   }
 
-  /*
+  /**
    * --------------------------------------------------
    * Persist both language documents
    * --------------------------------------------------
@@ -440,7 +435,7 @@ export async function removeExecutionFromConceptStructure(
  *   },
  *   {
  *     type: "concept",
- *     conceptID: 81
+ *     conceptID: "uuid"
  *   },
  *   {
  *     type: "heading",
@@ -456,7 +451,7 @@ export async function removeExecutionFromConceptStructure(
  */
 
 export async function createConcept(data: CreateConceptInput) {
-  /*
+  /**
    * --------------------------------------------------
    * Verify parent Lesson
    * --------------------------------------------------
@@ -470,7 +465,7 @@ export async function createConcept(data: CreateConceptInput) {
     throw new Error("Lesson not found");
   }
 
-  /*
+  /**
    * --------------------------------------------------
    * Prepare documents
    * --------------------------------------------------
@@ -480,7 +475,7 @@ export async function createConcept(data: CreateConceptInput) {
 
   const descriptionEng = normalizeConceptDocument(data.descriptionEng);
 
-  /*
+  /**
    * --------------------------------------------------
    * Create Concept
    * --------------------------------------------------
@@ -502,7 +497,7 @@ export async function createConcept(data: CreateConceptInput) {
     descriptionEng,
   });
 
-  /*
+  /**
    * --------------------------------------------------
    * Synchronize parent Lesson document
    * --------------------------------------------------
@@ -521,7 +516,7 @@ export async function createConcept(data: CreateConceptInput) {
   try {
     await appendConceptToLessonStructure(data.lessonId, concept.id);
   } catch (error) {
-    /*
+    /**
      * ------------------------------------------------
      * Roll back Concept creation
      * ------------------------------------------------
@@ -532,7 +527,7 @@ export async function createConcept(data: CreateConceptInput) {
         id: concept.id,
       }).delete();
     } catch {
-      /*
+      /**
        * Preserve the original
        * structure synchronization error.
        */
@@ -563,7 +558,7 @@ export async function createConcept(data: CreateConceptInput) {
  * description document to determine document placement.
  */
 
-export async function getConcepts(lessonId?: number) {
+export async function getConcepts(lessonId?: string) {
   if (lessonId !== undefined) {
     return prisma.orm.public.Concept.where({
       lessonId,
@@ -581,7 +576,7 @@ export async function getConcepts(lessonId?: number) {
  * ================================================================
  */
 
-export async function getConcept(id: number) {
+export async function getConcept(id: string) {
   return prisma.orm.public.Concept.first({
     id,
   });
@@ -605,8 +600,8 @@ export async function getConcept(id: number) {
  * the Concept primary key does not change.
  */
 
-export async function updateConcept(id: number, data: UpdateConceptInput) {
-  /*
+export async function updateConcept(id: string, data: UpdateConceptInput) {
+  /**
    * --------------------------------------------------
    * Find Concept
    * --------------------------------------------------
@@ -620,7 +615,7 @@ export async function updateConcept(id: number, data: UpdateConceptInput) {
     return null;
   }
 
-  /*
+  /**
    * --------------------------------------------------
    * Normalize documents
    * --------------------------------------------------
@@ -630,7 +625,7 @@ export async function updateConcept(id: number, data: UpdateConceptInput) {
 
   const descriptionEng = normalizeConceptDocument(data.descriptionEng);
 
-  /*
+  /**
    * --------------------------------------------------
    * Update Concept entity
    * --------------------------------------------------
@@ -666,11 +661,11 @@ export async function updateConcept(id: number, data: UpdateConceptInput) {
  */
 
 export async function setConceptStructure(
-  conceptId: number,
+  conceptId: string,
   descriptionBN: ConceptDocument,
   descriptionEng?: ConceptDocument,
 ) {
-  /*
+  /**
    * --------------------------------------------------
    * Find Concept
    * --------------------------------------------------
@@ -684,7 +679,7 @@ export async function setConceptStructure(
     return null;
   }
 
-  /*
+  /**
    * --------------------------------------------------
    * Normalize Bangla document
    * --------------------------------------------------
@@ -692,7 +687,7 @@ export async function setConceptStructure(
 
   const normalizedDescriptionBN = normalizeConceptDocument(descriptionBN);
 
-  /*
+  /**
    * --------------------------------------------------
    * Normalize English document
    * --------------------------------------------------
@@ -706,7 +701,7 @@ export async function setConceptStructure(
       ? normalizeConceptDocument(descriptionEng)
       : normalizeConceptDocument(concept.descriptionEng);
 
-  /*
+  /**
    * --------------------------------------------------
    * Persist both language documents
    * --------------------------------------------------
@@ -743,8 +738,8 @@ export async function setConceptStructure(
  * Their behavior is governed by the relational database contract.
  */
 
-export async function deleteConcept(id: number) {
-  /*
+export async function deleteConcept(id: string) {
+  /**
    * --------------------------------------------------
    * Find Concept
    * --------------------------------------------------
@@ -758,7 +753,7 @@ export async function deleteConcept(id: number) {
     return null;
   }
 
-  /*
+  /**
    * --------------------------------------------------
    * Remove Concept from parent Lesson document
    * --------------------------------------------------
@@ -775,7 +770,7 @@ export async function deleteConcept(id: number) {
 
   await removeConceptFromLessonStructure(concept.lessonId, concept.id);
 
-  /*
+  /**
    * --------------------------------------------------
    * Delete Concept entity
    * --------------------------------------------------

@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 
 import {
   createMCQ,
+  createMCQs,
   deleteMCQ,
   getMCQ,
   getMCQs,
@@ -23,6 +24,34 @@ function parsePositiveInt(value: unknown, fieldName: string): number {
 
   if (!Number.isInteger(parsed) || parsed <= 0) {
     throw new Error(`${fieldName} must be a positive integer`);
+  }
+
+  return parsed;
+}
+
+function parseUuid(value: unknown, fieldName: string): string | null {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  if (typeof value !== "string") {
+    throw new Error(`${fieldName} must be a valid UUID`);
+  }
+
+  const parsed = value.trim();
+
+  if (parsed.length === 0) {
+    return null;
+  }
+
+  return parsed;
+}
+
+function parseRequiredUuid(value: unknown, fieldName: string): string {
+  const parsed = parseUuid(value, fieldName);
+
+  if (parsed === null) {
+    throw new Error(`${fieldName} must be a valid UUID`);
   }
 
   return parsed;
@@ -132,11 +161,11 @@ function hasOwn(body: Record<string, unknown>, fieldName: string): boolean {
 
 function buildLink(body: Record<string, unknown>): {
   type: KnowledgeLinkType | null;
-  id: number | null;
+  id: string | null;
 } {
   return {
     type: parseKnowledgeLinkType(body.linkType),
-    id: parseOptionalPositiveInt(body.linkId, "linkId"),
+    id: parseUuid(body.linkId, "linkId"),
   };
 }
 
@@ -175,12 +204,10 @@ function buildCreateInput(body: Record<string, unknown>): CreateMCQInput {
     rightAns: parsePositiveInt(body.rightAns, "rightAns"),
 
     linkType: link.type,
+
     linkId: link.id,
 
-    questionPaperId: parseOptionalPositiveInt(
-      body.questionPaperId,
-      "questionPaperId",
-    ),
+    questionPaperId: parseUuid(body.questionPaperId, "questionPaperId"),
 
     qusNo: parseOptionalPositiveInt(body.qusNo, "qusNo"),
 
@@ -303,14 +330,11 @@ function buildUpdateInput(body: Record<string, unknown>): UpdateMCQInput {
   }
 
   if (hasOwn(body, "linkId")) {
-    data.linkId = parseOptionalPositiveInt(body.linkId, "linkId");
+    data.linkId = parseUuid(body.linkId, "linkId");
   }
 
   if (hasOwn(body, "questionPaperId")) {
-    data.questionPaperId = parseOptionalPositiveInt(
-      body.questionPaperId,
-      "questionPaperId",
-    );
+    data.questionPaperId = parseUuid(body.questionPaperId, "questionPaperId");
   }
 
   if (hasOwn(body, "qusNo")) {
@@ -360,6 +384,56 @@ export async function createMCQController(req: Request, res: Response) {
   try {
     const body = getRequestBody(req);
 
+    /*
+     * BULK CREATE
+     *
+     * Expected body:
+     *
+     * {
+     *   "questions": [
+     *     { ...MCQ 1... },
+     *     { ...MCQ 2... }
+     *   ]
+     * }
+     *
+     * Each question is passed through the same
+     * buildCreateInput() validation used by single create.
+     */
+    if (hasOwn(body, "questions")) {
+      const questions = body.questions;
+
+      if (!Array.isArray(questions) || questions.length === 0) {
+        throw new Error("questions must be a non-empty array");
+      }
+
+      const data = questions.map((question, index) => {
+        if (
+          !question ||
+          typeof question !== "object" ||
+          Array.isArray(question)
+        ) {
+          throw new Error(`questions[${index}] must be an object`);
+        }
+
+        return buildCreateInput(question as Record<string, unknown>);
+      });
+
+      const mcqs = await createMCQs(data);
+
+      res.status(201).json({
+        success: true,
+        count: mcqs.length,
+        data: mcqs,
+      });
+
+      return;
+    }
+
+    /*
+     * SINGLE CREATE
+     *
+     * Existing behavior remains unchanged.
+     */
     const data = buildCreateInput(body);
 
     const mcq = await createMCQ(data);
@@ -382,7 +456,7 @@ export async function getMCQsController(req: Request, res: Response) {
   try {
     const questionPaperId =
       req.query.questionPaperId !== undefined
-        ? parsePositiveInt(req.query.questionPaperId, "questionPaperId")
+        ? parseRequiredUuid(req.query.questionPaperId, "questionPaperId")
         : undefined;
 
     const mcqs = await getMCQs(questionPaperId);
@@ -403,7 +477,7 @@ export async function getMCQsController(req: Request, res: Response) {
 
 export async function getMCQController(req: Request, res: Response) {
   try {
-    const id = parsePositiveInt(req.params.id, "id");
+    const id = parseRequiredUuid(req.params.id, "id");
 
     const mcq = await getMCQ(id);
 
@@ -432,7 +506,7 @@ export async function getMCQController(req: Request, res: Response) {
 
 export async function updateMCQController(req: Request, res: Response) {
   try {
-    const id = parsePositiveInt(req.params.id, "id");
+    const id = parseRequiredUuid(req.params.id, "id");
 
     const body = getRequestBody(req);
 
@@ -465,7 +539,7 @@ export async function updateMCQController(req: Request, res: Response) {
 
 export async function deleteMCQController(req: Request, res: Response) {
   try {
-    const id = parsePositiveInt(req.params.id, "id");
+    const id = parseRequiredUuid(req.params.id, "id");
 
     const mcq = await deleteMCQ(id);
 

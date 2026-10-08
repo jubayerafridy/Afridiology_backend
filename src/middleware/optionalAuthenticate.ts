@@ -5,9 +5,9 @@ import { verifyAccessToken } from "../core/security/jwt.js";
 
 interface AuthenticatedRequest extends Request {
   auth?: {
-    userId: number;
+    userId: string;
     role: string;
-    sessionId: number;
+    sessionId: string;
   };
 }
 

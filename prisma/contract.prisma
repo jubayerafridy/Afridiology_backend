@@ -2,7 +2,7 @@
 // Production contract for Afridiology.
 // Run `pnpm prisma contract format` and then `pnpm prisma contract emit`.
 model User {
-  id                  Int                  @id(map: "user_pkey") @default(autoincrement())
+  id                  String               @id(map: "user_pkey") @default(uuid())
   createdAt           Timestamptz          @default(now())
   email               String               @unique(map: "user_email_key")
   emailVerified       Boolean              @default(false)
@@ -11,7 +11,6 @@ model User {
   role                String               @default("STUDENT")
   status              String               @default("ACTIVE")
   updatedAt           Timestamptz          @default(now())
-
   authIdentities      AuthIdentity[]
   authSessions        AuthSession[]
   bookmarks           Bookmark[]
@@ -21,7 +20,7 @@ model User {
   @@index([role], name: "user_role_idx")
   @@index([status], name: "user_status_idx")
 
-  @@check(expression: "(role = ANY (ARRAY['STUDENT'::text, 'TEACHER'::text, 'AUTHOR'::text, 'MODERATOR'::text, 'ADMIN'::text, 'SUPER_ADMIN'::text]))", name: "user_role_check_2d5baecb")
+  @@check(expression: "(role = ANY (ARRAY['STUDENT'::text, 'TEACHER'::text, 'AUTHOR'::text, 'MODERATOR'::text, 'ADMIN'::text, 'SUPER_ADMIN'::text]))", name: "user_role_check_2d5baec")
 
   @@check(expression: "(status = ANY (ARRAY['ACTIVE'::text, 'SUSPENDED'::text, 'DEACTIVATED'::text]))", name: "user_status_check_5dec1c59")
 
@@ -29,12 +28,12 @@ model User {
 }
 
 model AuthIdentity {
-  id         Int         @id(map: "authIdentity_pkey") @default(autoincrement())
+  id         String      @id(map: "authIdentity_pkey") @default(uuid())
   createdAt  Timestamptz @default(now())
   provider   String
   providerId String
   updatedAt  Timestamptz @default(now())
-  userId     Int
+  userId     String
 
   user       User        @relation(fields:[userId], references:[id], map: "authIdentity_userId_fkey")
 
@@ -47,13 +46,13 @@ model AuthIdentity {
 }
 
 model AuthSession {
-  id        Int          @id(map: "authSession_pkey") @default(autoincrement())
+  id        String       @id(map: "authSession_pkey") @default(uuid())
   createdAt Timestamptz  @default(now())
   expiresAt Timestamptz
   revokedAt Timestamptz?
   tokenHash String       @unique(map: "authSession_tokenHash_key")
   updatedAt Timestamptz  @default(now())
-  userId    Int
+  userId    String
 
   user      User         @relation(fields:[userId], references:[id], map: "authSession_userId_fkey")
 
@@ -64,7 +63,7 @@ model AuthSession {
 }
 
 model QuestionPaper {
-  id           Int         @id(map: "questionPaper_pkey") @default(autoincrement())
+  id           String      @id(map: "questionPaper_pkey") @default(uuid())
   board        String?
   class        String
   createdAt    Timestamptz @default(now())
@@ -72,7 +71,7 @@ model QuestionPaper {
   isActive     Boolean     @default(true)
   questionType String
   source       String
-  subjectId    Int
+  subjectId    String
   updatedAt    Timestamptz @default(now())
   year         Int?
 
@@ -89,7 +88,7 @@ model QuestionPaper {
 }
 
 model CQ {
-  id              Int           @id(map: "cQ_pkey") @default(autoincrement())
+  id              String        @id(map: "cQ_pkey") @default(uuid())
 
   createdAt       Timestamptz   @default(now())
   updatedAt       Timestamptz   @default(now())
@@ -98,7 +97,7 @@ model CQ {
   point           Int?
   ytLink          String?
 
-  questionPaperId Int
+  questionPaperId String
   qusNo           Int?
 
   descriptionBN   Json
@@ -109,7 +108,7 @@ model CQ {
   // ক
   quesKaBN        String
   quesKaEng       String
-  quesKaLinkId    Int?
+  quesKaLinkId    String?
   quesKaLinkType  String?
   ansKaBN         String?
   ansKaEng        String?
@@ -117,7 +116,7 @@ model CQ {
   // খ
   quesKhaBN       String
   quesKhaEng      String
-  quesKhaLinkId   Int?
+  quesKhaLinkId   String?
   quesKhaLinkType String?
   ansKhaBN        String?
   ansKhaEng       String?
@@ -125,7 +124,7 @@ model CQ {
   // গ
   quesGaBN        String
   quesGaEng       String
-  quesGaLinkId    Int?
+  quesGaLinkId    String?
   quesGaLinkType  String?
   ansGaBN         String?
   ansGaEng        String?
@@ -133,7 +132,7 @@ model CQ {
   // ঘ — optional
   quesGhaBN       String?
   quesGhaEng      String?
-  quesGhaLinkId   Int?
+  quesGhaLinkId   String?
   quesGhaLinkType String?
   ansGhaBN        String?
   ansGhaEng       String?
@@ -159,7 +158,7 @@ model CQ {
 }
 
 model EducationLevel {
-  id        Int         @id(map: "educationLevel_pkey") @default(autoincrement())
+  id        String      @id(map: "educationLevel_pkey") @default(uuid())
   name      String
   createdAt Timestamptz @default(now())
   isActive  Boolean     @default(true)
@@ -171,8 +170,8 @@ model EducationLevel {
 }
 
 model Subject {
-  id               Int            @id(map: "subject_pkey") @default(autoincrement())
-  educationLevelId Int
+  id               String         @id(map: "subject_pkey") @default(uuid())
+  educationLevelId String
   name             String
   createdAt        Timestamptz    @default(now())
   isActive         Boolean        @default(true)
@@ -187,8 +186,8 @@ model Subject {
 }
 
 model Chapter {
-  id             Int         @id(map: "chapter_pkey") @default(autoincrement())
-  subjectId      Int
+  id             String      @id(map: "chapter_pkey") @default(uuid())
+  subjectId      String
   createdAt      Timestamptz @default(now())
 
   descriptionBN  Json
@@ -211,8 +210,8 @@ model Chapter {
 }
 
 model Lesson {
-  id             Int         @id(map: "lesson_pkey") @default(autoincrement())
-  chapterId      Int
+  id             String      @id(map: "lesson_pkey") @default(uuid())
+  chapterId      String
   createdAt      Timestamptz @default(now())
 
   descriptionBN  Json
@@ -236,14 +235,14 @@ model Lesson {
 }
 
 model Concept {
-  id             Int         @id(map: "concept_pkey") @default(autoincrement())
+  id             String      @id(map: "concept_pkey") @default(uuid())
   createdAt      Timestamptz @default(now())
 
   descriptionBN  Json
   descriptionEng Json
 
   isActive       Boolean     @default(true)
-  lessonId       Int
+  lessonId       String
 
   nameBN         String
   nameEng        String
@@ -259,8 +258,8 @@ model Concept {
 }
 
 model Execution {
-  id             Int         @id(map: "execution_pkey") @default(autoincrement())
-  conceptId      Int
+  id             String      @id(map: "execution_pkey") @default(uuid())
+  conceptId      String
   createdAt      Timestamptz @default(now())
 
   descriptionBN  Json
@@ -281,7 +280,7 @@ model Execution {
 }
 
 model MCQ {
-  id              Int            @id(map: "mCQ_pkey") @default(autoincrement())
+  id              String         @id(map: "mCQ_pkey") @default(uuid())
   isActive        Boolean        @default(false)
 
   imageUrl        String?
@@ -294,10 +293,10 @@ model MCQ {
   explanationBN   Json?
   explanationEng  Json?
 
-  linkId          Int?
+  linkId          String?
   linkType        String?
 
-  questionPaperId Int?
+  questionPaperId String?
   qusNo           Int?
 
   optionsBN       Json
@@ -319,10 +318,10 @@ model MCQ {
 }
 
 model Bookmark {
-  id              Int                      @id(map: "bookmark_pkey") @default(autoincrement())
-  userId          Int
+  id              String                   @id(map: "bookmark_pkey") @default(uuid())
+  userId          String
   targetType      String
-  targetId        Int
+  targetId        String
   starRating      Int                      @default(0)
   createdAt       Timestamptz              @default(now())
   updatedAt       Timestamptz              @default(now())
@@ -342,10 +341,10 @@ model Bookmark {
 }
 
 model QuestionProgress {
-  id         Int         @id(map: "questionProgress_pkey") @default(autoincrement())
-  userId     Int
+  id         String      @id(map: "questionProgress_pkey") @default(uuid())
+  userId     String
   targetType String
-  targetId   Int
+  targetId   String
   status     String
   createdAt  Timestamptz @default(now())
   updatedAt  Timestamptz @default(now())
@@ -364,8 +363,8 @@ model QuestionProgress {
 }
 
 model BookmarkCollection {
-  id          Int                      @id(map: "bookmarkCollection_pkey") @default(autoincrement())
-  userId      Int
+  id          String                   @id(map: "bookmarkCollection_pkey") @default(uuid())
+  userId      String
   name        String
   color       String
   type        String
@@ -389,13 +388,13 @@ model BookmarkCollection {
 }
 
 model BookmarkCollectionItem {
-  id           Int                @id(map: "bookmarkCollectionItem_pkey") @default(autoincrement())
-  bookmarkId   Int
-  collectionId Int
+  id           String             @id(map: "bookmarkCollectionItem_pkey") @default(uuid())
+  bookmarkId   String
+  collectionId String
   createdAt    Timestamptz        @default(now())
 
   bookmark     Bookmark           @relation(fields:[bookmarkId], references:[id], onDelete: Cascade, map: "bookmarkCollectionItem_bookmarkId_fkey")
-  collection   BookmarkCollection @relation(fields:[collectionId], references:[id], map: "bookmarkCollectionItem_collectionId_fkey")
+  collection   BookmarkCollection @relation(fields:[collectionId], references:[id], onDelete: Cascade, map: "bookmarkCollectionItem_collectionId_fkey")
 
   @@unique([bookmarkId, collectionId], map: "bookmarkCollectionItem_bookmarkId_collectionId_key")
   @@index([collectionId], name: "bookmarkCollectionItem_collectionId_idx")

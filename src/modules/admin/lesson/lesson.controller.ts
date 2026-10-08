@@ -23,6 +23,30 @@ type JsonValue =
 
 /**
  * ================================================================
+ * UUID HELPERS
+ * ================================================================
+ */
+
+function parseUuid(value: unknown, fieldName: string): string | null {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  if (typeof value !== "string") {
+    throw new Error(`${fieldName} must be a valid UUID`);
+  }
+
+  const trimmed = value.trim();
+
+  if (trimmed.length === 0) {
+    return null;
+  }
+
+  return trimmed;
+}
+
+/**
+ * ================================================================
  * LESSON NUMBER HELPERS
  * ================================================================
  */
@@ -141,9 +165,9 @@ export async function createLessonController(
     descriptionEng?: unknown;
   };
 
-  const parsedChapterId = Number(chapterId);
+  const parsedChapterId = parseUuid(chapterId, "chapterId");
 
-  if (!Number.isInteger(parsedChapterId) || parsedChapterId <= 0) {
+  if (parsedChapterId === null) {
     res.status(400).json({
       success: false,
       message: "Valid chapterId is required",
@@ -298,12 +322,12 @@ export async function getLessonsController(
 ): Promise<void> {
   const chapterIdValue = req.query.chapterId;
 
-  let chapterId: number | undefined;
+  let chapterId: string | undefined;
 
   if (chapterIdValue !== undefined) {
-    chapterId = Number(chapterIdValue);
+    const parsedChapterId = parseUuid(chapterIdValue, "chapterId");
 
-    if (!Number.isInteger(chapterId) || chapterId <= 0) {
+    if (parsedChapterId === null) {
       res.status(400).json({
         success: false,
         message: "Invalid chapterId",
@@ -311,6 +335,8 @@ export async function getLessonsController(
 
       return;
     }
+
+    chapterId = parsedChapterId;
   }
 
   const lessons = await getLessons(chapterId);
@@ -331,9 +357,9 @@ export async function getLessonController(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const id = Number(req.params.id);
+  const id = parseUuid(req.params.id, "id");
 
-  if (!Number.isInteger(id) || id <= 0) {
+  if (id === null) {
     res.status(400).json({
       success: false,
       message: "Invalid lesson ID",
@@ -369,9 +395,9 @@ export async function updateLessonController(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const id = Number(req.params.id);
+  const id = parseUuid(req.params.id, "id");
 
-  if (!Number.isInteger(id) || id <= 0) {
+  if (id === null) {
     res.status(400).json({
       success: false,
       message: "Invalid lesson ID",
@@ -532,9 +558,9 @@ export async function deleteLessonController(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const id = Number(req.params.id);
+  const id = parseUuid(req.params.id, "id");
 
-  if (!Number.isInteger(id) || id <= 0) {
+  if (id === null) {
     res.status(400).json({
       success: false,
       message: "Invalid lesson ID",

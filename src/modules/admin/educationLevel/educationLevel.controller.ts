@@ -7,6 +7,20 @@ import {
   updateEducationLevel,
 } from "./educationLevel.service.js";
 
+function parseUuid(value: unknown): string | null {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 export async function createEducationLevelController(
   req: Request,
   res: Response,
@@ -51,9 +65,9 @@ export async function updateEducationLevelController(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const id = Number(req.params.id);
+  const id = parseUuid(req.params.id);
 
-  if (!Number.isInteger(id) || id <= 0) {
+  if (id === null) {
     res.status(400).json({
       success: false,
       message: "Invalid education level ID",
@@ -99,9 +113,9 @@ export async function deleteEducationLevelController(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const id = Number(req.params.id);
+  const id = parseUuid(req.params.id);
 
-  if (!Number.isInteger(id) || id <= 0) {
+  if (id === null) {
     res.status(400).json({
       success: false,
       message: "Invalid education level ID",

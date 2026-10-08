@@ -21,7 +21,7 @@ export async function getEducationLevels() {
 }
 
 export async function updateEducationLevel(
-  id: number,
+  id: string,
   data: UpdateEducationLevelInput,
 ) {
   const educationLevel = await prisma.orm.public.EducationLevel.first({
@@ -37,7 +37,7 @@ export async function updateEducationLevel(
   });
 }
 
-export async function deleteEducationLevel(id: number) {
+export async function deleteEducationLevel(id: string) {
   const educationLevel = await prisma.orm.public.EducationLevel.first({
     id,
   });

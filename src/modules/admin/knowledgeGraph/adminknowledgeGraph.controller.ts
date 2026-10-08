@@ -67,11 +67,21 @@ import { getAdminChapterKnowledgeGraph } from "./adminknowledgeGraph.service.js"
  *
  * --------------------------------------------------
  *
- * Connected:
+ * Connected questions:
  *
  * CQ
+ * MCQ
  *
- * MCQ is intentionally not included yet.
+ * Both question types are connected through their
+ * direct knowledge target:
+ *
+ * Chapter
+ * Lesson
+ * Concept
+ * Execution
+ *
+ * Ancestors are derived from the hierarchy and are
+ * not duplicated as question relationships.
  *
  * --------------------------------------------------
  *
@@ -114,26 +124,20 @@ export async function getAdminKnowledgeGraphController(
 
     /*
      * --------------------------------------------------
-     * Convert chapterId to number
+     * Convert chapterId to UUID string
      * --------------------------------------------------
      */
 
-    const chapterId = Number(rawChapterId);
-
-    /*
-     * --------------------------------------------------
-     * Validate chapterId
-     * --------------------------------------------------
-     */
-
-    if (!Number.isInteger(chapterId) || chapterId <= 0) {
+    if (typeof rawChapterId !== "string" || rawChapterId.trim().length === 0) {
       res.status(400).json({
         success: false,
-        message: "chapterId must be a positive integer.",
+        message: "chapterId must be a valid UUID.",
       });
 
       return;
     }
+
+    const chapterId = rawChapterId.trim();
 
     /*
      * --------------------------------------------------
@@ -150,6 +154,10 @@ export async function getAdminKnowledgeGraphController(
      * 6. Resolves Execution references.
      * 7. Reads Execution.structure.
      * 8. Adds connected CQs.
+     * 9. Adds connected MCQs.
+     *
+     * Question connections are based on their direct
+     * knowledge target.
      *
      * Structure ordering is preserved.
      */

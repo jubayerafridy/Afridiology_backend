@@ -47,6 +47,7 @@ function parsePositiveInt(value: unknown, fieldName: string): number {
 
 function parseOptionalPositiveInt(
   value: unknown,
+
   fieldName: string,
 ): number | null {
   if (value === undefined || value === null || value === "") {
@@ -58,6 +59,7 @@ function parseOptionalPositiveInt(
 
 function parseOptionalNonNegativeInt(
   value: unknown,
+
   fieldName: string,
 ): number | null {
   if (value === undefined || value === null || value === "") {
@@ -155,6 +157,7 @@ function parseRequiredJsonValue(value: unknown, fieldName: string): JsonValue {
 
 function parseOptionalJsonValue(
   value: unknown,
+
   fieldName: string,
 ): JsonValue | undefined {
   if (value === undefined) {
@@ -174,27 +177,42 @@ function hasOwn(body: Record<string, unknown>, fieldName: string): boolean {
 
 function buildLink(
   body: Record<string, unknown>,
+
   typeField: string,
+
   idField: string,
 ) {
   return {
     type: parseKnowledgeLinkType(body[typeField]),
+
     id: parseOptionalUuid(body[idField], idField),
   };
 }
 
 /**
- * Build the complete CQ payload used during creation.
- *
- * Rules:
- * - questionPaperId required
- * - qusNo optional
- * - point optional
- * - isActive optional
- * - stimulus JSON required
- * - Ka/Kha/Ga required
- * - Gha optional
+
+ \* Build the complete CQ payload used during creation.
+
+ \*
+
+ \* Rules:
+
+ \* - questionPaperId required
+
+ \* - qusNo optional
+
+ \* - point optional
+
+ \* - isActive optional
+
+ \* - stimulus JSON required
+
+ \* - Ka/Kha/Ga required
+
+ \* - Gha optional
+
  */
+
 function buildCreateInput(body: Record<string, unknown>): CreateCQInput {
   const kaLink = buildLink(body, "quesKaLinkType", "quesKaLinkId");
 
@@ -215,14 +233,17 @@ function buildCreateInput(body: Record<string, unknown>): CreateCQInput {
 
     descriptionEng: parseRequiredJsonValue(
       body.descriptionEng,
+
       "descriptionEng",
     ),
 
     quesUddipok: parseNullableString(body.quesUddipok),
 
     imageUrl: parseNullableString(body.imageUrl),
+    ytLink: parseNullableString(body.ytLink),
 
     // ক
+
     quesKaBN: parseRequiredString(body.quesKaBN, "quesKaBN"),
 
     quesKaEng: parseRequiredString(body.quesKaEng, "quesKaEng"),
@@ -236,6 +257,7 @@ function buildCreateInput(body: Record<string, unknown>): CreateCQInput {
     ansKaEng: parseNullableString(body.ansKaEng),
 
     // খ
+
     quesKhaBN: parseRequiredString(body.quesKhaBN, "quesKhaBN"),
 
     quesKhaEng: parseRequiredString(body.quesKhaEng, "quesKhaEng"),
@@ -249,6 +271,7 @@ function buildCreateInput(body: Record<string, unknown>): CreateCQInput {
     ansKhaEng: parseNullableString(body.ansKhaEng),
 
     // গ
+
     quesGaBN: parseRequiredString(body.quesGaBN, "quesGaBN"),
 
     quesGaEng: parseRequiredString(body.quesGaEng, "quesGaEng"),
@@ -262,6 +285,7 @@ function buildCreateInput(body: Record<string, unknown>): CreateCQInput {
     ansGaEng: parseNullableString(body.ansGaEng),
 
     // ঘ — optional
+
     quesGhaBN: parseNullableString(body.quesGhaBN),
 
     quesGhaEng: parseNullableString(body.quesGhaEng),
@@ -276,12 +300,19 @@ function buildCreateInput(body: Record<string, unknown>): CreateCQInput {
   };
 
   /**
-   * With exactOptionalPropertyTypes enabled,
-   * only assign isActive when the client actually
-   * supplied it.
-   *
-   * If omitted, the service uses false for a new CQ.
+
+   \* With exactOptionalPropertyTypes enabled,
+
+   \* only assign isActive when the client actually
+
+   \* supplied it.
+
+   \*
+
+   \* If omitted, the service uses false for a new CQ.
+
    */
+
   if (hasOwn(body, "isActive")) {
     data.isActive = parseBoolean(body.isActive, "isActive");
   }
@@ -290,23 +321,41 @@ function buildCreateInput(body: Record<string, unknown>): CreateCQInput {
 }
 
 /**
- * Build a PARTIAL CQ update.
- *
- * Only fields actually supplied by the client
- * are included.
- *
- * This allows independent updates such as:
- * - serial only
- * - point only
- * - active/inactive only
- * - stimulus only
- * - Ka only
- * - Kha only
- * - Ga only
- * - Gha only
- * - answer only
- * - clearing nullable values
+
+ \* Build a PARTIAL CQ update.
+
+ \*
+
+ \* Only fields actually supplied by the client
+
+ \* are included.
+
+ \*
+
+ \* This allows independent updates such as:
+
+ \* - serial only
+
+ \* - point only
+
+ \* - active/inactive only
+
+ \* - stimulus only
+
+ \* - Ka only
+
+ \* - Kha only
+
+ \* - Ga only
+
+ \* - Gha only
+
+ \* - answer only
+
+ \* - clearing nullable values
+
  */
+
 function buildUpdateInput(body: Record<string, unknown>): UpdateCQInput {
   const data: UpdateCQInput = {};
 
@@ -323,18 +372,29 @@ function buildUpdateInput(body: Record<string, unknown>): UpdateCQInput {
   }
 
   /**
-   * Each CQ controls its own active state.
-   *
-   * true  -> this CQ becomes active
-   * false -> this CQ becomes inactive
+
+   \* Each CQ controls its own active state.
+
+   \*
+
+   \* true  -> this CQ becomes active
+
+   \* false -> this CQ becomes inactive
+
    */
+
   if (hasOwn(body, "isActive")) {
     data.isActive = parseBoolean(body.isActive, "isActive");
+  }
+
+  if (hasOwn(body, "ytLink")) {
+    data.ytLink = parseNullableString(body.ytLink);
   }
 
   if (hasOwn(body, "descriptionBN")) {
     const descriptionBN = parseOptionalJsonValue(
       body.descriptionBN,
+
       "descriptionBN",
     );
 
@@ -346,6 +406,7 @@ function buildUpdateInput(body: Record<string, unknown>): UpdateCQInput {
   if (hasOwn(body, "descriptionEng")) {
     const descriptionEng = parseOptionalJsonValue(
       body.descriptionEng,
+
       "descriptionEng",
     );
 
@@ -363,6 +424,7 @@ function buildUpdateInput(body: Record<string, unknown>): UpdateCQInput {
   }
 
   // ক
+
   if (hasOwn(body, "quesKaBN")) {
     data.quesKaBN = parseRequiredString(body.quesKaBN, "quesKaBN");
   }
@@ -388,6 +450,7 @@ function buildUpdateInput(body: Record<string, unknown>): UpdateCQInput {
   }
 
   // খ
+
   if (hasOwn(body, "quesKhaBN")) {
     data.quesKhaBN = parseRequiredString(body.quesKhaBN, "quesKhaBN");
   }
@@ -413,6 +476,7 @@ function buildUpdateInput(body: Record<string, unknown>): UpdateCQInput {
   }
 
   // গ
+
   if (hasOwn(body, "quesGaBN")) {
     data.quesGaBN = parseRequiredString(body.quesGaBN, "quesGaBN");
   }
@@ -438,6 +502,7 @@ function buildUpdateInput(body: Record<string, unknown>): UpdateCQInput {
   }
 
   // ঘ — optional
+
   if (hasOwn(body, "quesGhaBN")) {
     data.quesGhaBN = parseNullableString(body.quesGhaBN);
   }
@@ -474,29 +539,52 @@ function getRequestBody(req: Request): Record<string, unknown> {
 }
 
 /**
- * Convert one nested CQ question into the internal
- * CreateCQInput-compatible flat structure.
- *
- * External bulk JSON format:
- *
- * ka: {
- *   bn,
- *   eng,
- *   link: {
- *     id,
- *     type
- *   }
- * }
- *
- * Internal service format:
- *
- * quesKaBN
- * quesKaEng
- * quesKaLinkId
- * quesKaLinkType
+
+ \* Convert one nested CQ question into the internal
+
+ \* CreateCQInput-compatible flat structure.
+
+ \*
+
+ \* External bulk JSON format:
+
+ \*
+
+ \* ka: {
+
+ \*   bn,
+
+ \*   eng,
+
+ \*   link: {
+
+ \*     id,
+
+ \*     type
+
+ \*   }
+
+ \* }
+
+ \*
+
+ \* Internal service format:
+
+ \*
+
+ \* quesKaBN
+
+ \* quesKaEng
+
+ \* quesKaLinkId
+
+ \* quesKaLinkType
+
  */
+
 function normalizeBulkQuestion(
   question: Record<string, unknown>,
+
   index: number,
 ): Record<string, unknown> {
   const ka =
@@ -575,8 +663,10 @@ function normalizeBulkQuestion(
     quesUddipok: question.quesUddipok,
 
     imageUrl: question.imageUrl,
+    ytLink: question.ytLink,
 
     // ক
+
     quesKaBN: ka.bn,
 
     quesKaEng: ka.eng,
@@ -590,6 +680,7 @@ function normalizeBulkQuestion(
     ansKaEng: ka.answerEng,
 
     // খ
+
     quesKhaBN: kha.bn,
 
     quesKhaEng: kha.eng,
@@ -603,6 +694,7 @@ function normalizeBulkQuestion(
     ansKhaEng: kha.answerEng,
 
     // গ
+
     quesGaBN: ga.bn,
 
     quesGaEng: ga.eng,
@@ -616,6 +708,7 @@ function normalizeBulkQuestion(
     ansGaEng: ga.answerEng,
 
     // ঘ — optional
+
     quesGhaBN: gha?.bn ?? null,
 
     quesGhaEng: gha?.eng ?? null,
@@ -633,39 +726,73 @@ function normalizeBulkQuestion(
 }
 
 /**
- * Build all CQ inputs for bulk creation.
- *
- * Bulk JSON uses the nested CQ format:
- *
- * {
- *   "questions": [
- *     {
- *       "questionPaperId": "...",
- *       "qusNo": 1,
- *       "descriptionBN": [],
- *       "descriptionEng": [],
- *       "imageUrl": null,
- *       "ka": {
- *         "bn": "...",
- *         "eng": "...",
- *         "link": {
- *           "id": "...",
- *           "type": "CHAPTER"
- *         },
- *         "answerBN": null,
- *         "answerEng": null
- *       },
- *       "kha": {},
- *       "ga": {},
- *       "gha": null
- *     }
- *   ]
- * }
- *
- * Each nested question is converted into the existing
- * internal CreateCQInput format and then passed through
- * the existing validation.
+
+ \* Build all CQ inputs for bulk creation.
+
+ \*
+
+ \* Bulk JSON uses the nested CQ format:
+
+ \*
+
+ \* {
+
+ \*   "questions": [
+
+ \*     {
+
+ \*       "questionPaperId": "...",
+
+ \*       "qusNo": 1,
+
+ \*       "descriptionBN": [],
+
+ \*       "descriptionEng": [],
+
+ \*       "imageUrl": null,
+
+ \*       "ka": {
+
+ \*         "bn": "...",
+
+ \*         "eng": "...",
+
+ \*         "link": {
+
+ \*           "id": "...",
+
+ \*           "type": "CHAPTER"
+
+ \*         },
+
+ \*         "answerBN": null,
+
+ \*         "answerEng": null
+
+ \*       },
+
+ \*       "kha": {},
+
+ \*       "ga": {},
+
+ \*       "gha": null
+
+ \*     }
+
+ \*   ]
+
+ \* }
+
+ \*
+
+ \* Each nested question is converted into the existing
+
+ \* internal CreateCQInput format and then passed through
+
+ \* the existing validation.
+
  */
+
 function buildBulkCreateInputs(body: Record<string, unknown>): CreateCQInput[] {
   const questions = body.questions;
 
@@ -684,6 +811,7 @@ function buildBulkCreateInputs(body: Record<string, unknown>): CreateCQInput[] {
 
     const normalizedQuestion = normalizeBulkQuestion(
       question as Record<string, unknown>,
+
       index,
     );
 
@@ -704,15 +832,25 @@ export async function createCQController(req: Request, res: Response) {
     const body = getRequestBody(req);
 
     /**
-     * Bulk creation:
-     *
-     * {
-     *   "questions": [
-     *     { ...nested CQ 1... },
-     *     { ...nested CQ 2... }
-     *   ]
-     * }
+
+     \* Bulk creation:
+
+     \*
+
+     \* {
+
+     \*   "questions": [
+
+     \*     { ...nested CQ 1... },
+
+     \*     { ...nested CQ 2... }
+
+     \*   ]
+
+     \* }
+
      */
+
     if (Object.prototype.hasOwnProperty.call(body, "questions")) {
       const data = buildBulkCreateInputs(body);
 
@@ -720,6 +858,7 @@ export async function createCQController(req: Request, res: Response) {
 
       res.status(201).json({
         success: true,
+
         data: cqs,
       });
 
@@ -727,17 +866,24 @@ export async function createCQController(req: Request, res: Response) {
     }
 
     /**
-     * Existing single CQ creation remains unchanged.
-     *
-     * Single creation continues to use the existing
-     * flat request structure expected by the admin UI.
+
+     \* Existing single CQ creation remains unchanged.
+
+     \*
+
+     \* Single creation continues to use the existing
+
+     \* flat request structure expected by the admin UI.
+
      */
+
     const data = buildCreateInput(body);
 
     const cq = await createCQ(data);
 
     res.status(201).json({
       success: true,
+
       data: cq,
     });
   } catch (error) {
@@ -745,6 +891,7 @@ export async function createCQController(req: Request, res: Response) {
 
     res.status(400).json({
       success: false,
+
       message: getErrorMessage(error),
     });
   }
@@ -761,6 +908,7 @@ export async function getCQsController(req: Request, res: Response) {
 
     res.status(200).json({
       success: true,
+
       data: cqs,
     });
   } catch (error) {
@@ -768,6 +916,7 @@ export async function getCQsController(req: Request, res: Response) {
 
     res.status(400).json({
       success: false,
+
       message: getErrorMessage(error),
     });
   }
@@ -782,6 +931,7 @@ export async function getCQController(req: Request, res: Response) {
     if (!cq) {
       res.status(404).json({
         success: false,
+
         message: "CQ not found",
       });
 
@@ -790,6 +940,7 @@ export async function getCQController(req: Request, res: Response) {
 
     res.status(200).json({
       success: true,
+
       data: cq,
     });
   } catch (error) {
@@ -797,6 +948,7 @@ export async function getCQController(req: Request, res: Response) {
 
     res.status(400).json({
       success: false,
+
       message: getErrorMessage(error),
     });
   }
@@ -815,6 +967,7 @@ export async function updateCQController(req: Request, res: Response) {
     if (!cq) {
       res.status(404).json({
         success: false,
+
         message: "CQ not found",
       });
 
@@ -823,6 +976,7 @@ export async function updateCQController(req: Request, res: Response) {
 
     res.status(200).json({
       success: true,
+
       data: cq,
     });
   } catch (error) {
@@ -830,6 +984,7 @@ export async function updateCQController(req: Request, res: Response) {
 
     res.status(400).json({
       success: false,
+
       message: getErrorMessage(error),
     });
   }
@@ -844,6 +999,7 @@ export async function deleteCQController(req: Request, res: Response) {
     if (!cq) {
       res.status(404).json({
         success: false,
+
         message: "CQ not found",
       });
 
@@ -852,6 +1008,7 @@ export async function deleteCQController(req: Request, res: Response) {
 
     res.status(200).json({
       success: true,
+
       data: cq,
     });
   } catch (error) {
@@ -859,6 +1016,7 @@ export async function deleteCQController(req: Request, res: Response) {
 
     res.status(400).json({
       success: false,
+
       message: getErrorMessage(error),
     });
   }

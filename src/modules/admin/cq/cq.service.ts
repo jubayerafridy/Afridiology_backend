@@ -16,16 +16,27 @@ export interface KnowledgeLinkInput {
 }
 
 /**
+
  * Data required when creating a CQ.
+
  *
+
  * qusNo and point are optional.
+
  *
+
  * New CQs are inactive by default; isActive can be explicitly set.
+
  *
+
  * Ka, Kha and Ga must always have a direct knowledge link.
+
  *
+
  * Gha is optional.
+
  */
+
 export interface CreateCQInput {
   questionPaperId: string;
 
@@ -42,6 +53,8 @@ export interface CreateCQInput {
   quesUddipok?: string | null;
 
   imageUrl?: string | null;
+
+  ytLink?: string | null;
 
   // ক
 
@@ -101,14 +114,23 @@ export interface CreateCQInput {
 }
 
 /**
+
  * Partial update.
+
  *
+
  * undefined = do not change.
+
  *
+
  * null = clear a nullable field.
+
  *
+
  * isActive = true/false controls this CQ independently.
+
  */
+
 export type UpdateCQInput = Partial<CreateCQInput>;
 
 interface NormalizedLink {
@@ -133,6 +155,8 @@ interface NormalizedCQData {
   quesUddipok: string | null;
 
   imageUrl: string | null;
+
+  ytLink: string | null;
 
   // ক
 
@@ -192,15 +216,25 @@ interface NormalizedCQData {
 }
 
 /**
+
  * Internal type used while merging an existing database row
+
  * with a partial update.
+
  *
+
  * Database link types are intentionally represented as string
+
  * because the generated ORM model exposes them as string | null.
+
  *
+
  * normalizeLinkType() validates them before they enter the
+
  * normalized application type.
+
  */
+
 interface MergedCQInput {
   questionPaperId: string;
 
@@ -217,6 +251,8 @@ interface MergedCQInput {
   quesUddipok: string | null;
 
   imageUrl: string | null;
+
+  ytLink: string | null;
 
   // ক
 
@@ -336,9 +372,13 @@ function normalizeIsActive(value?: boolean): boolean {
 }
 
 /**
+
  * Converts a value coming from the database into the
+
  * application's KnowledgeLinkType.
+
  */
+
 function normalizeLinkType(
   value: string | KnowledgeLinkType | null | undefined,
 ): KnowledgeLinkType | null {
@@ -359,22 +399,38 @@ function normalizeLinkType(
 }
 
 /**
+
  * Normalizes one direct knowledge link.
+
  *
+
  * A CQ part may directly point to:
+
  *
+
  * CHAPTER
+
  * LESSON
+
  * CONCEPT
+
  * EXECUTION
+
  *
+
  * Only this direct target is stored.
+
  * Ancestors are derived from the existing hierarchy.
+
  */
+
 function normalizeKnowledgeLink(
   linkType: KnowledgeLinkType | string | null | undefined,
+
   linkId: string | null | undefined,
+
   fieldName: string,
+
   required: boolean,
 ): NormalizedLink | null {
   if (linkType === undefined && linkId === undefined) {
@@ -411,28 +467,44 @@ function normalizeKnowledgeLink(
 }
 
 /**
+
  * Gha is optional.
+
  *
+
  * If Gha has question text, its direct knowledge link is required.
+
  * If Gha is not provided, its link may remain null.
+
  */
+
 function normalizeOptionalGhaLink(
   linkType: KnowledgeLinkType | string | null | undefined,
+
   linkId: string | null | undefined,
 ): NormalizedLink | null {
   return normalizeKnowledgeLink(linkType, linkId, "quesGha", false);
 }
 
 /**
+
  * Validates that a direct knowledge target belongs to the same subject
+
  * as the Question Paper.
+
  *
+
  * Only the direct target is stored. Ancestors are derived from the
+
  * existing Chapter -> Lesson -> Concept -> Execution hierarchy.
+
  */
+
 async function validateKnowledgeLink(
   questionPaperSubjectId: string,
+
   link: NormalizedLink,
+
   fieldName: string,
 ): Promise<void> {
   switch (link.type) {
@@ -578,8 +650,10 @@ async function validateKnowledgeLink(
 
 async function validateAllKnowledgeLinks(
   questionPaperSubjectId: string,
+
   links: Array<{
     fieldName: string;
+
     link: NormalizedLink | null;
   }>,
 ): Promise<void> {
@@ -590,7 +664,9 @@ async function validateAllKnowledgeLinks(
 
     await validateKnowledgeLink(
       questionPaperSubjectId,
+
       item.link,
+
       item.fieldName,
     );
   }
@@ -599,22 +675,31 @@ async function validateAllKnowledgeLinks(
 function normalizeData(data: MergedCQInput | CreateCQInput): NormalizedCQData {
   const kaLink = normalizeKnowledgeLink(
     data.quesKaLinkType,
+
     data.quesKaLinkId,
+
     "quesKa",
+
     true,
   );
 
   const khaLink = normalizeKnowledgeLink(
     data.quesKhaLinkType,
+
     data.quesKhaLinkId,
+
     "quesKha",
+
     true,
   );
 
   const gaLink = normalizeKnowledgeLink(
     data.quesGaLinkType,
+
     data.quesGaLinkId,
+
     "quesGa",
+
     true,
   );
 
@@ -626,6 +711,7 @@ function normalizeData(data: MergedCQInput | CreateCQInput): NormalizedCQData {
 
   const normalizedGhaLink = normalizeOptionalGhaLink(
     data.quesGhaLinkType,
+
     data.quesGhaLinkId,
   );
 
@@ -670,6 +756,8 @@ function normalizeData(data: MergedCQInput | CreateCQInput): NormalizedCQData {
     quesUddipok: normalizeOptionalText(data.quesUddipok),
 
     imageUrl: normalizeOptionalText(data.imageUrl),
+
+    ytLink: normalizeOptionalText(data.ytLink),
 
     // ক
 
@@ -731,6 +819,7 @@ function normalizeData(data: MergedCQInput | CreateCQInput): NormalizedCQData {
 
 async function validateQuestionPaper(questionPaperId: string): Promise<{
   id: string;
+
   subjectId: string;
 }> {
   const questionPaper = await prisma.orm.public.QuestionPaper.first({
@@ -750,7 +839,9 @@ async function validateQuestionPaper(questionPaperId: string): Promise<{
 
 async function validateQuestionNumber(
   questionPaperId: string,
+
   qusNo: number | null,
+
   currentCQId?: string,
 ): Promise<void> {
   if (qusNo === null) {
@@ -773,6 +864,7 @@ async function validateQuestionNumber(
 function sortCQsByQuestionNumber<
   T extends {
     id: string;
+
     qusNo: number | null;
   },
 >(cqs: T[]): T[] {
@@ -794,11 +886,17 @@ function sortCQsByQuestionNumber<
 }
 
 /**
+
  * ORM JSON values use a generated JSON type that is not
+
  * identical to our local JsonValue type.
+
  *
+
  * This conversion is only at the service boundary.
+
  */
+
 function normalizeExistingJson(value: unknown): JsonValue {
   return value as JsonValue;
 }
@@ -806,50 +904,79 @@ function normalizeExistingJson(value: unknown): JsonValue {
 function mergeCQData(
   existingCQ: {
     questionPaperId: string;
+
     qusNo: number | null;
+
     point: number | null;
+
     isActive: boolean;
+
     descriptionBN: unknown;
+
     descriptionEng: unknown;
+
     quesUddipok: string | null;
+
     imageUrl: string | null;
+    ytLink: string | null;
 
     // ক
 
     quesKaBN: string;
+
     quesKaEng: string;
+
     quesKaLinkType: string | null;
+
     quesKaLinkId: string | null;
+
     ansKaBN: string | null;
+
     ansKaEng: string | null;
 
     // খ
 
     quesKhaBN: string;
+
     quesKhaEng: string;
+
     quesKhaLinkType: string | null;
+
     quesKhaLinkId: string | null;
+
     ansKhaBN: string | null;
+
     ansKhaEng: string | null;
 
     // গ
 
     quesGaBN: string;
+
     quesGaEng: string;
+
     quesGaLinkType: string | null;
+
     quesGaLinkId: string | null;
+
     ansGaBN: string | null;
+
     ansGaEng: string | null;
 
     // ঘ
 
     quesGhaBN: string | null;
+
     quesGhaEng: string | null;
+
     quesGhaLinkType: string | null;
+
     quesGhaLinkId: string | null;
+
     ansGhaBN: string | null;
+
     ansGhaEng: string | null;
   },
+
   data: UpdateCQInput,
 ): MergedCQInput {
   return {
@@ -877,6 +1004,7 @@ function mergeCQData(
         : existingCQ.quesUddipok,
 
     imageUrl: data.imageUrl !== undefined ? data.imageUrl : existingCQ.imageUrl,
+    ytLink: data.ytLink !== undefined ? data.ytLink : existingCQ.ytLink,
 
     // ক
 
@@ -970,29 +1098,36 @@ function mergeCQData(
 
 async function validateNormalizedCQ(
   questionPaperSubjectId: string,
+
   normalizedData: NormalizedCQData,
 ): Promise<void> {
   await validateAllKnowledgeLinks(questionPaperSubjectId, [
     {
       fieldName: "quesKa",
+
       link: {
         type: normalizedData.quesKaLinkType,
+
         id: normalizedData.quesKaLinkId,
       },
     },
 
     {
       fieldName: "quesKha",
+
       link: {
         type: normalizedData.quesKhaLinkType,
+
         id: normalizedData.quesKhaLinkId,
       },
     },
 
     {
       fieldName: "quesGa",
+
       link: {
         type: normalizedData.quesGaLinkType,
+
         id: normalizedData.quesGaLinkId,
       },
     },
@@ -1005,6 +1140,7 @@ async function validateNormalizedCQ(
         normalizedData.quesGhaLinkType !== null
           ? {
               type: normalizedData.quesGhaLinkType,
+
               id: normalizedData.quesGhaLinkId,
             }
           : null,
@@ -1013,10 +1149,15 @@ async function validateNormalizedCQ(
 }
 
 /**
+
  * Create one CQ.
+
  *
+
  * This remains the normal single-CQ creation function.
+
  */
+
 export async function createCQ(data: CreateCQInput) {
   const questionPaper = await validateQuestionPaper(data.questionPaperId);
 
@@ -1042,6 +1183,7 @@ export async function createCQ(data: CreateCQInput) {
     quesUddipok: normalizedData.quesUddipok,
 
     imageUrl: normalizedData.imageUrl,
+    ytLink: normalizedData.ytLink,
 
     // ক
 
@@ -1102,32 +1244,54 @@ export async function createCQ(data: CreateCQInput) {
 }
 
 /**
+
  * Create multiple CQs for one or more Question Papers.
+
  *
+
  * The same validation used by createCQ() is applied to every CQ.
+
  *
+
  * This function is intentionally kept separate from createCQ()
+
  * so the existing single-CQ admin flow continues to work.
+
  *
+
  * Before creating anything, duplicate question numbers inside
+
  * the same Question Paper are detected.
+
  */
+
 export async function createCQs(data: CreateCQInput[]) {
   if (!Array.isArray(data) || data.length === 0) {
     throw new Error("At least one CQ is required");
   }
 
   /**
+
    * Detect duplicate question numbers inside the incoming batch
+
    * before any database rows are created.
+
    *
+
    * This prevents a batch such as:
+
    *
+
    * CQ 1 -> qusNo 1
+
    * CQ 2 -> qusNo 1
+
    *
+
    * from partially creating the batch.
+
    */
+
   const questionNumbers = new Map<string, Set<number>>();
 
   for (const item of data) {
@@ -1157,12 +1321,19 @@ export async function createCQs(data: CreateCQInput[]) {
   }
 
   /**
+
    * Create sequentially.
+
    *
+
    * We deliberately reuse createCQ() so that bulk creation
+
    * follows exactly the same validation and database mapping
+
    * as single-CQ creation.
+
    */
+
   const createdCQs = [];
 
   for (const item of data) {
@@ -1209,7 +1380,9 @@ export async function updateCQ(id: string, data: UpdateCQInput) {
 
   await validateQuestionNumber(
     normalizedData.questionPaperId,
+
     normalizedData.qusNo,
+
     id,
   );
 
@@ -1231,6 +1404,7 @@ export async function updateCQ(id: string, data: UpdateCQInput) {
     quesUddipok: normalizedData.quesUddipok,
 
     imageUrl: normalizedData.imageUrl,
+    ytLink: normalizedData.ytLink,
 
     // ক
 

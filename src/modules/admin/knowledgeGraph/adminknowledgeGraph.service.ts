@@ -180,63 +180,112 @@ export interface AdminKnowledgeGraphItem {
   isActive?: boolean;
 
   /*
+
    * ==================================================
+
    * QUESTION PAYLOAD
+
    * ==================================================
+
    *
+
    * CQ and MCQ graph nodes expose their complete stored
+
    * question data so the admin frontend does not need a
+
    * second question-specific request just to render/edit
+
    * the question from the knowledge graph.
+
    *
+
    * These fields are optional because only CQ/MCQ items use
+
    * them. Existing chapter/lesson/concept/math items are
+
    * unchanged.
+
    */
 
   questionPaperId?: string | null;
+
   qusNo?: number | null;
+
   point?: number | null;
+
   imageUrl?: string | null;
+
   ytLink?: string | null;
 
   // CQ — ক
+
   quesKaBN?: string | null;
+
   quesKaEng?: string | null;
+
   quesKaLinkType?: KnowledgeLinkType | null;
+
   quesKaLinkId?: string | null;
+
   ansKaBN?: string | null;
+
   ansKaEng?: string | null;
 
   // CQ — খ
+
   quesKhaBN?: string | null;
+
   quesKhaEng?: string | null;
+
   quesKhaLinkType?: KnowledgeLinkType | null;
+
   quesKhaLinkId?: string | null;
+
   ansKhaBN?: string | null;
+
   ansKhaEng?: string | null;
 
   // CQ — গ
+
   quesGaBN?: string | null;
+
   quesGaEng?: string | null;
+
   quesGaLinkType?: KnowledgeLinkType | null;
+
   quesGaLinkId?: string | null;
+
   ansGaBN?: string | null;
+
   ansGaEng?: string | null;
 
   // CQ — ঘ
+
   quesGhaBN?: string | null;
+
   quesGhaEng?: string | null;
+
   quesGhaLinkType?: KnowledgeLinkType | null;
+
   quesGhaLinkId?: string | null;
+
   ansGhaBN?: string | null;
+
   ansGhaEng?: string | null;
 
-  // MCQ
+  // MCQ direct knowledge connection
+  linkType?: KnowledgeLinkType | null;
+  linkId?: string | null;
+
+  // MCQ question content
   optionsBN?: unknown;
+
   optionsEng?: unknown;
+
   rightAns?: number | null;
+
   explanationBN?: unknown;
+
   explanationEng?: unknown;
 
   questionMeta?: {
@@ -1314,6 +1363,7 @@ export async function getAdminChapterKnowledgeGraph(
       point: cq.point,
 
       imageUrl: cq.imageUrl,
+      ytLink: cq.ytLink,
 
       description: normalizeDocument(cq.descriptionBN),
 
@@ -1604,6 +1654,10 @@ export async function getAdminChapterKnowledgeGraph(
        */
 
       isActive: mcq.isActive,
+
+      // The MCQ has one direct knowledge connection.
+      linkType: isKnowledgeLinkType(mcq.linkType) ? mcq.linkType : null,
+      linkId: mcq.linkId,
 
       /*
 

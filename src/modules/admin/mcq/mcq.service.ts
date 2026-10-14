@@ -60,6 +60,24 @@ export interface CreateMCQInput {
  */
 export type UpdateMCQInput = Partial<CreateMCQInput>;
 
+/**
+ * One item in a bulk MCQ update request.
+ */
+export interface BulkUpdateMCQItem {
+  id: string;
+  data: UpdateMCQInput;
+}
+
+/**
+ * Result for one MCQ in a bulk update request.
+ */
+export interface BulkUpdateMCQItemResult {
+  id: string;
+  success: boolean;
+  mcq?: Awaited<ReturnType<typeof updateMCQ>>;
+  error?: string;
+}
+
 interface NormalizedMCQData {
   isActive: boolean;
   imageUrl: string | null;
@@ -834,6 +852,98 @@ export async function updateMCQ(id: string, data: UpdateMCQInput) {
 
     ytLink: normalizedData.ytLink,
   });
+}
+
+/**
+ * Update multiple MCQs sequentially.
+ *
+ * Every MCQ goes through the same validation as updateMCQ().
+ * A failed item does not prevent the remaining items from being processed.
+ *
+ * Expected input:
+ *
+ * [
+ *   {
+ *     "id": "MCQ_ID_1",
+ *     "data": {
+ *       "linkType": "CONCEPT",
+ *       "linkId": "CONCEPT_ID_1"
+ *     }
+ *   },
+ *   {
+ *     "id": "MCQ_ID_2",
+ *     "data": {
+ *       "linkType": "EXECUTION",
+ *       "linkId": "EXECUTION_ID_2"
+ *     }
+ *   }
+ * ]
+ */
+export async function updateMCQs(
+  updates: BulkUpdateMCQItem[],
+): Promise<BulkUpdateMCQItemResult[]> {
+  if (!Array.isArray(updates) || updates.length === 0) {
+    throw new Error("updates must contain at least one MCQ update");
+  }
+
+  const seenIds = new Set<string>();
+
+  // Validate the request structure before attempting any updates.
+  for (const item of updates) {
+    if (!item || typeof item.id !== "string" || item.id.trim().length === 0) {
+      throw new Error("Every update must contain a valid MCQ id");
+    }
+
+    if (seenIds.has(item.id)) {
+      throw new Error(`Duplicate MCQ id in bulk update: ${item.id}`);
+    }
+
+    seenIds.add(item.id);
+
+    if (
+      !item.data ||
+      typeof item.data !== "object" ||
+      Array.isArray(item.data)
+    ) {
+      throw new Error(`A valid data object is required for MCQ ${item.id}`);
+    }
+
+    if (Object.keys(item.data).length === 0) {
+      throw new Error(`Update data cannot be empty for MCQ ${item.id}`);
+    }
+  }
+
+  const results: BulkUpdateMCQItemResult[] = [];
+
+  for (const item of updates) {
+    try {
+      const mcq = await updateMCQ(item.id, item.data);
+
+      if (!mcq) {
+        results.push({
+          id: item.id,
+          success: false,
+          error: "MCQ not found",
+        });
+
+        continue;
+      }
+
+      results.push({
+        id: item.id,
+        success: true,
+        mcq,
+      });
+    } catch (error) {
+      results.push({
+        id: item.id,
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to update MCQ",
+      });
+    }
+  }
+
+  return results;
 }
 
 export async function deleteMCQ(id: string) {

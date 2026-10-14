@@ -6,11 +6,14 @@ import {
   getCQController,
   getCQsController,
   updateCQController,
+  updateCQsController,
 } from "./cq.controller.js";
 
 const cqRouter = Router();
 
 cqRouter.get("/", getCQsController);
+
+cqRouter.post("/bulk-update", updateCQsController);
 
 cqRouter.get("/:id", getCQController);
 

@@ -1464,6 +1464,101 @@ export async function updateCQ(id: string, data: UpdateCQInput) {
   });
 }
 
+/**
+ * Result for one item in a bulk CQ update request.
+ *
+ * Each CQ is updated through updateCQ(), so the existing merge,
+ * question-paper, question-number, and knowledge-link validation stays in use.
+ * A failure for one CQ does not prevent later CQs from being processed.
+ */
+export interface BulkUpdateCQItem {
+  id: string;
+  data: UpdateCQInput;
+}
+
+export interface BulkUpdateCQItemResult {
+  id: string;
+  success: boolean;
+  cq?: Awaited<ReturnType<typeof updateCQ>>;
+  error?: string;
+}
+
+/**
+ * Update multiple existing CQs with partial field updates.
+ *
+ * `data` may contain only the fields to change. Fields omitted from `data`
+ * remain unchanged because updateCQ() merges each patch with the current row.
+ *
+ * This function deliberately reuses updateCQ() rather than writing directly
+ * to the database, preserving all current per-CQ validation and mapping.
+ * Results are returned per record so callers can report and retry failures.
+ */
+export async function updateCQs(
+  updates: BulkUpdateCQItem[],
+): Promise<BulkUpdateCQItemResult[]> {
+  if (!Array.isArray(updates) || updates.length === 0) {
+    throw new Error("At least one CQ update is required");
+  }
+
+  const seenIds = new Set<string>();
+  for (const item of updates) {
+    if (!item || typeof item.id !== "string" || item.id.trim() === "") {
+      throw new Error("Every CQ update must include a valid string ID");
+    }
+
+    if (seenIds.has(item.id)) {
+      throw new Error(
+        `CQ ID ${item.id} appears more than once in the bulk update`,
+      );
+    }
+    seenIds.add(item.id);
+
+    if (
+      !item.data ||
+      typeof item.data !== "object" ||
+      Array.isArray(item.data)
+    ) {
+      throw new Error(`Update data is required for CQ ${item.id}`);
+    }
+
+    if (Object.keys(item.data).length === 0) {
+      throw new Error(`At least one field must be provided for CQ ${item.id}`);
+    }
+  }
+
+  const results: BulkUpdateCQItemResult[] = [];
+
+  for (const item of updates) {
+    try {
+      const updatedCQ = await updateCQ(item.id, item.data);
+
+      if (!updatedCQ) {
+        results.push({
+          id: item.id,
+          success: false,
+          error: `CQ with ID ${item.id} was not found`,
+        });
+        continue;
+      }
+
+      results.push({
+        id: item.id,
+        success: true,
+        cq: updatedCQ,
+      });
+    } catch (error: unknown) {
+      results.push({
+        id: item.id,
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Unknown CQ update error",
+      });
+    }
+  }
+
+  return results;
+}
+
 export async function deleteCQ(id: string) {
   const existingCQ = await prisma.orm.public.CQ.first({
     id,

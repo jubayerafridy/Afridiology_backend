@@ -7,6 +7,7 @@ import {
   getMCQ,
   getMCQs,
   updateMCQ,
+  updateMCQs,
   type CreateMCQInput,
   type KnowledgeLinkType,
   type UpdateMCQInput,
@@ -191,30 +192,19 @@ function buildCreateInput(body: Record<string, unknown>): CreateMCQInput {
 
   const data: CreateMCQInput = {
     isActive: false,
-
     imageUrl: parseNullableString(body.imageUrl),
-
     descriptionBN: parseRequiredJsonValue(body.descriptionBN, "descriptionBN"),
-
     descriptionEng: parseRequiredJsonValue(
       body.descriptionEng,
       "descriptionEng",
     ),
-
     rightAns: parsePositiveInt(body.rightAns, "rightAns"),
-
     linkType: link.type,
-
     linkId: link.id,
-
     questionPaperId: parseUuid(body.questionPaperId, "questionPaperId"),
-
     qusNo: parseOptionalPositiveInt(body.qusNo, "qusNo"),
-
     optionsBN: parseRequiredJsonValue(body.optionsBN, "optionsBN"),
-
     optionsEng: parseRequiredJsonValue(body.optionsEng, "optionsEng"),
-
     ytLink: parseNullableString(body.ytLink),
   };
 
@@ -526,6 +516,88 @@ export async function updateMCQController(req: Request, res: Response) {
     res.status(200).json({
       success: true,
       data: mcq,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(400).json({
+      success: false,
+      message: getErrorMessage(error),
+    });
+  }
+}
+
+/**
+ * Bulk update multiple MCQs.
+ *
+ * Expected body:
+ *
+ * {
+ *   "updates": [
+ *     {
+ *       "id": "MCQ_UUID_1",
+ *       "data": {
+ *         "linkType": "CONCEPT",
+ *         "linkId": "CONCEPT_UUID_1"
+ *       }
+ *     },
+ *     {
+ *       "id": "MCQ_UUID_2",
+ *       "data": {
+ *         "linkType": "EXECUTION",
+ *         "linkId": "EXECUTION_UUID_2"
+ *       }
+ *     }
+ *   ]
+ * }
+ *
+ * Each item is validated and updated independently by the service.
+ */
+export async function updateMCQsController(req: Request, res: Response) {
+  try {
+    const body = getRequestBody(req);
+
+    if (!Array.isArray(body.updates) || body.updates.length === 0) {
+      throw new Error("updates must be a non-empty array");
+    }
+
+    const updates = body.updates.map((item, index) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) {
+        throw new Error(`updates[${index}] must be an object`);
+      }
+
+      const updateItem = item as Record<string, unknown>;
+
+      const id = parseRequiredUuid(updateItem.id, `updates[${index}].id`);
+
+      if (
+        !updateItem.data ||
+        typeof updateItem.data !== "object" ||
+        Array.isArray(updateItem.data)
+      ) {
+        throw new Error(`updates[${index}].data must be an object`);
+      }
+
+      const data = buildUpdateInput(updateItem.data as Record<string, unknown>);
+
+      if (Object.keys(data).length === 0) {
+        throw new Error(`updates[${index}].data must not be empty`);
+      }
+
+      return { id, data };
+    });
+
+    const results = await updateMCQs(updates);
+
+    const successCount = results.filter((result) => result.success).length;
+    const failureCount = results.length - successCount;
+
+    res.status(200).json({
+      success: failureCount === 0,
+      count: results.length,
+      successCount,
+      failureCount,
+      data: results,
     });
   } catch (error) {
     console.error(error);

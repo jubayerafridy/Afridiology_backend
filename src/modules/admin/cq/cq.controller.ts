@@ -7,6 +7,7 @@ import {
   getCQ,
   getCQs,
   updateCQ,
+  updateCQs,
   type CreateCQInput,
   type KnowledgeLinkType,
   type UpdateCQInput,
@@ -191,25 +192,25 @@ function buildLink(
 
 /**
 
- \* Build the complete CQ payload used during creation.
+ \\* Build the complete CQ payload used during creation.
 
- \*
+ \\*
 
- \* Rules:
+ \\* Rules:
 
- \* - questionPaperId required
+ \\* - questionPaperId required
 
- \* - qusNo optional
+ \\* - qusNo optional
 
- \* - point optional
+ \\* - point optional
 
- \* - isActive optional
+ \\* - isActive optional
 
- \* - stimulus JSON required
+ \\* - stimulus JSON required
 
- \* - Ka/Kha/Ga required
+ \\* - Ka/Kha/Ga required
 
- \* - Gha optional
+ \\* - Gha optional
 
  */
 
@@ -240,6 +241,7 @@ function buildCreateInput(body: Record<string, unknown>): CreateCQInput {
     quesUddipok: parseNullableString(body.quesUddipok),
 
     imageUrl: parseNullableString(body.imageUrl),
+
     ytLink: parseNullableString(body.ytLink),
 
     // ক
@@ -301,15 +303,15 @@ function buildCreateInput(body: Record<string, unknown>): CreateCQInput {
 
   /**
 
-   \* With exactOptionalPropertyTypes enabled,
+   \\* With exactOptionalPropertyTypes enabled,
 
-   \* only assign isActive when the client actually
+   \\* only assign isActive when the client actually
 
-   \* supplied it.
+   \\* supplied it.
 
-   \*
+   \\*
 
-   \* If omitted, the service uses false for a new CQ.
+   \\* If omitted, the service uses false for a new CQ.
 
    */
 
@@ -322,37 +324,37 @@ function buildCreateInput(body: Record<string, unknown>): CreateCQInput {
 
 /**
 
- \* Build a PARTIAL CQ update.
+ \\* Build a PARTIAL CQ update.
 
- \*
+ \\*
 
- \* Only fields actually supplied by the client
+ \\* Only fields actually supplied by the client
 
- \* are included.
+ \\* are included.
 
- \*
+ \\*
 
- \* This allows independent updates such as:
+ \\* This allows independent updates such as:
 
- \* - serial only
+ \\* - serial only
 
- \* - point only
+ \\* - point only
 
- \* - active/inactive only
+ \\* - active/inactive only
 
- \* - stimulus only
+ \\* - stimulus only
 
- \* - Ka only
+ \\* - Ka only
 
- \* - Kha only
+ \\* - Kha only
 
- \* - Ga only
+ \\* - Ga only
 
- \* - Gha only
+ \\* - Gha only
 
- \* - answer only
+ \\* - answer only
 
- \* - clearing nullable values
+ \\* - clearing nullable values
 
  */
 
@@ -373,13 +375,13 @@ function buildUpdateInput(body: Record<string, unknown>): UpdateCQInput {
 
   /**
 
-   \* Each CQ controls its own active state.
+   \\* Each CQ controls its own active state.
 
-   \*
+   \\*
 
-   \* true  -> this CQ becomes active
+   \\* true  -> this CQ becomes active
 
-   \* false -> this CQ becomes inactive
+   \\* false -> this CQ becomes inactive
 
    */
 
@@ -540,45 +542,45 @@ function getRequestBody(req: Request): Record<string, unknown> {
 
 /**
 
- \* Convert one nested CQ question into the internal
+ \\* Convert one nested CQ question into the internal
 
- \* CreateCQInput-compatible flat structure.
+ \\* CreateCQInput-compatible flat structure.
 
- \*
+ \\*
 
- \* External bulk JSON format:
+ \\* External bulk JSON format:
 
- \*
+ \\*
 
- \* ka: {
+ \\* ka: {
 
- \*   bn,
+ \\*   bn,
 
- \*   eng,
+ \\*   eng,
 
- \*   link: {
+ \\*   link: {
 
- \*     id,
+ \\*     id,
 
- \*     type
+ \\*     type
 
- \*   }
+ \\*   }
 
- \* }
+ \\* }
 
- \*
+ \\*
 
- \* Internal service format:
+ \\* Internal service format:
 
- \*
+ \\*
 
- \* quesKaBN
+ \\* quesKaBN
 
- \* quesKaEng
+ \\* quesKaEng
 
- \* quesKaLinkId
+ \\* quesKaLinkId
 
- \* quesKaLinkType
+ \\* quesKaLinkType
 
  */
 
@@ -663,6 +665,7 @@ function normalizeBulkQuestion(
     quesUddipok: question.quesUddipok,
 
     imageUrl: question.imageUrl,
+
     ytLink: question.ytLink,
 
     // ক
@@ -727,69 +730,69 @@ function normalizeBulkQuestion(
 
 /**
 
- \* Build all CQ inputs for bulk creation.
+ \\* Build all CQ inputs for bulk creation.
 
- \*
+ \\*
 
- \* Bulk JSON uses the nested CQ format:
+ \\* Bulk JSON uses the nested CQ format:
 
- \*
+ \\*
 
- \* {
+ \\* {
 
- \*   "questions": [
+ \\*   "questions": [
 
- \*     {
+ \\*     {
 
- \*       "questionPaperId": "...",
+ \\*       "questionPaperId": "...",
 
- \*       "qusNo": 1,
+ \\*       "qusNo": 1,
 
- \*       "descriptionBN": [],
+ \\*       "descriptionBN": [],
 
- \*       "descriptionEng": [],
+ \\*       "descriptionEng": [],
 
- \*       "imageUrl": null,
+ \\*       "imageUrl": null,
 
- \*       "ka": {
+ \\*       "ka": {
 
- \*         "bn": "...",
+ \\*         "bn": "...",
 
- \*         "eng": "...",
+ \\*         "eng": "...",
 
- \*         "link": {
+ \\*         "link": {
 
- \*           "id": "...",
+ \\*           "id": "...",
 
- \*           "type": "CHAPTER"
+ \\*           "type": "CHAPTER"
 
- \*         },
+ \\*         },
 
- \*         "answerBN": null,
+ \\*         "answerBN": null,
 
- \*         "answerEng": null
+ \\*         "answerEng": null
 
- \*       },
+ \\*       },
 
- \*       "kha": {},
+ \\*       "kha": {},
 
- \*       "ga": {},
+ \\*       "ga": {},
 
- \*       "gha": null
+ \\*       "gha": null
 
- \*     }
+ \\*     }
 
- \*   ]
+ \\*   ]
 
- \* }
+ \\* }
 
- \*
+ \\*
 
- \* Each nested question is converted into the existing
+ \\* Each nested question is converted into the existing
 
- \* internal CreateCQInput format and then passed through
+ \\* internal CreateCQInput format and then passed through
 
- \* the existing validation.
+ \\* the existing validation.
 
  */
 
@@ -833,21 +836,21 @@ export async function createCQController(req: Request, res: Response) {
 
     /**
 
-     \* Bulk creation:
+     \\* Bulk creation:
 
-     \*
+     \\*
 
-     \* {
+     \\* {
 
-     \*   "questions": [
+     \\*   "questions": [
 
-     \*     { ...nested CQ 1... },
+     \\*     { ...nested CQ 1... },
 
-     \*     { ...nested CQ 2... }
+     \\*     { ...nested CQ 2... }
 
-     \*   ]
+     \\*   ]
 
-     \* }
+     \\* }
 
      */
 
@@ -867,13 +870,13 @@ export async function createCQController(req: Request, res: Response) {
 
     /**
 
-     \* Existing single CQ creation remains unchanged.
+     \\* Existing single CQ creation remains unchanged.
 
-     \*
+     \\*
 
-     \* Single creation continues to use the existing
+     \\* Single creation continues to use the existing
 
-     \* flat request structure expected by the admin UI.
+     \\* flat request structure expected by the admin UI.
 
      */
 
@@ -985,6 +988,81 @@ export async function updateCQController(req: Request, res: Response) {
     res.status(400).json({
       success: false,
 
+      message: getErrorMessage(error),
+    });
+  }
+}
+
+/**
+ * Bulk partial update.
+ *
+ * Request body:
+ * {
+ *   "updates": [
+ *     { "id": "<CQ UUID>", "data": { "quesKaLinkType": "CONCEPT", "quesKaLinkId": "<UUID>" } },
+ *     { "id": "<CQ UUID>", "data": { "quesGaLinkType": "LESSON", "quesGaLinkId": "<UUID>" } }
+ *   ]
+ * }
+ *
+ * Each item can update a different subset of fields. The existing
+ * single-update validation and service logic are reused.
+ */
+export async function updateCQsController(req: Request, res: Response) {
+  try {
+    const body = getRequestBody(req);
+    const updates = body.updates;
+
+    if (!Array.isArray(updates) || updates.length === 0) {
+      throw new Error("updates must be a non-empty array");
+    }
+
+    const prepared = updates.map((item, index) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) {
+        throw new Error(`updates[${index}] must be an object`);
+      }
+
+      const record = item as Record<string, unknown>;
+      const id = parseUuid(record.id, `updates[${index}].id`);
+
+      // Accept both { id, data: { ... } } and { id, ...fields }.
+      const rawData =
+        record.data &&
+        typeof record.data === "object" &&
+        !Array.isArray(record.data)
+          ? (record.data as Record<string, unknown>)
+          : Object.fromEntries(
+              Object.entries(record).filter(([key]) => key !== "id"),
+            );
+
+      const data = buildUpdateInput(rawData);
+
+      if (Object.keys(data).length === 0) {
+        throw new Error(
+          `updates[${index}] must contain at least one field to update`,
+        );
+      }
+
+      return { id, data };
+    });
+
+    const results = await updateCQs(prepared);
+    const succeeded = results.filter((result) => result.success).length;
+    const failed = results.length - succeeded;
+
+    res.status(failed === 0 ? 200 : 207).json({
+      success: failed === 0,
+      summary: {
+        total: results.length,
+        succeeded,
+        failed,
+      },
+      data: results,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(400).json({
+      success: false,
       message: getErrorMessage(error),
     });
   }

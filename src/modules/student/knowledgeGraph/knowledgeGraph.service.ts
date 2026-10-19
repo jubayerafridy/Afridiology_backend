@@ -74,6 +74,11 @@ interface KnowledgeGraphItem {
 
   side?: "left" | "right";
 
+  // Direct knowledge target for MCQ cards.
+  linkType?: KnowledgeLinkType | null;
+
+  linkId?: string | null;
+
   /*
 
    * Personalization package is intentionally optional.
@@ -1049,13 +1054,25 @@ export async function getChapterKnowledgeGraph(
   }
 
   /*
-
    * ==================================================
-
    * MCQs
-
    * ==================================================
-
+   *
+   * Return lightweight MCQ graph cards only.
+   *
+   * The MCQ's direct linkType + linkId determines
+   * where it belongs in the chapter graph, just as in
+   * the admin knowledge graph.
+   *
+   * Full MCQ content is fetched separately through
+   * GET /knowledge-graph/mcqs/:id when the card is clicked.
+   *
+   * Keep student visibility rules:
+   * - the MCQ must be active
+   * - its QuestionPaper must exist and be active
+   *
+   * Do not filter by QuestionPaper.questionType here:
+   * the MCQ table already identifies this record as an MCQ.
    */
 
   const mcqRecords = await prisma.orm.public.MCQ.where({
@@ -1083,10 +1100,6 @@ export async function getChapterKnowledgeGraph(
       continue;
     }
 
-    if (questionPaper.questionType !== "MCQ") {
-      continue;
-    }
-
     const questionGraphId = `mcq-${mcq.id}`;
 
     items.push({
@@ -1098,19 +1111,20 @@ export async function getChapterKnowledgeGraph(
 
       slug: `mcq-${mcq.id}`,
 
-      description: mcq.descriptionBN,
+      // Keep the MCQ's direct knowledge connection available to the card.
+      linkType: isKnowledgeLinkType(mcq.linkType) ? mcq.linkType : null,
 
-      descriptionBN: mcq.descriptionBN,
-
-      descriptionEng: mcq.descriptionEng,
+      linkId: mcq.linkId,
 
       side: mcqSideIndex % 2 === 0 ? "left" : "right",
 
+      // Board, year, source type and paper ID for the lightweight card.
       questionMeta: buildQuestionMeta(questionPaper),
     });
 
     mcqSideIndex += 1;
 
+    // Preserve the admin graph's direct-target relation convention.
     for (const mapping of chapterMappings) {
       const sourceId = getGraphId(mapping.type, mapping.id);
 

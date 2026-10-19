@@ -1450,33 +1450,25 @@ export async function getMCQDetail(id: string) {
 
   return {
     id: mcq.id,
-
     questionPaperId: mcq.questionPaperId,
-
     qusNo: mcq.qusNo,
 
     source: {
       type: questionPaper.source,
-
       board: questionPaper.board,
-
       institution: questionPaper.institution,
-
       year: questionPaper.year,
     },
 
     descriptionBN: mcq.descriptionBN,
-
     descriptionEng: mcq.descriptionEng,
-
     stimulus: null,
 
-    options: mcq.optionsEng,
+    // Return Bangla options for the student-facing API.
+    options: mcq.optionsBN,
 
     rightAnswer: mcq.rightAns,
-
     explanation: mcq.explanationEng,
-
     imageUrl: mcq.imageUrl,
   };
 }

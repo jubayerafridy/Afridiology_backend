@@ -66,9 +66,9 @@ export interface CreateCQInput {
 
   quesKaLinkId?: string | null;
 
-  ansKaBN?: string | null;
+  ansKaBN?: JsonValue;
 
-  ansKaEng?: string | null;
+  ansKaEng?: JsonValue;
 
   // খ
 
@@ -80,9 +80,9 @@ export interface CreateCQInput {
 
   quesKhaLinkId?: string | null;
 
-  ansKhaBN?: string | null;
+  ansKhaBN?: JsonValue;
 
-  ansKhaEng?: string | null;
+  ansKhaEng?: JsonValue;
 
   // গ
 
@@ -94,9 +94,9 @@ export interface CreateCQInput {
 
   quesGaLinkId?: string | null;
 
-  ansGaBN?: string | null;
+  ansGaBN?: JsonValue;
 
-  ansGaEng?: string | null;
+  ansGaEng?: JsonValue;
 
   // ঘ — optional
 
@@ -108,9 +108,9 @@ export interface CreateCQInput {
 
   quesGhaLinkId?: string | null;
 
-  ansGhaBN?: string | null;
+  ansGhaBN?: JsonValue;
 
-  ansGhaEng?: string | null;
+  ansGhaEng?: JsonValue;
 }
 
 /**
@@ -168,9 +168,9 @@ interface NormalizedCQData {
 
   quesKaLinkId: string;
 
-  ansKaBN: string | null;
+  ansKaBN: JsonValue;
 
-  ansKaEng: string | null;
+  ansKaEng: JsonValue;
 
   // খ
 
@@ -182,9 +182,9 @@ interface NormalizedCQData {
 
   quesKhaLinkId: string;
 
-  ansKhaBN: string | null;
+  ansKhaBN: JsonValue;
 
-  ansKhaEng: string | null;
+  ansKhaEng: JsonValue;
 
   // গ
 
@@ -196,9 +196,9 @@ interface NormalizedCQData {
 
   quesGaLinkId: string;
 
-  ansGaBN: string | null;
+  ansGaBN: JsonValue;
 
-  ansGaEng: string | null;
+  ansGaEng: JsonValue;
 
   // ঘ — optional
 
@@ -210,9 +210,9 @@ interface NormalizedCQData {
 
   quesGhaLinkId: string | null;
 
-  ansGhaBN: string | null;
+  ansGhaBN: JsonValue;
 
-  ansGhaEng: string | null;
+  ansGhaEng: JsonValue;
 }
 
 /**
@@ -264,9 +264,9 @@ interface MergedCQInput {
 
   quesKaLinkId: string | null;
 
-  ansKaBN: string | null;
+  ansKaBN: JsonValue;
 
-  ansKaEng: string | null;
+  ansKaEng: JsonValue;
 
   // খ
 
@@ -278,9 +278,9 @@ interface MergedCQInput {
 
   quesKhaLinkId: string | null;
 
-  ansKhaBN: string | null;
+  ansKhaBN: JsonValue;
 
-  ansKhaEng: string | null;
+  ansKhaEng: JsonValue;
 
   // গ
 
@@ -292,9 +292,9 @@ interface MergedCQInput {
 
   quesGaLinkId: string | null;
 
-  ansGaBN: string | null;
+  ansGaBN: JsonValue;
 
-  ansGaEng: string | null;
+  ansGaEng: JsonValue;
 
   // ঘ
 
@@ -306,9 +306,9 @@ interface MergedCQInput {
 
   quesGhaLinkId: string | null;
 
-  ansGhaBN: string | null;
+  ansGhaBN: JsonValue;
 
-  ansGhaEng: string | null;
+  ansGhaEng: JsonValue;
 }
 
 function normalizeOptionalText(value?: string | null): string | null {
@@ -732,8 +732,8 @@ function normalizeData(data: MergedCQInput | CreateCQInput): NormalizedCQData {
   if (
     !hasGhaQuestion &&
     (normalizedGhaLink !== null ||
-      normalizeOptionalText(data.ansGhaBN) !== null ||
-      normalizeOptionalText(data.ansGhaEng) !== null)
+      (data.ansGhaBN !== undefined && data.ansGhaBN !== null) ||
+      (data.ansGhaEng !== undefined && data.ansGhaEng !== null))
   ) {
     throw new Error(
       "Gha question must be provided before Gha answer or knowledge link",
@@ -769,9 +769,9 @@ function normalizeData(data: MergedCQInput | CreateCQInput): NormalizedCQData {
 
     quesKaLinkId: kaLink!.id,
 
-    ansKaBN: normalizeOptionalText(data.ansKaBN),
+    ansKaBN: data.ansKaBN ?? null,
 
-    ansKaEng: normalizeOptionalText(data.ansKaEng),
+    ansKaEng: data.ansKaEng ?? null,
 
     // খ
 
@@ -783,9 +783,9 @@ function normalizeData(data: MergedCQInput | CreateCQInput): NormalizedCQData {
 
     quesKhaLinkId: khaLink!.id,
 
-    ansKhaBN: normalizeOptionalText(data.ansKhaBN),
+    ansKhaBN: data.ansKhaBN ?? null,
 
-    ansKhaEng: normalizeOptionalText(data.ansKhaEng),
+    ansKhaEng: data.ansKhaEng ?? null,
 
     // গ
 
@@ -797,9 +797,9 @@ function normalizeData(data: MergedCQInput | CreateCQInput): NormalizedCQData {
 
     quesGaLinkId: gaLink!.id,
 
-    ansGaBN: normalizeOptionalText(data.ansGaBN),
+    ansGaBN: data.ansGaBN ?? null,
 
-    ansGaEng: normalizeOptionalText(data.ansGaEng),
+    ansGaEng: data.ansGaEng ?? null,
 
     // ঘ — optional
 
@@ -811,9 +811,9 @@ function normalizeData(data: MergedCQInput | CreateCQInput): NormalizedCQData {
 
     quesGhaLinkId: hasGhaQuestion ? (normalizedGhaLink?.id ?? null) : null,
 
-    ansGhaBN: hasGhaQuestion ? normalizeOptionalText(data.ansGhaBN) : null,
+    ansGhaBN: hasGhaQuestion ? (data.ansGhaBN ?? null) : null,
 
-    ansGhaEng: hasGhaQuestion ? normalizeOptionalText(data.ansGhaEng) : null,
+    ansGhaEng: hasGhaQuestion ? (data.ansGhaEng ?? null) : null,
   };
 }
 
@@ -930,9 +930,9 @@ function mergeCQData(
 
     quesKaLinkId: string | null;
 
-    ansKaBN: string | null;
+    ansKaBN: unknown;
 
-    ansKaEng: string | null;
+    ansKaEng: unknown;
 
     // খ
 
@@ -944,9 +944,9 @@ function mergeCQData(
 
     quesKhaLinkId: string | null;
 
-    ansKhaBN: string | null;
+    ansKhaBN: unknown;
 
-    ansKhaEng: string | null;
+    ansKhaEng: unknown;
 
     // গ
 
@@ -958,9 +958,9 @@ function mergeCQData(
 
     quesGaLinkId: string | null;
 
-    ansGaBN: string | null;
+    ansGaBN: unknown;
 
-    ansGaEng: string | null;
+    ansGaEng: unknown;
 
     // ঘ
 
@@ -972,9 +972,9 @@ function mergeCQData(
 
     quesGhaLinkId: string | null;
 
-    ansGhaBN: string | null;
+    ansGhaBN: unknown;
 
-    ansGhaEng: string | null;
+    ansGhaEng: unknown;
   },
 
   data: UpdateCQInput,
@@ -1023,9 +1023,15 @@ function mergeCQData(
         ? data.quesKaLinkId
         : existingCQ.quesKaLinkId,
 
-    ansKaBN: data.ansKaBN !== undefined ? data.ansKaBN : existingCQ.ansKaBN,
+    ansKaBN:
+      data.ansKaBN !== undefined
+        ? data.ansKaBN
+        : normalizeExistingJson(existingCQ.ansKaBN),
 
-    ansKaEng: data.ansKaEng !== undefined ? data.ansKaEng : existingCQ.ansKaEng,
+    ansKaEng:
+      data.ansKaEng !== undefined
+        ? data.ansKaEng
+        : normalizeExistingJson(existingCQ.ansKaEng),
 
     // খ
 
@@ -1045,10 +1051,15 @@ function mergeCQData(
         ? data.quesKhaLinkId
         : existingCQ.quesKhaLinkId,
 
-    ansKhaBN: data.ansKhaBN !== undefined ? data.ansKhaBN : existingCQ.ansKhaBN,
+    ansKhaBN:
+      data.ansKhaBN !== undefined
+        ? data.ansKhaBN
+        : normalizeExistingJson(existingCQ.ansKhaBN),
 
     ansKhaEng:
-      data.ansKhaEng !== undefined ? data.ansKhaEng : existingCQ.ansKhaEng,
+      data.ansKhaEng !== undefined
+        ? data.ansKhaEng
+        : normalizeExistingJson(existingCQ.ansKhaEng),
 
     // গ
 
@@ -1067,9 +1078,15 @@ function mergeCQData(
         ? data.quesGaLinkId
         : existingCQ.quesGaLinkId,
 
-    ansGaBN: data.ansGaBN !== undefined ? data.ansGaBN : existingCQ.ansGaBN,
+    ansGaBN:
+      data.ansGaBN !== undefined
+        ? data.ansGaBN
+        : normalizeExistingJson(existingCQ.ansGaBN),
 
-    ansGaEng: data.ansGaEng !== undefined ? data.ansGaEng : existingCQ.ansGaEng,
+    ansGaEng:
+      data.ansGaEng !== undefined
+        ? data.ansGaEng
+        : normalizeExistingJson(existingCQ.ansGaEng),
 
     // ঘ
 
@@ -1089,10 +1106,15 @@ function mergeCQData(
         ? data.quesGhaLinkId
         : existingCQ.quesGhaLinkId,
 
-    ansGhaBN: data.ansGhaBN !== undefined ? data.ansGhaBN : existingCQ.ansGhaBN,
+    ansGhaBN:
+      data.ansGhaBN !== undefined
+        ? data.ansGhaBN
+        : normalizeExistingJson(existingCQ.ansGhaBN),
 
     ansGhaEng:
-      data.ansGhaEng !== undefined ? data.ansGhaEng : existingCQ.ansGhaEng,
+      data.ansGhaEng !== undefined
+        ? data.ansGhaEng
+        : normalizeExistingJson(existingCQ.ansGhaEng),
   };
 }
 

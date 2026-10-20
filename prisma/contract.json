@@ -594,56 +594,56 @@
               "ansGaBN": {
                 "nullable": true,
                 "type": {
-                  "codecId": "pg/text@1",
+                  "codecId": "pg/json@1",
                   "kind": "scalar"
                 }
               },
               "ansGaEng": {
                 "nullable": true,
                 "type": {
-                  "codecId": "pg/text@1",
+                  "codecId": "pg/json@1",
                   "kind": "scalar"
                 }
               },
               "ansGhaBN": {
                 "nullable": true,
                 "type": {
-                  "codecId": "pg/text@1",
+                  "codecId": "pg/json@1",
                   "kind": "scalar"
                 }
               },
               "ansGhaEng": {
                 "nullable": true,
                 "type": {
-                  "codecId": "pg/text@1",
+                  "codecId": "pg/json@1",
                   "kind": "scalar"
                 }
               },
               "ansKaBN": {
                 "nullable": true,
                 "type": {
-                  "codecId": "pg/text@1",
+                  "codecId": "pg/json@1",
                   "kind": "scalar"
                 }
               },
               "ansKaEng": {
                 "nullable": true,
                 "type": {
-                  "codecId": "pg/text@1",
+                  "codecId": "pg/json@1",
                   "kind": "scalar"
                 }
               },
               "ansKhaBN": {
                 "nullable": true,
                 "type": {
-                  "codecId": "pg/text@1",
+                  "codecId": "pg/json@1",
                   "kind": "scalar"
                 }
               },
               "ansKhaEng": {
                 "nullable": true,
                 "type": {
-                  "codecId": "pg/text@1",
+                  "codecId": "pg/json@1",
                   "kind": "scalar"
                 }
               },
@@ -2897,43 +2897,43 @@
               ],
               "columns": {
                 "ansGaBN": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
+                  "codecId": "pg/json@1",
+                  "nativeType": "json",
                   "nullable": true
                 },
                 "ansGaEng": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
+                  "codecId": "pg/json@1",
+                  "nativeType": "json",
                   "nullable": true
                 },
                 "ansGhaBN": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
+                  "codecId": "pg/json@1",
+                  "nativeType": "json",
                   "nullable": true
                 },
                 "ansGhaEng": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
+                  "codecId": "pg/json@1",
+                  "nativeType": "json",
                   "nullable": true
                 },
                 "ansKaBN": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
+                  "codecId": "pg/json@1",
+                  "nativeType": "json",
                   "nullable": true
                 },
                 "ansKaEng": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
+                  "codecId": "pg/json@1",
+                  "nativeType": "json",
                   "nullable": true
                 },
                 "ansKhaBN": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
+                  "codecId": "pg/json@1",
+                  "nativeType": "json",
                   "nullable": true
                 },
                 "ansKhaEng": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
+                  "codecId": "pg/json@1",
+                  "nativeType": "json",
                   "nullable": true
                 },
                 "createdAt": {
@@ -4196,7 +4196,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "ad2650510d1583c31df5cc9bfb2d5d8e01e2c358a47116b4e6f89583689f4b72"
+    "storageHash": "3dfcd21bd3c5c1f0063677e7ba6622377169a6362c1c788a2576801fa70bfbc7"
   },
   "execution": {
     "executionHash": "0e1053383c755307e4450420da0f57556b45b8020bc4d52f5d9a344051923efc",

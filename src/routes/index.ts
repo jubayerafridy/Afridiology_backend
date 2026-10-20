@@ -20,6 +20,8 @@ import studentQuestionBankRouter from "../modules/student/questionBank/questionB
 import bookmarkRouter from "../modules/student/bookmark/bookmark.route.js";
 import questionProgressRouter from "../modules/student/questionProgress/questionProgress.routes.js";
 
+import cqAnsRouter from "../modules/student/cqAns/cqAns.route.js";
+
 const router = Router();
 
 /*
@@ -65,5 +67,7 @@ router.use("/question-bank", studentQuestionBankRouter);
 router.use("/bookmarks", bookmarkRouter);
 
 router.use("/question-progress", questionProgressRouter);
+
+router.use("/cq-answers", cqAnsRouter);
 
 export default router;

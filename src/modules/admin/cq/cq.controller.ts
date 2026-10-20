@@ -172,6 +172,21 @@ function parseOptionalJsonValue(
   return value;
 }
 
+function parseNullableJsonValue(
+  value: unknown,
+  fieldName: string,
+): JsonValue | null {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  if (!isJsonValue(value)) {
+    throw new Error(`${fieldName} must contain valid JSON`);
+  }
+
+  return value;
+}
+
 function hasOwn(body: Record<string, unknown>, fieldName: string): boolean {
   return Object.prototype.hasOwnProperty.call(body, fieldName);
 }
@@ -254,9 +269,9 @@ function buildCreateInput(body: Record<string, unknown>): CreateCQInput {
 
     quesKaLinkId: kaLink.id,
 
-    ansKaBN: parseNullableString(body.ansKaBN),
+    ansKaBN: parseNullableJsonValue(body.ansKaBN, "ansKaBN"),
 
-    ansKaEng: parseNullableString(body.ansKaEng),
+    ansKaEng: parseNullableJsonValue(body.ansKaEng, "ansKaEng"),
 
     // খ
 
@@ -268,9 +283,9 @@ function buildCreateInput(body: Record<string, unknown>): CreateCQInput {
 
     quesKhaLinkId: khaLink.id,
 
-    ansKhaBN: parseNullableString(body.ansKhaBN),
+    ansKhaBN: parseNullableJsonValue(body.ansKhaBN, "ansKhaBN"),
 
-    ansKhaEng: parseNullableString(body.ansKhaEng),
+    ansKhaEng: parseNullableJsonValue(body.ansKhaEng, "ansKhaEng"),
 
     // গ
 
@@ -282,9 +297,9 @@ function buildCreateInput(body: Record<string, unknown>): CreateCQInput {
 
     quesGaLinkId: gaLink.id,
 
-    ansGaBN: parseNullableString(body.ansGaBN),
+    ansGaBN: parseNullableJsonValue(body.ansGaBN, "ansGaBN"),
 
-    ansGaEng: parseNullableString(body.ansGaEng),
+    ansGaEng: parseNullableJsonValue(body.ansGaEng, "ansGaEng"),
 
     // ঘ — optional
 
@@ -296,9 +311,9 @@ function buildCreateInput(body: Record<string, unknown>): CreateCQInput {
 
     quesGhaLinkId: ghaLink.id,
 
-    ansGhaBN: parseNullableString(body.ansGhaBN),
+    ansGhaBN: parseNullableJsonValue(body.ansGhaBN, "ansGhaBN"),
 
-    ansGhaEng: parseNullableString(body.ansGhaEng),
+    ansGhaEng: parseNullableJsonValue(body.ansGhaEng, "ansGhaEng"),
   };
 
   /**
@@ -444,11 +459,17 @@ function buildUpdateInput(body: Record<string, unknown>): UpdateCQInput {
   }
 
   if (hasOwn(body, "ansKaBN")) {
-    data.ansKaBN = parseNullableString(body.ansKaBN);
+    const ansKaBN = parseOptionalJsonValue(body.ansKaBN, "ansKaBN");
+    if (ansKaBN !== undefined) {
+      data.ansKaBN = ansKaBN;
+    }
   }
 
   if (hasOwn(body, "ansKaEng")) {
-    data.ansKaEng = parseNullableString(body.ansKaEng);
+    const ansKaEng = parseOptionalJsonValue(body.ansKaEng, "ansKaEng");
+    if (ansKaEng !== undefined) {
+      data.ansKaEng = ansKaEng;
+    }
   }
 
   // খ
@@ -470,11 +491,17 @@ function buildUpdateInput(body: Record<string, unknown>): UpdateCQInput {
   }
 
   if (hasOwn(body, "ansKhaBN")) {
-    data.ansKhaBN = parseNullableString(body.ansKhaBN);
+    const ansKhaBN = parseOptionalJsonValue(body.ansKhaBN, "ansKhaBN");
+    if (ansKhaBN !== undefined) {
+      data.ansKhaBN = ansKhaBN;
+    }
   }
 
   if (hasOwn(body, "ansKhaEng")) {
-    data.ansKhaEng = parseNullableString(body.ansKhaEng);
+    const ansKhaEng = parseOptionalJsonValue(body.ansKhaEng, "ansKhaEng");
+    if (ansKhaEng !== undefined) {
+      data.ansKhaEng = ansKhaEng;
+    }
   }
 
   // গ
@@ -496,11 +523,17 @@ function buildUpdateInput(body: Record<string, unknown>): UpdateCQInput {
   }
 
   if (hasOwn(body, "ansGaBN")) {
-    data.ansGaBN = parseNullableString(body.ansGaBN);
+    const ansGaBN = parseOptionalJsonValue(body.ansGaBN, "ansGaBN");
+    if (ansGaBN !== undefined) {
+      data.ansGaBN = ansGaBN;
+    }
   }
 
   if (hasOwn(body, "ansGaEng")) {
-    data.ansGaEng = parseNullableString(body.ansGaEng);
+    const ansGaEng = parseOptionalJsonValue(body.ansGaEng, "ansGaEng");
+    if (ansGaEng !== undefined) {
+      data.ansGaEng = ansGaEng;
+    }
   }
 
   // ঘ — optional
@@ -522,11 +555,17 @@ function buildUpdateInput(body: Record<string, unknown>): UpdateCQInput {
   }
 
   if (hasOwn(body, "ansGhaBN")) {
-    data.ansGhaBN = parseNullableString(body.ansGhaBN);
+    const ansGhaBN = parseOptionalJsonValue(body.ansGhaBN, "ansGhaBN");
+    if (ansGhaBN !== undefined) {
+      data.ansGhaBN = ansGhaBN;
+    }
   }
 
   if (hasOwn(body, "ansGhaEng")) {
-    data.ansGhaEng = parseNullableString(body.ansGhaEng);
+    const ansGhaEng = parseOptionalJsonValue(body.ansGhaEng, "ansGhaEng");
+    if (ansGhaEng !== undefined) {
+      data.ansGhaEng = ansGhaEng;
+    }
   }
 
   return data;

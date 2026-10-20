@@ -1,0 +1,370 @@
+[
+  {
+    "id": "alterType.cQ.ansKaBN",
+    "label": "Alter type of \"cQ\".\"ansKaBN\" to json",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "ansKaBN",
+        "table": "cQ"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"ansKaBN\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "cQ",
+          "ansKaBN"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "alter type of \"ansKaBN\"",
+        "sql": "ALTER TABLE \"public\".\"cQ\" ALTER COLUMN \"ansKaBN\" TYPE json USING \"ansKaBN\"::json"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"ansKaBN\" has type \"json\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "cQ",
+          "ansKaBN",
+          "json"
+        ]
+      }
+    ],
+    "meta": {
+      "warning": "TABLE_REWRITE"
+    }
+  },
+  {
+    "id": "alterType.cQ.ansKaEng",
+    "label": "Alter type of \"cQ\".\"ansKaEng\" to json",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "ansKaEng",
+        "table": "cQ"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"ansKaEng\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "cQ",
+          "ansKaEng"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "alter type of \"ansKaEng\"",
+        "sql": "ALTER TABLE \"public\".\"cQ\" ALTER COLUMN \"ansKaEng\" TYPE json USING \"ansKaEng\"::json"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"ansKaEng\" has type \"json\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "cQ",
+          "ansKaEng",
+          "json"
+        ]
+      }
+    ],
+    "meta": {
+      "warning": "TABLE_REWRITE"
+    }
+  },
+  {
+    "id": "alterType.cQ.ansKhaBN",
+    "label": "Alter type of \"cQ\".\"ansKhaBN\" to json",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "ansKhaBN",
+        "table": "cQ"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"ansKhaBN\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "cQ",
+          "ansKhaBN"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "alter type of \"ansKhaBN\"",
+        "sql": "ALTER TABLE \"public\".\"cQ\" ALTER COLUMN \"ansKhaBN\" TYPE json USING \"ansKhaBN\"::json"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"ansKhaBN\" has type \"json\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "cQ",
+          "ansKhaBN",
+          "json"
+        ]
+      }
+    ],
+    "meta": {
+      "warning": "TABLE_REWRITE"
+    }
+  },
+  {
+    "id": "alterType.cQ.ansKhaEng",
+    "label": "Alter type of \"cQ\".\"ansKhaEng\" to json",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "ansKhaEng",
+        "table": "cQ"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"ansKhaEng\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "cQ",
+          "ansKhaEng"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "alter type of \"ansKhaEng\"",
+        "sql": "ALTER TABLE \"public\".\"cQ\" ALTER COLUMN \"ansKhaEng\" TYPE json USING \"ansKhaEng\"::json"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"ansKhaEng\" has type \"json\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "cQ",
+          "ansKhaEng",
+          "json"
+        ]
+      }
+    ],
+    "meta": {
+      "warning": "TABLE_REWRITE"
+    }
+  },
+  {
+    "id": "alterType.cQ.ansGaBN",
+    "label": "Alter type of \"cQ\".\"ansGaBN\" to json",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "ansGaBN",
+        "table": "cQ"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"ansGaBN\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "cQ",
+          "ansGaBN"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "alter type of \"ansGaBN\"",
+        "sql": "ALTER TABLE \"public\".\"cQ\" ALTER COLUMN \"ansGaBN\" TYPE json USING \"ansGaBN\"::json"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"ansGaBN\" has type \"json\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "cQ",
+          "ansGaBN",
+          "json"
+        ]
+      }
+    ],
+    "meta": {
+      "warning": "TABLE_REWRITE"
+    }
+  },
+  {
+    "id": "alterType.cQ.ansGaEng",
+    "label": "Alter type of \"cQ\".\"ansGaEng\" to json",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "ansGaEng",
+        "table": "cQ"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"ansGaEng\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "cQ",
+          "ansGaEng"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "alter type of \"ansGaEng\"",
+        "sql": "ALTER TABLE \"public\".\"cQ\" ALTER COLUMN \"ansGaEng\" TYPE json USING \"ansGaEng\"::json"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"ansGaEng\" has type \"json\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "cQ",
+          "ansGaEng",
+          "json"
+        ]
+      }
+    ],
+    "meta": {
+      "warning": "TABLE_REWRITE"
+    }
+  },
+  {
+    "id": "alterType.cQ.ansGhaBN",
+    "label": "Alter type of \"cQ\".\"ansGhaBN\" to json",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "ansGhaBN",
+        "table": "cQ"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"ansGhaBN\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "cQ",
+          "ansGhaBN"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "alter type of \"ansGhaBN\"",
+        "sql": "ALTER TABLE \"public\".\"cQ\" ALTER COLUMN \"ansGhaBN\" TYPE json USING \"ansGhaBN\"::json"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"ansGhaBN\" has type \"json\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "cQ",
+          "ansGhaBN",
+          "json"
+        ]
+      }
+    ],
+    "meta": {
+      "warning": "TABLE_REWRITE"
+    }
+  },
+  {
+    "id": "alterType.cQ.ansGhaEng",
+    "label": "Alter type of \"cQ\".\"ansGhaEng\" to json",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "ansGhaEng",
+        "table": "cQ"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"ansGhaEng\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "cQ",
+          "ansGhaEng"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "alter type of \"ansGhaEng\"",
+        "sql": "ALTER TABLE \"public\".\"cQ\" ALTER COLUMN \"ansGhaEng\" TYPE json USING \"ansGhaEng\"::json"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"ansGhaEng\" has type \"json\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "cQ",
+          "ansGhaEng",
+          "json"
+        ]
+      }
+    ],
+    "meta": {
+      "warning": "TABLE_REWRITE"
+    }
+  }
+]

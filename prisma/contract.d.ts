@@ -34,7 +34,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'ad2650510d1583c31df5cc9bfb2d5d8e01e2c358a47116b4e6f89583689f4b72'>;
+  StorageHashBase<'3dfcd21bd3c5c1f0063677e7ba6622377169a6362c1c788a2576801fa70bfbc7'>;
 export type ExecutionHash =
   ExecutionHashBase<'0e1053383c755307e4450420da0f57556b45b8020bc4d52f5d9a344051923efc'>;
 export type ProfileHash =
@@ -325,26 +325,26 @@ export type FieldOutputTypes = {
       readonly quesKaEng: CodecTypes['pg/text@1']['output'];
       readonly quesKaLinkId: CodecTypes['pg/text@1']['output'] | null;
       readonly quesKaLinkType: CodecTypes['pg/text@1']['output'] | null;
-      readonly ansKaBN: CodecTypes['pg/text@1']['output'] | null;
-      readonly ansKaEng: CodecTypes['pg/text@1']['output'] | null;
+      readonly ansKaBN: CodecTypes['pg/json@1']['output'] | null;
+      readonly ansKaEng: CodecTypes['pg/json@1']['output'] | null;
       readonly quesKhaBN: CodecTypes['pg/text@1']['output'];
       readonly quesKhaEng: CodecTypes['pg/text@1']['output'];
       readonly quesKhaLinkId: CodecTypes['pg/text@1']['output'] | null;
       readonly quesKhaLinkType: CodecTypes['pg/text@1']['output'] | null;
-      readonly ansKhaBN: CodecTypes['pg/text@1']['output'] | null;
-      readonly ansKhaEng: CodecTypes['pg/text@1']['output'] | null;
+      readonly ansKhaBN: CodecTypes['pg/json@1']['output'] | null;
+      readonly ansKhaEng: CodecTypes['pg/json@1']['output'] | null;
       readonly quesGaBN: CodecTypes['pg/text@1']['output'];
       readonly quesGaEng: CodecTypes['pg/text@1']['output'];
       readonly quesGaLinkId: CodecTypes['pg/text@1']['output'] | null;
       readonly quesGaLinkType: CodecTypes['pg/text@1']['output'] | null;
-      readonly ansGaBN: CodecTypes['pg/text@1']['output'] | null;
-      readonly ansGaEng: CodecTypes['pg/text@1']['output'] | null;
+      readonly ansGaBN: CodecTypes['pg/json@1']['output'] | null;
+      readonly ansGaEng: CodecTypes['pg/json@1']['output'] | null;
       readonly quesGhaBN: CodecTypes['pg/text@1']['output'] | null;
       readonly quesGhaEng: CodecTypes['pg/text@1']['output'] | null;
       readonly quesGhaLinkId: CodecTypes['pg/text@1']['output'] | null;
       readonly quesGhaLinkType: CodecTypes['pg/text@1']['output'] | null;
-      readonly ansGhaBN: CodecTypes['pg/text@1']['output'] | null;
-      readonly ansGhaEng: CodecTypes['pg/text@1']['output'] | null;
+      readonly ansGhaBN: CodecTypes['pg/json@1']['output'] | null;
+      readonly ansGhaEng: CodecTypes['pg/json@1']['output'] | null;
     };
     readonly EducationLevel: {
       readonly id: CodecTypes['pg/text@1']['output'];
@@ -523,26 +523,26 @@ export type FieldInputTypes = {
       readonly quesKaEng: CodecTypes['pg/text@1']['input'];
       readonly quesKaLinkId: CodecTypes['pg/text@1']['input'] | null;
       readonly quesKaLinkType: CodecTypes['pg/text@1']['input'] | null;
-      readonly ansKaBN: CodecTypes['pg/text@1']['input'] | null;
-      readonly ansKaEng: CodecTypes['pg/text@1']['input'] | null;
+      readonly ansKaBN: CodecTypes['pg/json@1']['input'] | null;
+      readonly ansKaEng: CodecTypes['pg/json@1']['input'] | null;
       readonly quesKhaBN: CodecTypes['pg/text@1']['input'];
       readonly quesKhaEng: CodecTypes['pg/text@1']['input'];
       readonly quesKhaLinkId: CodecTypes['pg/text@1']['input'] | null;
       readonly quesKhaLinkType: CodecTypes['pg/text@1']['input'] | null;
-      readonly ansKhaBN: CodecTypes['pg/text@1']['input'] | null;
-      readonly ansKhaEng: CodecTypes['pg/text@1']['input'] | null;
+      readonly ansKhaBN: CodecTypes['pg/json@1']['input'] | null;
+      readonly ansKhaEng: CodecTypes['pg/json@1']['input'] | null;
       readonly quesGaBN: CodecTypes['pg/text@1']['input'];
       readonly quesGaEng: CodecTypes['pg/text@1']['input'];
       readonly quesGaLinkId: CodecTypes['pg/text@1']['input'] | null;
       readonly quesGaLinkType: CodecTypes['pg/text@1']['input'] | null;
-      readonly ansGaBN: CodecTypes['pg/text@1']['input'] | null;
-      readonly ansGaEng: CodecTypes['pg/text@1']['input'] | null;
+      readonly ansGaBN: CodecTypes['pg/json@1']['input'] | null;
+      readonly ansGaEng: CodecTypes['pg/json@1']['input'] | null;
       readonly quesGhaBN: CodecTypes['pg/text@1']['input'] | null;
       readonly quesGhaEng: CodecTypes['pg/text@1']['input'] | null;
       readonly quesGhaLinkId: CodecTypes['pg/text@1']['input'] | null;
       readonly quesGhaLinkType: CodecTypes['pg/text@1']['input'] | null;
-      readonly ansGhaBN: CodecTypes['pg/text@1']['input'] | null;
-      readonly ansGhaEng: CodecTypes['pg/text@1']['input'] | null;
+      readonly ansGhaBN: CodecTypes['pg/json@1']['input'] | null;
+      readonly ansGhaEng: CodecTypes['pg/json@1']['input'] | null;
     };
     readonly EducationLevel: {
       readonly id: CodecTypes['pg/text@1']['input'];
@@ -705,14 +705,14 @@ export type StorageColumnTypes = {
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
     readonly cQ: {
-      readonly ansGaBN: CodecTypes['pg/text@1']['output'] | null;
-      readonly ansGaEng: CodecTypes['pg/text@1']['output'] | null;
-      readonly ansGhaBN: CodecTypes['pg/text@1']['output'] | null;
-      readonly ansGhaEng: CodecTypes['pg/text@1']['output'] | null;
-      readonly ansKaBN: CodecTypes['pg/text@1']['output'] | null;
-      readonly ansKaEng: CodecTypes['pg/text@1']['output'] | null;
-      readonly ansKhaBN: CodecTypes['pg/text@1']['output'] | null;
-      readonly ansKhaEng: CodecTypes['pg/text@1']['output'] | null;
+      readonly ansGaBN: CodecTypes['pg/json@1']['output'] | null;
+      readonly ansGaEng: CodecTypes['pg/json@1']['output'] | null;
+      readonly ansGhaBN: CodecTypes['pg/json@1']['output'] | null;
+      readonly ansGhaEng: CodecTypes['pg/json@1']['output'] | null;
+      readonly ansKaBN: CodecTypes['pg/json@1']['output'] | null;
+      readonly ansKaEng: CodecTypes['pg/json@1']['output'] | null;
+      readonly ansKhaBN: CodecTypes['pg/json@1']['output'] | null;
+      readonly ansKhaEng: CodecTypes['pg/json@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly descriptionBN: CodecTypes['pg/json@1']['output'];
       readonly descriptionEng: CodecTypes['pg/json@1']['output'];
@@ -903,14 +903,14 @@ export type StorageColumnInputTypes = {
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
     readonly cQ: {
-      readonly ansGaBN: CodecTypes['pg/text@1']['input'] | null;
-      readonly ansGaEng: CodecTypes['pg/text@1']['input'] | null;
-      readonly ansGhaBN: CodecTypes['pg/text@1']['input'] | null;
-      readonly ansGhaEng: CodecTypes['pg/text@1']['input'] | null;
-      readonly ansKaBN: CodecTypes['pg/text@1']['input'] | null;
-      readonly ansKaEng: CodecTypes['pg/text@1']['input'] | null;
-      readonly ansKhaBN: CodecTypes['pg/text@1']['input'] | null;
-      readonly ansKhaEng: CodecTypes['pg/text@1']['input'] | null;
+      readonly ansGaBN: CodecTypes['pg/json@1']['input'] | null;
+      readonly ansGaEng: CodecTypes['pg/json@1']['input'] | null;
+      readonly ansGhaBN: CodecTypes['pg/json@1']['input'] | null;
+      readonly ansGhaEng: CodecTypes['pg/json@1']['input'] | null;
+      readonly ansKaBN: CodecTypes['pg/json@1']['input'] | null;
+      readonly ansKaEng: CodecTypes['pg/json@1']['input'] | null;
+      readonly ansKhaBN: CodecTypes['pg/json@1']['input'] | null;
+      readonly ansKhaEng: CodecTypes['pg/json@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly descriptionBN: CodecTypes['pg/json@1']['input'];
       readonly descriptionEng: CodecTypes['pg/json@1']['input'];
@@ -1106,26 +1106,26 @@ export namespace Models {
     quesKaEng: CodecTypes['pg/text@1']['output'];
     quesKaLinkId: CodecTypes['pg/text@1']['output'] | null;
     quesKaLinkType: CodecTypes['pg/text@1']['output'] | null;
-    ansKaBN: CodecTypes['pg/text@1']['output'] | null;
-    ansKaEng: CodecTypes['pg/text@1']['output'] | null;
+    ansKaBN: CodecTypes['pg/json@1']['output'] | null;
+    ansKaEng: CodecTypes['pg/json@1']['output'] | null;
     quesKhaBN: CodecTypes['pg/text@1']['output'];
     quesKhaEng: CodecTypes['pg/text@1']['output'];
     quesKhaLinkId: CodecTypes['pg/text@1']['output'] | null;
     quesKhaLinkType: CodecTypes['pg/text@1']['output'] | null;
-    ansKhaBN: CodecTypes['pg/text@1']['output'] | null;
-    ansKhaEng: CodecTypes['pg/text@1']['output'] | null;
+    ansKhaBN: CodecTypes['pg/json@1']['output'] | null;
+    ansKhaEng: CodecTypes['pg/json@1']['output'] | null;
     quesGaBN: CodecTypes['pg/text@1']['output'];
     quesGaEng: CodecTypes['pg/text@1']['output'];
     quesGaLinkId: CodecTypes['pg/text@1']['output'] | null;
     quesGaLinkType: CodecTypes['pg/text@1']['output'] | null;
-    ansGaBN: CodecTypes['pg/text@1']['output'] | null;
-    ansGaEng: CodecTypes['pg/text@1']['output'] | null;
+    ansGaBN: CodecTypes['pg/json@1']['output'] | null;
+    ansGaEng: CodecTypes['pg/json@1']['output'] | null;
     quesGhaBN: CodecTypes['pg/text@1']['output'] | null;
     quesGhaEng: CodecTypes['pg/text@1']['output'] | null;
     quesGhaLinkId: CodecTypes['pg/text@1']['output'] | null;
     quesGhaLinkType: CodecTypes['pg/text@1']['output'] | null;
-    ansGhaBN: CodecTypes['pg/text@1']['output'] | null;
-    ansGhaEng: CodecTypes['pg/text@1']['output'] | null;
+    ansGhaBN: CodecTypes['pg/json@1']['output'] | null;
+    ansGhaEng: CodecTypes['pg/json@1']['output'] | null;
     questionPaper: public_QuestionPaper;
     readonly [RelationKeys]?: 'questionPaper';
   };
@@ -1974,13 +1974,13 @@ type ContractBase = Omit<
                   readonly nullable: true;
                 };
                 readonly ansKaBN: {
-                  readonly nativeType: 'text';
-                  readonly codecId: 'pg/text@1';
+                  readonly nativeType: 'json';
+                  readonly codecId: 'pg/json@1';
                   readonly nullable: true;
                 };
                 readonly ansKaEng: {
-                  readonly nativeType: 'text';
-                  readonly codecId: 'pg/text@1';
+                  readonly nativeType: 'json';
+                  readonly codecId: 'pg/json@1';
                   readonly nullable: true;
                 };
                 readonly quesKhaBN: {
@@ -2004,13 +2004,13 @@ type ContractBase = Omit<
                   readonly nullable: true;
                 };
                 readonly ansKhaBN: {
-                  readonly nativeType: 'text';
-                  readonly codecId: 'pg/text@1';
+                  readonly nativeType: 'json';
+                  readonly codecId: 'pg/json@1';
                   readonly nullable: true;
                 };
                 readonly ansKhaEng: {
-                  readonly nativeType: 'text';
-                  readonly codecId: 'pg/text@1';
+                  readonly nativeType: 'json';
+                  readonly codecId: 'pg/json@1';
                   readonly nullable: true;
                 };
                 readonly quesGaBN: {
@@ -2034,13 +2034,13 @@ type ContractBase = Omit<
                   readonly nullable: true;
                 };
                 readonly ansGaBN: {
-                  readonly nativeType: 'text';
-                  readonly codecId: 'pg/text@1';
+                  readonly nativeType: 'json';
+                  readonly codecId: 'pg/json@1';
                   readonly nullable: true;
                 };
                 readonly ansGaEng: {
-                  readonly nativeType: 'text';
-                  readonly codecId: 'pg/text@1';
+                  readonly nativeType: 'json';
+                  readonly codecId: 'pg/json@1';
                   readonly nullable: true;
                 };
                 readonly quesGhaBN: {
@@ -2064,13 +2064,13 @@ type ContractBase = Omit<
                   readonly nullable: true;
                 };
                 readonly ansGhaBN: {
-                  readonly nativeType: 'text';
-                  readonly codecId: 'pg/text@1';
+                  readonly nativeType: 'json';
+                  readonly codecId: 'pg/json@1';
                   readonly nullable: true;
                 };
                 readonly ansGhaEng: {
-                  readonly nativeType: 'text';
-                  readonly codecId: 'pg/text@1';
+                  readonly nativeType: 'json';
+                  readonly codecId: 'pg/json@1';
                   readonly nullable: true;
                 };
               };
@@ -3412,11 +3412,11 @@ type ContractBase = Omit<
               };
               readonly ansKaBN: {
                 readonly nullable: true;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/json@1' };
               };
               readonly ansKaEng: {
                 readonly nullable: true;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/json@1' };
               };
               readonly quesKhaBN: {
                 readonly nullable: false;
@@ -3436,11 +3436,11 @@ type ContractBase = Omit<
               };
               readonly ansKhaBN: {
                 readonly nullable: true;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/json@1' };
               };
               readonly ansKhaEng: {
                 readonly nullable: true;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/json@1' };
               };
               readonly quesGaBN: {
                 readonly nullable: false;
@@ -3460,11 +3460,11 @@ type ContractBase = Omit<
               };
               readonly ansGaBN: {
                 readonly nullable: true;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/json@1' };
               };
               readonly ansGaEng: {
                 readonly nullable: true;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/json@1' };
               };
               readonly quesGhaBN: {
                 readonly nullable: true;
@@ -3484,11 +3484,11 @@ type ContractBase = Omit<
               };
               readonly ansGhaBN: {
                 readonly nullable: true;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/json@1' };
               };
               readonly ansGhaEng: {
                 readonly nullable: true;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/json@1' };
               };
             };
             readonly relations: {

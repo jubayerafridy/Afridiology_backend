@@ -110,32 +110,32 @@ model CQ {
   quesKaEng       String
   quesKaLinkId    String?
   quesKaLinkType  String?
-  ansKaBN         String?
-  ansKaEng        String?
+  ansKaBN         Json?
+  ansKaEng        Json?
 
   // খ
   quesKhaBN       String
   quesKhaEng      String
   quesKhaLinkId   String?
   quesKhaLinkType String?
-  ansKhaBN        String?
-  ansKhaEng       String?
+  ansKhaBN        Json?
+  ansKhaEng       Json?
 
   // গ
   quesGaBN        String
   quesGaEng       String
   quesGaLinkId    String?
   quesGaLinkType  String?
-  ansGaBN         String?
-  ansGaEng        String?
+  ansGaBN         Json?
+  ansGaEng        Json?
 
   // ঘ — optional
   quesGhaBN       String?
   quesGhaEng      String?
   quesGhaLinkId   String?
   quesGhaLinkType String?
-  ansGhaBN        String?
-  ansGhaEng       String?
+  ansGhaBN        Json?
+  ansGhaEng       Json?
 
   questionPaper   QuestionPaper @relation(fields:[questionPaperId], references:[id], map: "cQ_questionPaperId_fkey")
 

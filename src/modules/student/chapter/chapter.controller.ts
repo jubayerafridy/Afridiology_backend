@@ -25,10 +25,7 @@ function parseUuid(value: Request["query"]["subjectId"]): string | null {
   return trimmed;
 }
 
-export async function getChaptersController(
-  req: Request,
-  res: Response,
-): Promise<void> {
+export async function getChaptersController(req: Request, res: Response): Promise<void> {
   const subjectId = parseUuid(req.query.subjectId);
 
   if (subjectId === null) {

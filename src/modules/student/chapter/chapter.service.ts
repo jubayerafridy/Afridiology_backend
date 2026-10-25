@@ -13,7 +13,6 @@ export async function getChaptersBySubject(subjectId: string) {
 
   const chapters = await prisma.orm.public.Chapter.where({
     subjectId,
-    isActive: true,
   })
     .orderBy((chapter) => chapter.chapterNo.asc())
     .all();
@@ -27,6 +26,7 @@ export async function getChaptersBySubject(subjectId: string) {
     chapters: chapters.map((chapter) => ({
       id: chapter.id,
       chapterNo: chapter.chapterNo,
+      isActive: chapter.isActive,
       nameBN: chapter.nameBN,
       nameEng: chapter.nameEng,
 

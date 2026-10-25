@@ -22,11 +22,7 @@ const answerFields = {
   },
 } as const;
 
-export async function getCQAnswer(
-  cqId: string,
-  part: CQPart,
-  language: CQLanguage,
-) {
+export async function getCQAnswer(cqId: string, part: CQPart, language: CQLanguage = "BN") {
   const cq = await prisma.orm.public.CQ.first({
     id: cqId,
   });

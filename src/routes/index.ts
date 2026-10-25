@@ -22,6 +22,9 @@ import questionProgressRouter from "../modules/student/questionProgress/question
 
 import cqAnsRouter from "../modules/student/cqAns/cqAns.route.js";
 
+import chapterCQRoutes from "../modules/student/chapterCQ/chapterCQ.routes.js";
+import chapterMCQRoutes from "../modules/student/chapterMCQ/chapterMCQ.routes.js";
+
 const router = Router();
 
 /*
@@ -69,5 +72,8 @@ router.use("/bookmarks", bookmarkRouter);
 router.use("/question-progress", questionProgressRouter);
 
 router.use("/cq-answers", cqAnsRouter);
+
+router.use("/student/chapter-cq", chapterCQRoutes);
+router.use("/student/chapter-mcq", chapterMCQRoutes);
 
 export default router;

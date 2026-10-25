@@ -19,13 +19,10 @@ function isCQLanguage(value: string): value is CQLanguage {
   return value === "BN" || value === "Eng";
 }
 
-export async function getCQAnswerController(
-  req: Request,
-  res: Response,
-): Promise<void> {
+export async function getCQAnswerController(req: Request, res: Response): Promise<void> {
   const cqId = parseParam(req.params.cqId);
   const partValue = parseParam(req.params.part);
-  const languageValue = parseParam(req.query.language) ?? "Eng";
+  const languageValue = parseParam(req.query.language) ?? "BN";
 
   if (cqId === null) {
     res.status(400).json({

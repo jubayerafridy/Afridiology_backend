@@ -45,8 +45,7 @@ export interface ChapterCQData {
   chapter: {
     id: string;
     chapterNo: number;
-    nameBN: string;
-    nameEng: string;
+    name: string;
   };
   questions: ChapterCQItem[];
   bookmarkCollections?: BookmarkCollectionData[];
@@ -278,8 +277,7 @@ export async function getChapterCQs(chapterId: string, language: ChapterCQLangua
     chapter: {
       id: chapter.id,
       chapterNo: chapter.chapterNo,
-      nameBN: chapter.nameBN,
-      nameEng: chapter.nameEng,
+      name: language === "bangla" ? chapter.nameBN : chapter.nameEng,
     },
     questions,
   };

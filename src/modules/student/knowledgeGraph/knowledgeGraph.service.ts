@@ -37,6 +37,8 @@ type QuestionSource =
   | "quiz"
   | "extra";
 
+export type KnowledgeGraphLanguage = "bangla" | "english";
+
 interface KnowledgeGraphItem {
   id: string;
 
@@ -65,10 +67,6 @@ interface KnowledgeGraphItem {
    */
 
   description?: unknown;
-
-  descriptionBN?: unknown;
-
-  descriptionEng?: unknown;
 
   parentId?: string;
 
@@ -146,13 +144,9 @@ export interface KnowledgeGraphData {
 
     chapterNo: number;
 
-    nameBN: string;
+    name: string;
 
-    nameEng: string;
-
-    descriptionBN: unknown;
-
-    descriptionEng: unknown;
+    description: unknown;
   };
 
   /*
@@ -742,7 +736,7 @@ function buildBookmarkCollectionData(
 
 export async function getChapterKnowledgeGraph(
   chapterId: string,
-
+  language: KnowledgeGraphLanguage = "bangla",
   userId?: string,
 ): Promise<KnowledgeGraphData | null> {
   const chapter = await prisma.orm.public.Chapter.first({
@@ -784,15 +778,11 @@ export async function getChapterKnowledgeGraph(
 
     type: "chapter",
 
-    title: chapter.nameBN,
+    title: language === "bangla" ? chapter.nameBN : chapter.nameEng,
 
     slug: slugify(chapter.nameEng),
 
-    description: chapter.descriptionBN,
-
-    descriptionBN: chapter.descriptionBN,
-
-    descriptionEng: chapter.descriptionEng,
+    description: language === "bangla" ? chapter.descriptionBN : chapter.descriptionEng,
   });
 
   /*
@@ -808,10 +798,10 @@ export async function getChapterKnowledgeGraph(
   for (const lesson of lessons) {
     const lessonGraphId = `lesson-${lesson.id}`;
 
-    const lessonTitle =
-      lesson.lessonNo !== null
-        ? `${lesson.lessonNo} ${lesson.nameBN}`
-        : lesson.nameBN;
+    const lessonName = language === "bangla" ? lesson.nameBN : lesson.nameEng;
+    const lessonTitle = lesson.lessonNo !== null
+      ? `${lesson.lessonNo} ${lessonName}`
+      : lessonName;
 
     items.push({
       id: lessonGraphId,
@@ -822,11 +812,7 @@ export async function getChapterKnowledgeGraph(
 
       slug: slugify(lesson.nameEng),
 
-      description: lesson.descriptionBN,
-
-      descriptionBN: lesson.descriptionBN,
-
-      descriptionEng: lesson.descriptionEng,
+      description: language === "bangla" ? lesson.descriptionBN : lesson.descriptionEng,
 
       parentId: chapterGraphId,
     });
@@ -869,15 +855,11 @@ export async function getChapterKnowledgeGraph(
 
         type: "concept",
 
-        title: concept.nameBN,
+        title: language === "bangla" ? concept.nameBN : concept.nameEng,
 
         slug: slugify(concept.nameEng),
 
-        description: concept.descriptionBN,
-
-        descriptionBN: concept.descriptionBN,
-
-        descriptionEng: concept.descriptionEng,
+        description: language === "bangla" ? concept.descriptionBN : concept.descriptionEng,
 
         parentId: lessonGraphId,
       });
@@ -920,15 +902,11 @@ export async function getChapterKnowledgeGraph(
 
           type: "math",
 
-          title: execution.nameBN,
+          title: language === "bangla" ? execution.nameBN : execution.nameEng,
 
           slug: slugify(execution.nameEng),
 
-          description: execution.descriptionBN,
-
-          descriptionBN: execution.descriptionBN,
-
-          descriptionEng: execution.descriptionEng,
+          description: language === "bangla" ? execution.descriptionBN : execution.descriptionEng,
 
           parentId: conceptGraphId,
         });
@@ -1019,11 +997,7 @@ export async function getChapterKnowledgeGraph(
 
       slug: `cq-${cq.id}`,
 
-      description: cq.descriptionBN,
-
-      descriptionBN: cq.descriptionBN,
-
-      descriptionEng: cq.descriptionEng,
+      description: language === "bangla" ? cq.descriptionBN : cq.descriptionEng,
 
       side: cqSideIndex % 2 === 0 ? "left" : "right",
 
@@ -1308,13 +1282,9 @@ export async function getChapterKnowledgeGraph(
 
       chapterNo: chapter.chapterNo,
 
-      nameBN: chapter.nameBN,
+      name: language === "bangla" ? chapter.nameBN : chapter.nameEng,
 
-      nameEng: chapter.nameEng,
-
-      descriptionBN: chapter.descriptionBN,
-
-      descriptionEng: chapter.descriptionEng,
+      description: language === "bangla" ? chapter.descriptionBN : chapter.descriptionEng,
     },
 
     items,
@@ -1357,7 +1327,7 @@ export async function getChapterKnowledgeGraph(
 
  */
 
-export async function getCQDetail(id: string) {
+export async function getCQDetail(id: string, language: KnowledgeGraphLanguage = "bangla") {
   const cq = await prisma.orm.public.CQ.first({
     id,
   });
@@ -1391,30 +1361,28 @@ export async function getCQDetail(id: string) {
       year: questionPaper.year,
     },
 
-    descriptionBN: cq.descriptionBN,
-
-    descriptionEng: cq.descriptionEng,
+    description: language === "bangla" ? cq.descriptionBN : cq.descriptionEng,
 
     stimulus: cq.quesUddipok,
 
     questions: {
-      a: cq.quesKaEng,
+      a: language === "bangla" ? cq.quesKaBN : cq.quesKaEng,
 
-      b: cq.quesKhaEng,
+      b: language === "bangla" ? cq.quesKhaBN : cq.quesKhaEng,
 
-      c: cq.quesGaEng,
+      c: language === "bangla" ? cq.quesGaBN : cq.quesGaEng,
 
-      d: cq.quesGhaEng,
+      d: language === "bangla" ? cq.quesGhaBN : cq.quesGhaEng,
     },
 
     answers: {
-      a: cq.ansKaEng,
+      a: language === "bangla" ? cq.ansKaBN : cq.ansKaEng,
 
-      b: cq.ansKhaEng,
+      b: language === "bangla" ? cq.ansKhaBN : cq.ansKhaEng,
 
-      c: cq.ansGaEng,
+      c: language === "bangla" ? cq.ansGaBN : cq.ansGaEng,
 
-      d: cq.ansGhaEng,
+      d: language === "bangla" ? cq.ansGhaBN : cq.ansGhaEng,
     },
 
     imageUrl: cq.imageUrl,
@@ -1431,7 +1399,7 @@ export async function getCQDetail(id: string) {
 
  */
 
-export async function getMCQDetail(id: string) {
+export async function getMCQDetail(id: string, language: KnowledgeGraphLanguage = "bangla") {
   const mcq = await prisma.orm.public.MCQ.first({
     id,
   });
@@ -1460,15 +1428,13 @@ export async function getMCQDetail(id: string) {
       year: questionPaper.year,
     },
 
-    descriptionBN: mcq.descriptionBN,
-    descriptionEng: mcq.descriptionEng,
+    description: language === "bangla" ? mcq.descriptionBN : mcq.descriptionEng,
     stimulus: null,
 
-    // Return Bangla options for the student-facing API.
-    options: mcq.optionsBN,
+    options: language === "bangla" ? mcq.optionsBN : mcq.optionsEng,
 
     rightAnswer: mcq.rightAns,
-    explanation: mcq.explanationEng,
+    explanation: language === "bangla" ? mcq.explanationBN : mcq.explanationEng,
     imageUrl: mcq.imageUrl,
   };
 }

@@ -192,8 +192,7 @@ export async function getChapterMCQs(chapterId: string, language: ChapterMCQLang
     chapter: {
       id: string;
       chapterNo: number;
-      nameBN: string;
-      nameEng: string;
+      name: string;
     };
     questions: typeof questions;
     bookmarkCollections?: BookmarkCollectionData[];
@@ -201,8 +200,7 @@ export async function getChapterMCQs(chapterId: string, language: ChapterMCQLang
     chapter: {
       id: chapter.id,
       chapterNo: chapter.chapterNo,
-      nameBN: chapter.nameBN,
-      nameEng: chapter.nameEng,
+      name: language === "bangla" ? chapter.nameBN : chapter.nameEng,
     },
     questions,
   };

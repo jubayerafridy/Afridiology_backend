@@ -1,6 +1,8 @@
 import { prisma } from "../../../config/prisma.js";
 
-export async function getChaptersBySubject(subjectId: string) {
+export type ChapterLanguage = "bangla" | "english";
+
+export async function getChaptersBySubject(subjectId: string, language: ChapterLanguage = "bangla") {
   const subject = await prisma.orm.public.Subject.first({
     id: subjectId,
   });
@@ -27,14 +29,12 @@ export async function getChaptersBySubject(subjectId: string) {
       id: chapter.id,
       chapterNo: chapter.chapterNo,
       isActive: chapter.isActive,
-      nameBN: chapter.nameBN,
-      nameEng: chapter.nameEng,
+      name: language === "bangla" ? chapter.nameBN : chapter.nameEng,
 
       // JSON content documents.
       // The blocks array inside each document preserves the
       // exact author-defined rendering order for the frontend.
-      descriptionBN: chapter.descriptionBN,
-      descriptionEng: chapter.descriptionEng,
+      description: language === "bangla" ? chapter.descriptionBN : chapter.descriptionEng,
     })),
   };
 }

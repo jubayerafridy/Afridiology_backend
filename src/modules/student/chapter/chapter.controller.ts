@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { getChaptersBySubject } from "./chapter.service.js";
+import { getChaptersBySubject, type ChapterLanguage } from "./chapter.service.js";
 
 function getQueryParam(value: Request["query"]["subjectId"]): string | null {
   if (typeof value !== "string") {
@@ -27,6 +27,8 @@ function parseUuid(value: Request["query"]["subjectId"]): string | null {
 
 export async function getChaptersController(req: Request, res: Response): Promise<void> {
   const subjectId = parseUuid(req.query.subjectId);
+  const rawLanguage = req.query.language;
+  const language = typeof rawLanguage === "string" ? rawLanguage.trim() : "bangla";
 
   if (subjectId === null) {
     res.status(400).json({
@@ -37,8 +39,13 @@ export async function getChaptersController(req: Request, res: Response): Promis
     return;
   }
 
+  if (language !== "bangla" && language !== "english") {
+    res.status(400).json({ success: false, message: "language must be bangla or english" });
+    return;
+  }
+
   try {
-    const data = await getChaptersBySubject(subjectId);
+    const data = await getChaptersBySubject(subjectId, language as ChapterLanguage);
 
     res.status(200).json({
       success: true,

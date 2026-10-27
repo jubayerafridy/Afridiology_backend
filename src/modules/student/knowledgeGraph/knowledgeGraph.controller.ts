@@ -4,6 +4,7 @@ import {
   getChapterKnowledgeGraph,
   getCQDetail,
   getMCQDetail,
+  type KnowledgeGraphLanguage,
 } from "./knowledgeGraph.service.js";
 
 /*
@@ -48,6 +49,13 @@ function parseUuid(value: string | string[] | undefined): string | null {
   }
 
   return parsed;
+}
+
+function parseLanguage(value: Request["query"]["language"]): KnowledgeGraphLanguage | null {
+  if (value === undefined) return "bangla";
+  if (typeof value !== "string") return null;
+  const language = value.trim();
+  return language === "bangla" || language === "english" ? language : null;
 }
 
 /*
@@ -112,6 +120,7 @@ export async function getChapterKnowledgeGraphController(
 ): Promise<void> {
   try {
     const chapterId = parseUuid(req.params.chapterId);
+    const language = parseLanguage(req.query.language);
 
     if (chapterId === null) {
       res.status(400).json({
@@ -119,6 +128,11 @@ export async function getChapterKnowledgeGraphController(
         message: "Invalid chapter ID",
       });
 
+      return;
+    }
+
+    if (language === null) {
+      res.status(400).json({ success: false, message: "language must be bangla or english" });
       return;
     }
 
@@ -136,7 +150,7 @@ export async function getChapterKnowledgeGraphController(
      * In that case the service does not perform any
      * bookmark queries.
      */
-    const graph = await getChapterKnowledgeGraph(chapterId, userId);
+    const graph = await getChapterKnowledgeGraph(chapterId, language, userId);
 
     if (!graph) {
       res.status(404).json({
@@ -173,6 +187,7 @@ export async function getCQDetailController(
 ): Promise<void> {
   try {
     const id = parseUuid(req.params.id);
+    const language = parseLanguage(req.query.language);
 
     if (id === null) {
       res.status(400).json({
@@ -183,7 +198,12 @@ export async function getCQDetailController(
       return;
     }
 
-    const cq = await getCQDetail(id);
+    if (language === null) {
+      res.status(400).json({ success: false, message: "language must be bangla or english" });
+      return;
+    }
+
+    const cq = await getCQDetail(id, language);
 
     if (!cq) {
       res.status(404).json({
@@ -220,6 +240,7 @@ export async function getMCQDetailController(
 ): Promise<void> {
   try {
     const id = parseUuid(req.params.id);
+    const language = parseLanguage(req.query.language);
 
     if (id === null) {
       res.status(400).json({
@@ -230,7 +251,12 @@ export async function getMCQDetailController(
       return;
     }
 
-    const mcq = await getMCQDetail(id);
+    if (language === null) {
+      res.status(400).json({ success: false, message: "language must be bangla or english" });
+      return;
+    }
+
+    const mcq = await getMCQDetail(id, language);
 
     if (!mcq) {
       res.status(404).json({

@@ -15,6 +15,8 @@ import authRouter from "../modules/auth/auth.route.js";
 
 import studentChapterRouter from "../modules/student/chapter/chapter.route.js";
 import knowledgeGraphRouter from "../modules/student/knowledgeGraph/knowledgeGraph.route.js";
+import studentCQRouter from "../modules/student/CQ/CQ.route.js";
+import studentMCQRouter from "../modules/student/MCQ/MCQ.route.js";
 import studentQuestionBankRouter from "../modules/student/questionBank/questionBank.route.js";
 
 import bookmarkRouter from "../modules/student/bookmark/bookmark.route.js";
@@ -64,6 +66,15 @@ router.use("/admin/knowledge-graph", adminKnowledgeGraphRouter);
 router.use("/chapters", studentChapterRouter);
 
 router.use("/knowledge-graph", knowledgeGraphRouter);
+
+// Keep the former detail URLs working while their handlers live in the
+// dedicated CQ and MCQ modules.
+router.use("/knowledge-graph/cqs", studentCQRouter);
+router.use("/knowledge-graph/mcqs", studentMCQRouter);
+
+router.use("/cqs", studentCQRouter);
+
+router.use("/mcqs", studentMCQRouter);
 
 router.use("/question-bank", studentQuestionBankRouter);
 

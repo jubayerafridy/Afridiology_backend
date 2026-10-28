@@ -12,21 +12,9 @@ import { prisma } from "../../../config/prisma.js";
 
 export type KnowledgeLinkType = "CHAPTER" | "LESSON" | "CONCEPT" | "EXECUTION";
 
-export type AdminKnowledgeItemType =
-  | "chapter"
-  | "lesson"
-  | "concept"
-  | "math"
-  | "cq"
-  | "mcq";
+export type AdminKnowledgeItemType = "chapter" | "lesson" | "concept" | "math" | "cq" | "mcq";
 
-export type QuestionSource =
-  | "board"
-  | "test-paper"
-  | "model-test"
-  | "game"
-  | "quiz"
-  | "extra";
+export type QuestionSource = "board" | "test-paper" | "model-test" | "game" | "quiz" | "extra";
 
 /*
 
@@ -227,9 +215,9 @@ export interface AdminKnowledgeGraphItem {
 
   quesKaLinkId?: string | null;
 
-  ansKaBN?: string | null;
+  ansKaBN?: unknown;
 
-  ansKaEng?: string | null;
+  ansKaEng?: unknown;
 
   // CQ — খ
 
@@ -241,9 +229,9 @@ export interface AdminKnowledgeGraphItem {
 
   quesKhaLinkId?: string | null;
 
-  ansKhaBN?: string | null;
+  ansKhaBN?: unknown;
 
-  ansKhaEng?: string | null;
+  ansKhaEng?: unknown;
 
   // CQ — গ
 
@@ -255,9 +243,9 @@ export interface AdminKnowledgeGraphItem {
 
   quesGaLinkId?: string | null;
 
-  ansGaBN?: string | null;
+  ansGaBN?: unknown;
 
-  ansGaEng?: string | null;
+  ansGaEng?: unknown;
 
   // CQ — ঘ
 
@@ -269,9 +257,9 @@ export interface AdminKnowledgeGraphItem {
 
   quesGhaLinkId?: string | null;
 
-  ansGhaBN?: string | null;
+  ansGhaBN?: unknown;
 
-  ansGhaEng?: string | null;
+  ansGhaEng?: unknown;
 
   // MCQ direct knowledge connection
   linkType?: KnowledgeLinkType | null;
@@ -479,10 +467,7 @@ function normalizeDocument(value: unknown): AdminKnowledgeDocument {
       [key: string]: unknown;
     };
 
-    if (
-      typeof candidate.type !== "string" ||
-      candidate.type.trim().length === 0
-    ) {
+    if (typeof candidate.type !== "string" || candidate.type.trim().length === 0) {
       continue;
     }
 
@@ -509,12 +494,7 @@ interface QuestionMapping {
 }
 
 function isKnowledgeLinkType(value: string | null): value is KnowledgeLinkType {
-  return (
-    value === "CHAPTER" ||
-    value === "LESSON" ||
-    value === "CONCEPT" ||
-    value === "EXECUTION"
-  );
+  return value === "CHAPTER" || value === "LESSON" || value === "CONCEPT" || value === "EXECUTION";
 }
 
 function getCQMappings(cq: {
@@ -679,19 +659,13 @@ function buildQuestionTitle(questionPaper: {
 }): string {
   switch (questionPaper.source) {
     case "BOARD":
-      return questionPaper.year !== null
-        ? `${questionPaper.board ?? "Board"} Board ${questionPaper.year}`
-        : `${questionPaper.board ?? "Board"} Board`;
+      return questionPaper.year !== null ? `${questionPaper.board ?? "Board"} Board ${questionPaper.year}` : `${questionPaper.board ?? "Board"} Board`;
 
     case "TEST_PAPER":
-      return questionPaper.year !== null
-        ? `${questionPaper.institution ?? "Test Paper"} ${questionPaper.year}`
-        : (questionPaper.institution ?? "Test Paper");
+      return questionPaper.year !== null ? `${questionPaper.institution ?? "Test Paper"} ${questionPaper.year}` : (questionPaper.institution ?? "Test Paper");
 
     case "MODEL_TEST":
-      return questionPaper.year !== null
-        ? `Model Test ${questionPaper.year}`
-        : "Model Test";
+      return questionPaper.year !== null ? `Model Test ${questionPaper.year}` : "Model Test";
 
     case "GAME":
       return "Game";
@@ -859,9 +833,7 @@ function buildQuestionMeta(questionPaper: {
 
  */
 
-export async function getAdminChapterKnowledgeGraph(
-  chapterId: string,
-): Promise<AdminKnowledgeGraphData | null> {
+export async function getAdminChapterKnowledgeGraph(chapterId: string): Promise<AdminKnowledgeGraphData | null> {
   /*
 
    * ==================================================
@@ -967,10 +939,7 @@ export async function getAdminChapterKnowledgeGraph(
 
     const lessonDescriptionEng = normalizeDocument(lesson.descriptionEng);
 
-    const lessonTitle =
-      lesson.lessonNo !== null
-        ? `${lesson.lessonNo} ${lesson.nameBN}`
-        : lesson.nameBN;
+    const lessonTitle = lesson.lessonNo !== null ? `${lesson.lessonNo} ${lesson.nameBN}` : lesson.nameBN;
 
     /*
 
@@ -1146,13 +1115,9 @@ export async function getAdminChapterKnowledgeGraph(
       for (const execution of executions) {
         const executionGraphId = `math-${execution.id}`;
 
-        const executionDescriptionBN = normalizeDocument(
-          execution.descriptionBN,
-        );
+        const executionDescriptionBN = normalizeDocument(execution.descriptionBN);
 
-        const executionDescriptionEng = normalizeDocument(
-          execution.descriptionEng,
-        );
+        const executionDescriptionEng = normalizeDocument(execution.descriptionEng);
 
         /*
 
@@ -1224,12 +1189,7 @@ export async function getAdminChapterKnowledgeGraph(
   const hierarchyIds = new Set<string>();
 
   for (const item of items) {
-    if (
-      item.type === "chapter" ||
-      item.type === "lesson" ||
-      item.type === "concept" ||
-      item.type === "math"
-    ) {
+    if (item.type === "chapter" || item.type === "lesson" || item.type === "concept" || item.type === "math") {
       hierarchyIds.add(item.id);
     }
   }
@@ -1283,9 +1243,7 @@ export async function getAdminChapterKnowledgeGraph(
   for (const cq of cqRecords) {
     const mappings = getCQMappings(cq);
 
-    const chapterMappings = mappings.filter((mapping) =>
-      hierarchyIds.has(getGraphId(mapping.type, mapping.id)),
-    );
+    const chapterMappings = mappings.filter((mapping) => hierarchyIds.has(getGraphId(mapping.type, mapping.id)));
 
     if (chapterMappings.length === 0) {
       continue;
@@ -1377,9 +1335,7 @@ export async function getAdminChapterKnowledgeGraph(
 
       quesKaEng: cq.quesKaEng,
 
-      quesKaLinkType: isKnowledgeLinkType(cq.quesKaLinkType)
-        ? cq.quesKaLinkType
-        : null,
+      quesKaLinkType: isKnowledgeLinkType(cq.quesKaLinkType) ? cq.quesKaLinkType : null,
 
       quesKaLinkId: cq.quesKaLinkId,
 
@@ -1393,9 +1349,7 @@ export async function getAdminChapterKnowledgeGraph(
 
       quesKhaEng: cq.quesKhaEng,
 
-      quesKhaLinkType: isKnowledgeLinkType(cq.quesKhaLinkType)
-        ? cq.quesKhaLinkType
-        : null,
+      quesKhaLinkType: isKnowledgeLinkType(cq.quesKhaLinkType) ? cq.quesKhaLinkType : null,
 
       quesKhaLinkId: cq.quesKhaLinkId,
 
@@ -1409,9 +1363,7 @@ export async function getAdminChapterKnowledgeGraph(
 
       quesGaEng: cq.quesGaEng,
 
-      quesGaLinkType: isKnowledgeLinkType(cq.quesGaLinkType)
-        ? cq.quesGaLinkType
-        : null,
+      quesGaLinkType: isKnowledgeLinkType(cq.quesGaLinkType) ? cq.quesGaLinkType : null,
 
       quesGaLinkId: cq.quesGaLinkId,
 
@@ -1425,9 +1377,7 @@ export async function getAdminChapterKnowledgeGraph(
 
       quesGhaEng: cq.quesGhaEng,
 
-      quesGhaLinkType: isKnowledgeLinkType(cq.quesGhaLinkType)
-        ? cq.quesGhaLinkType
-        : null,
+      quesGhaLinkType: isKnowledgeLinkType(cq.quesGhaLinkType) ? cq.quesGhaLinkType : null,
 
       quesGhaLinkId: cq.quesGhaLinkId,
 

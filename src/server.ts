@@ -1,7 +1,7 @@
 import app from "./app.js";
 import { env } from "./config/env.js";
 
-const server = app.listen(env.PORT, () => {
+const server = app.listen(env.PORT, "127.0.0.1", () => {
   console.log(`Afridiology backend running on port ${env.PORT}`);
 
   console.log(`Environment: ${env.NODE_ENV}`);

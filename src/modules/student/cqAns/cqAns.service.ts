@@ -1,4 +1,5 @@
 import { prisma } from "../../../config/prisma.js";
+import { hasActiveQuestionPaper } from "../studentContentAccess.service.js";
 
 export type CQPart = "ka" | "kha" | "ga" | "gha";
 export type CQLanguage = "BN" | "Eng";
@@ -25,9 +26,19 @@ const answerFields = {
 export async function getCQAnswer(cqId: string, part: CQPart, language: CQLanguage = "BN") {
   const cq = await prisma.orm.public.CQ.first({
     id: cqId,
+    isActive: true,
   });
 
   if (!cq) {
+    return null;
+  }
+
+  const paper = await prisma.orm.public.QuestionPaper.first({
+    id: cq.questionPaperId,
+    isActive: true,
+  });
+
+  if (!paper || !await hasActiveQuestionPaper(paper.id)) {
     return null;
   }
 

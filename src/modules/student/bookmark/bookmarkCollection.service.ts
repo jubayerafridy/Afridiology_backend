@@ -1,4 +1,5 @@
 import { prisma } from "../../../config/prisma.js";
+import { AppError } from "../../../core/errors/AppError.js";
 
 import {
   DEFAULT_BOOKMARK_COLLECTIONS,
@@ -36,11 +37,7 @@ import {
  * ================================================== */
 
 function createError(name: string, message: string): Error {
-  const error = new Error(message);
-
-  error.name = name;
-
-  return error;
+  return new AppError(message, name === "NOT_FOUND" ? 404 : name === "BAD_REQUEST" ? 400 : 500, name);
 }
 
 /* ==================================================

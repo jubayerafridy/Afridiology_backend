@@ -1,4 +1,10 @@
 import { prisma } from "../../../config/prisma.js";
+import { AppError } from "../../../core/errors/AppError.js";
+import {
+  hasActiveConcept,
+  hasActiveExecution,
+  hasActiveQuestionPaper,
+} from "../studentContentAccess.service.js";
 
 import type {
   QuestionProgressStateLookupTarget,
@@ -40,11 +46,7 @@ import { validateSetQuestionProgressInput } from "./questionProgress.validation.
  * ================================================== */
 
 function createError(name: string, message: string): Error {
-  const error = new Error(message);
-
-  error.name = name;
-
-  return error;
+  return new AppError(message, name === "NOT_FOUND" ? 404 : name === "BAD_REQUEST" ? 400 : 500, name);
 }
 
 /* ==================================================
@@ -76,6 +78,7 @@ async function ensureConceptExists(targetId: string): Promise<void> {
   if (!concept || !concept.isActive) {
     throw createError("NOT_FOUND", "Concept not found");
   }
+  if (!await hasActiveConcept(targetId)) throw createError("NOT_FOUND", "Concept not found");
 }
 
 /* ==================================================
@@ -90,6 +93,7 @@ async function ensureExecutionExists(targetId: string): Promise<void> {
   if (!execution || !execution.isActive) {
     throw createError("NOT_FOUND", "Execution not found");
   }
+  if (!await hasActiveExecution(targetId)) throw createError("NOT_FOUND", "Execution not found");
 }
 
 /* ==================================================
@@ -104,6 +108,7 @@ async function ensureCQExists(targetId: string): Promise<void> {
   if (!cq || !cq.isActive) {
     throw createError("NOT_FOUND", "CQ not found");
   }
+  if (!await hasActiveQuestionPaper(cq.questionPaperId)) throw createError("NOT_FOUND", "CQ not found");
 }
 
 /* ==================================================
@@ -116,6 +121,9 @@ async function ensureMCQExists(targetId: string): Promise<void> {
   });
 
   if (!mcq || !mcq.isActive) {
+    throw createError("NOT_FOUND", "MCQ not found");
+  }
+  if (mcq.questionPaperId === null || !await hasActiveQuestionPaper(mcq.questionPaperId)) {
     throw createError("NOT_FOUND", "MCQ not found");
   }
 }
@@ -166,6 +174,8 @@ export async function getQuestionProgress(
   targetType: SetQuestionProgressInput["targetType"],
   targetId: string,
 ): Promise<QuestionProgressState> {
+  await ensureTargetExists(targetType, targetId);
+
   const progress = await prisma.orm.public.QuestionProgress.first({
     userId,
     targetType,

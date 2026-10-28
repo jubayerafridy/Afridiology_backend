@@ -1,10 +1,11 @@
 import type { Request, Response } from "express";
 import { getMCQDetail, type MCQLanguage } from "./MCQ.service.js";
+import { isUuid } from "../student.validation.js";
 
 function parseId(value: string | string[] | undefined): string | null {
   if (typeof value !== "string") return null;
   const id = value.trim();
-  return id.length > 0 ? id : null;
+  return isUuid(id) ? id : null;
 }
 
 function parseLanguage(value: Request["query"]["language"]): MCQLanguage | null {
@@ -20,23 +21,23 @@ export async function getMCQDetailController(req: Request, res: Response): Promi
     const language = parseLanguage(req.query.language);
 
     if (id === null) {
-      res.status(400).json({ success: false, message: "Invalid MCQ ID" });
+      res.status(400).json("invalid request");
       return;
     }
     if (language === null) {
-      res.status(400).json({ success: false, message: "language must be bangla or english" });
+      res.status(400).json("invalid request");
       return;
     }
 
     const mcq = await getMCQDetail(id, language);
     if (!mcq) {
-      res.status(404).json({ success: false, message: "MCQ not found" });
+      res.status(404).json("data not found");
       return;
     }
 
-    res.status(200).json({ success: true, data: mcq });
+    res.status(200).json(mcq);
   } catch (error) {
-    console.error("getMCQDetailController error:", error);
-    res.status(500).json({ success: false, message: "Internal server error" });
+    console.error("getMCQDetailController error:", error instanceof Error ? error.name : typeof error);
+    res.status(500).json("error response");
   }
 }

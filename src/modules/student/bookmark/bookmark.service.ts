@@ -1,4 +1,12 @@
 import { prisma } from "../../../config/prisma.js";
+import { AppError } from "../../../core/errors/AppError.js";
+import {
+  hasActiveChapter,
+  hasActiveConcept,
+  hasActiveExecution,
+  hasActiveLesson,
+  hasActiveQuestionPaper,
+} from "../studentContentAccess.service.js";
 
 import type {
   BookmarkStateLookupTarget,
@@ -44,11 +52,37 @@ import { ensureDefaultBookmarkCollections } from "./bookmarkCollection.service.j
  * ================================================== */
 
 function createError(name: string, message: string): Error {
-  const error = new Error(message);
+  return new AppError(message, name === "NOT_FOUND" ? 404 : name === "BAD_REQUEST" ? 400 : 500, name);
+}
 
-  error.name = name;
+async function ensureTargetIsActive(targetType: CreateBookmarkInput["targetType"], targetId: string): Promise<void> {
+  let exists = false;
+  switch (targetType) {
+    case "CHAPTER":
+      exists = await hasActiveChapter(targetId);
+      break;
+    case "LESSON":
+      exists = await hasActiveLesson(targetId);
+      break;
+    case "CONCEPT":
+      exists = await hasActiveConcept(targetId);
+      break;
+    case "EXECUTION":
+      exists = await hasActiveExecution(targetId);
+      break;
+    case "CQ": {
+      const cq = await prisma.orm.public.CQ.first({ id: targetId, isActive: true });
+      exists = Boolean(cq && await hasActiveQuestionPaper(cq.questionPaperId));
+      break;
+    }
+    case "MCQ": {
+      const mcq = await prisma.orm.public.MCQ.first({ id: targetId, isActive: true });
+      exists = Boolean(mcq && mcq.questionPaperId !== null && await hasActiveQuestionPaper(mcq.questionPaperId));
+      break;
+    }
+  }
 
-  return error;
+  if (!exists) throw createError("NOT_FOUND", "Bookmark target not found");
 }
 
 /* ==================================================
@@ -77,9 +111,9 @@ async function validateUserCollections(
 
   if (invalidIds.length > 0) {
     throw createError(
-      "BAD_REQUEST",
+      "NOT_FOUND",
 
-      "One or more bookmark collections do not belong to the current user",
+      "Bookmark collection not found",
     );
   }
 }
@@ -138,6 +172,8 @@ export async function createBookmark(
   input: CreateBookmarkInput,
 ) {
   const validated = validateCreateBookmarkInput(input);
+
+  await ensureTargetIsActive(validated.targetType, validated.targetId);
 
   /*
 

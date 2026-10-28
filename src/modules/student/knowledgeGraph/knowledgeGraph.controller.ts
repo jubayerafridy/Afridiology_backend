@@ -4,6 +4,7 @@ import {
   getChapterKnowledgeGraph,
   type KnowledgeGraphLanguage,
 } from "./knowledgeGraph.service.js";
+import { isUuid } from "../student.validation.js";
 
 /*
  * ==================================================
@@ -46,7 +47,7 @@ function parseUuid(value: string | string[] | undefined): string | null {
     return null;
   }
 
-  return parsed;
+  return isUuid(parsed) ? parsed : null;
 }
 
 function parseLanguage(value: Request["query"]["language"]): KnowledgeGraphLanguage | null {
@@ -121,16 +122,13 @@ export async function getChapterKnowledgeGraphController(
     const language = parseLanguage(req.query.language);
 
     if (chapterId === null) {
-      res.status(400).json({
-        success: false,
-        message: "Invalid chapter ID",
-      });
+      res.status(400).json("invalid request");
 
       return;
     }
 
     if (language === null) {
-      res.status(400).json({ success: false, message: "language must be bangla or english" });
+      res.status(400).json("invalid request");
       return;
     }
 
@@ -151,25 +149,15 @@ export async function getChapterKnowledgeGraphController(
     const graph = await getChapterKnowledgeGraph(chapterId, language, userId);
 
     if (!graph) {
-      res.status(404).json({
-        success: false,
-        message: "Chapter not found",
-      });
+      res.status(404).json("data not found");
 
       return;
     }
 
-    res.status(200).json({
-      success: true,
-      data: graph,
-    });
+    res.status(200).json(graph);
   } catch (error) {
-    console.error("getChapterKnowledgeGraphController error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
+    console.error("getChapterKnowledgeGraphController error:", error instanceof Error ? error.name : typeof error);
+    res.status(500).json("error response");
   }
 }
 

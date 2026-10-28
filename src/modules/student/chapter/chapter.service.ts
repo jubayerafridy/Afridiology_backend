@@ -15,6 +15,7 @@ export async function getChaptersBySubject(subjectId: string, language: ChapterL
 
   const chapters = await prisma.orm.public.Chapter.where({
     subjectId,
+    isActive: true,
   })
     .orderBy((chapter) => chapter.chapterNo.asc())
     .all();

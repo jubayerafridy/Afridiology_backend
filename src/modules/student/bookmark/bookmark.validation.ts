@@ -14,6 +14,8 @@ import type {
   UpdateBookmarkCollectionInput,
   UpdateBookmarkInput,
 } from "./bookmark.types.js";
+import { AppError } from "../../../core/errors/AppError.js";
+import { isUuid } from "../student.validation.js";
 
 /*
  * ==================================================
@@ -32,11 +34,17 @@ import type {
  * ================================================== */
 
 function badRequest(message: string): never {
-  const error = new Error(message);
+  throw new AppError(message, 400, "BAD_REQUEST");
+}
 
-  error.name = "BAD_REQUEST";
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
-  throw error;
+function rejectUnexpectedFields(input: Record<string, unknown>, allowed: readonly string[]): void {
+  if (Object.keys(input).some((key) => !allowed.includes(key))) {
+    badRequest("Unexpected request field");
+  }
 }
 
 /* ==================================================
@@ -44,11 +52,11 @@ function badRequest(message: string): never {
  * ================================================== */
 
 export function validateUuid(value: unknown, fieldName: string): string {
-  if (typeof value !== "string" || value.trim().length === 0) {
+  if (!isUuid(value)) {
     badRequest(`${fieldName} must be a valid UUID`);
   }
 
-  return value.trim();
+  return value;
 }
 
 /* ==================================================
@@ -203,21 +211,21 @@ export function validateCollectionColor(value: unknown): string {
  * ================================================== */
 
 export function validateCreateBookmarkInput(
-  input: CreateBookmarkInput,
+  input: unknown,
 ): CreateBookmarkInput {
-  validateBookmarkTargetType(input.targetType);
-
-  validateUuid(input.targetId, "targetId");
-
+  if (!isRecord(input)) badRequest("Invalid bookmark input");
+  rejectUnexpectedFields(input, ["targetType", "targetId", "starRating", "collectionIds"]);
+  const result: CreateBookmarkInput = {
+    targetType: validateBookmarkTargetType(input.targetType),
+    targetId: validateUuid(input.targetId, "targetId"),
+  };
   if (input.starRating !== undefined) {
-    validateBookmarkStarRating(input.starRating);
+    result.starRating = validateBookmarkStarRating(input.starRating);
   }
-
   if (input.collectionIds !== undefined) {
-    validateCollectionIds(input.collectionIds);
+    result.collectionIds = validateCollectionIds(input.collectionIds);
   }
-
-  return input;
+  return result;
 }
 
 /* ==================================================
@@ -225,21 +233,21 @@ export function validateCreateBookmarkInput(
  * ================================================== */
 
 export function validateUpdateBookmarkInput(
-  input: UpdateBookmarkInput,
+  input: unknown,
 ): UpdateBookmarkInput {
-  if (input.starRating === undefined && input.collectionIds === undefined) {
+  if (!isRecord(input)) badRequest("Invalid bookmark input");
+  rejectUnexpectedFields(input, ["starRating", "collectionIds"]);
+  const result: UpdateBookmarkInput = {};
+  if (input.starRating !== undefined) {
+    result.starRating = validateBookmarkStarRating(input.starRating);
+  }
+  if (input.collectionIds !== undefined) {
+    result.collectionIds = validateCollectionIds(input.collectionIds);
+  }
+  if (result.starRating === undefined && result.collectionIds === undefined) {
     badRequest("At least one bookmark field must be provided");
   }
-
-  if (input.starRating !== undefined) {
-    validateBookmarkStarRating(input.starRating);
-  }
-
-  if (input.collectionIds !== undefined) {
-    validateCollectionIds(input.collectionIds);
-  }
-
-  return input;
+  return result;
 }
 
 /* ==================================================
@@ -247,8 +255,10 @@ export function validateUpdateBookmarkInput(
  * ================================================== */
 
 export function validateCreateBookmarkCollectionInput(
-  input: CreateBookmarkCollectionInput,
+  input: unknown,
 ): CreateBookmarkCollectionInput {
+  if (!isRecord(input)) badRequest("Invalid collection input");
+  rejectUnexpectedFields(input, ["name", "color"]);
   return {
     name: validateCollectionName(input.name),
 
@@ -261,8 +271,10 @@ export function validateCreateBookmarkCollectionInput(
  * ================================================== */
 
 export function validateUpdateBookmarkCollectionInput(
-  input: UpdateBookmarkCollectionInput,
+  input: unknown,
 ): UpdateBookmarkCollectionInput {
+  if (!isRecord(input)) badRequest("Invalid collection input");
+  rejectUnexpectedFields(input, ["name", "color", "sortOrder"]);
   if (
     input.name === undefined &&
     input.color === undefined &&
@@ -282,8 +294,13 @@ export function validateUpdateBookmarkCollectionInput(
   }
 
   if (input.sortOrder !== undefined) {
-    if (!Number.isInteger(input.sortOrder) || input.sortOrder < 0) {
-      badRequest("sortOrder must be a non-negative integer");
+    if (
+      typeof input.sortOrder !== "number" ||
+      !Number.isInteger(input.sortOrder) ||
+      input.sortOrder < 0 ||
+      input.sortOrder > 2_147_483_647
+    ) {
+      badRequest("sortOrder must be a non-negative 32-bit integer");
     }
 
     result.sortOrder = input.sortOrder;

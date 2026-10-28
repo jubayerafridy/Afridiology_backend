@@ -4,6 +4,7 @@ import { getBookmarkStates } from "../bookmark/bookmark.service.js";
 import { getQuestionProgressStates } from "../questionProgress/questionProgress.service.js";
 
 import type { BookmarkCollectionData, BookmarkState } from "../bookmark/bookmark.types.js";
+import { hasActiveChapter, hasActiveQuestionPaper } from "../studentContentAccess.service.js";
 
 export type ChapterCQLanguage = "bangla" | "english";
 
@@ -144,11 +145,14 @@ function applyPersonalization(questions: ChapterCQItem[], bookmarkStates: Map<st
 export async function getChapterCQs(chapterId: string, language: ChapterCQLanguage = "bangla", userId?: string): Promise<ChapterCQData | null> {
   const chapter = await prisma.orm.public.Chapter.first({
     id: chapterId,
+    isActive: true,
   });
 
   if (!chapter) {
     return null;
   }
+
+  if (!await hasActiveChapter(chapterId)) return null;
 
   // Match the Knowledge Graph's chapter hierarchy.
   const hierarchyIds = new Set<string>();
@@ -204,7 +208,7 @@ export async function getChapterCQs(chapterId: string, language: ChapterCQLangua
       id: cq.questionPaperId,
     });
 
-    if (!paper || !paper.isActive || paper.questionType !== "CQ") {
+    if (!paper || !paper.isActive || paper.questionType !== "CQ" || !await hasActiveQuestionPaper(paper.id)) {
       continue;
     }
 

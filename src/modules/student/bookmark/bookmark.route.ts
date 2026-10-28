@@ -1,6 +1,8 @@
 import { Router } from "express";
 
 import { authenticate } from "../../../middleware/authenticate.js";
+import { requireActiveUser } from "../../../middleware/requireActiveUser.js";
+import { studentErrorHandler } from "../studentErrorHandler.js";
 
 import {
   createBookmarkController,
@@ -33,6 +35,7 @@ const router = Router();
  * }
  */
 router.use(authenticate);
+router.use(requireActiveUser);
 
 /*
  * ==================================================
@@ -79,5 +82,6 @@ router.patch("/:bookmarkId", updateBookmarkController);
 
 /* DELETE bookmark */
 router.delete("/:bookmarkId", deleteBookmarkController);
+router.use(studentErrorHandler);
 
 export default router;

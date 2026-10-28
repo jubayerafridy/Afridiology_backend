@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { isUuid } from "../student.validation.js";
 
 import { getBoardPapers, getPaperCQs, getPaperMCQs, getTestPapers } from "./questionBank.service.js";
 
@@ -7,7 +8,7 @@ import { getBoardPapers, getPaperCQs, getPaperMCQs, getTestPapers } from "./ques
  * ========================================================= */
 
 function parseId(value: unknown, fieldName: string): string {
-  if (typeof value !== "string" || value.trim().length === 0) {
+  if (typeof value !== "string" || !isUuid(value.trim())) {
     const error = new Error(`${fieldName} must be a valid UUID`);
     error.name = "BAD_REQUEST";
     throw error;
@@ -17,7 +18,7 @@ function parseId(value: unknown, fieldName: string): string {
 }
 
 function getQueryString(value: unknown, fieldName: string): string {
-  if (typeof value !== "string" || value.length === 0) {
+  if (typeof value !== "string" || value.trim().length === 0) {
     const error = new Error(`${fieldName} is required`);
     error.name = "BAD_REQUEST";
     throw error;
@@ -63,33 +64,20 @@ export async function boardPapersController(req: Request, res: Response) {
 
     const data = await getBoardPapers(subjectId);
 
-    res.status(200).json({
-      success: true,
-      data,
-    });
+    res.status(200).json(data);
   } catch (error: unknown) {
     if (error instanceof Error && error.name === "BAD_REQUEST") {
-      res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      res.status(400).json("invalid request");
       return;
     }
 
     if (error instanceof Error && error.name === "NOT_FOUND") {
-      res.status(404).json({
-        success: false,
-        message: error.message,
-      });
+      res.status(404).json("data not found");
       return;
     }
 
-    console.error(error);
-
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
+    console.error("Student question bank request failed", error instanceof Error ? error.name : typeof error);
+    res.status(500).json("error response");
   }
 }
 
@@ -104,33 +92,20 @@ export async function testPapersController(req: Request, res: Response) {
 
     const data = await getTestPapers(subjectId, type);
 
-    res.status(200).json({
-      success: true,
-      data,
-    });
+    res.status(200).json(data);
   } catch (error: unknown) {
     if (error instanceof Error && error.name === "BAD_REQUEST") {
-      res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      res.status(400).json("invalid request");
       return;
     }
 
     if (error instanceof Error && error.name === "NOT_FOUND") {
-      res.status(404).json({
-        success: false,
-        message: error.message,
-      });
+      res.status(404).json("data not found");
       return;
     }
 
-    console.error(error);
-
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
+    console.error("Student question bank request failed", error instanceof Error ? error.name : typeof error);
+    res.status(500).json("error response");
   }
 }
 
@@ -145,33 +120,20 @@ export async function paperCQsController(req: Request, res: Response) {
 
     const data = await getPaperCQs(paperId, language);
 
-    res.status(200).json({
-      success: true,
-      data,
-    });
+    res.status(200).json(data);
   } catch (error: unknown) {
     if (error instanceof Error && error.name === "BAD_REQUEST") {
-      res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      res.status(400).json("invalid request");
       return;
     }
 
     if (error instanceof Error && error.name === "NOT_FOUND") {
-      res.status(404).json({
-        success: false,
-        message: error.message,
-      });
+      res.status(404).json("data not found");
       return;
     }
 
-    console.error(error);
-
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
+    console.error("Student question bank request failed", error instanceof Error ? error.name : typeof error);
+    res.status(500).json("error response");
   }
 }
 
@@ -186,32 +148,19 @@ export async function paperMCQsController(req: Request, res: Response) {
 
     const data = await getPaperMCQs(paperId, language);
 
-    res.status(200).json({
-      success: true,
-      data,
-    });
+    res.status(200).json(data);
   } catch (error: unknown) {
     if (error instanceof Error && error.name === "BAD_REQUEST") {
-      res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      res.status(400).json("invalid request");
       return;
     }
 
     if (error instanceof Error && error.name === "NOT_FOUND") {
-      res.status(404).json({
-        success: false,
-        message: error.message,
-      });
+      res.status(404).json("data not found");
       return;
     }
 
-    console.error(error);
-
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
+    console.error("Student question bank request failed", error instanceof Error ? error.name : typeof error);
+    res.status(500).json("error response");
   }
 }

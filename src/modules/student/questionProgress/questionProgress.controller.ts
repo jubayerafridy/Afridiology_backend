@@ -1,4 +1,6 @@
 import type { Request, Response } from "express";
+import { AppError } from "../../../core/errors/AppError.js";
+import { isUuid } from "../student.validation.js";
 
 import {
   getQuestionProgress,
@@ -45,7 +47,7 @@ function getAuthenticatedUserId(req: Request): string {
   const authenticatedRequest = req as AuthenticatedRequest;
 
   if (!authenticatedRequest.auth) {
-    throw new Error("Authenticated user not found");
+    throw new AppError("Authentication required", 401, "AUTHENTICATION_REQUIRED");
   }
 
   return authenticatedRequest.auth.userId;
@@ -64,10 +66,9 @@ function getRequiredParam(
 ): string {
   const normalizedValue = Array.isArray(value) ? value[0] : value;
 
-  if (!normalizedValue) {
-    throw new Error(`${name} is required`);
+  if (typeof normalizedValue !== "string" || normalizedValue.trim().length === 0) {
+    throw new AppError(`${name} is required`, 400, "BAD_REQUEST");
   }
-
   return normalizedValue;
 }
 
@@ -80,8 +81,8 @@ function getUuidParam(
 ): string {
   const normalizedValue = getRequiredParam(value, name).trim();
 
-  if (normalizedValue.length === 0) {
-    throw new Error(`${name} must be a valid UUID`);
+  if (!isUuid(normalizedValue)) {
+    throw new AppError(`${name} must be a valid UUID`, 400, "BAD_REQUEST");
   }
 
   return normalizedValue;
@@ -106,7 +107,7 @@ function getTargetTypeParam(
     normalizedValue !== "CQ" &&
     normalizedValue !== "MCQ"
   ) {
-    throw new Error("Invalid question progress targetType");
+    throw new AppError("Invalid question progress targetType", 400, "BAD_REQUEST");
   }
 
   return normalizedValue;
@@ -142,10 +143,7 @@ export async function getQuestionProgressController(
 
   const progress = await getQuestionProgress(userId, targetType, targetId);
 
-  res.status(200).json({
-    success: true,
-    data: progress,
-  });
+  res.status(200).json(progress);
 }
 
 /*
@@ -178,8 +176,5 @@ export async function setQuestionProgressController(
 
   const progress = await setQuestionProgress(userId, input);
 
-  res.status(200).json({
-    success: true,
-    data: progress,
-  });
+  res.status(200).json(progress);
 }

@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import { optionalAuthenticate } from "../../../middleware/optionalAuthenticate.js";
+import { studentErrorHandler } from "../studentErrorHandler.js";
 
 import {
   getChapterKnowledgeGraphController,
@@ -32,5 +33,6 @@ knowledgeGraphRouter.get(
   "/chapters/:chapterId",
   getChapterKnowledgeGraphController,
 );
+knowledgeGraphRouter.use(studentErrorHandler);
 
 export default knowledgeGraphRouter;

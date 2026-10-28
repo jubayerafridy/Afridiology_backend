@@ -1,6 +1,8 @@
 import { Router } from "express";
 
 import { authenticate } from "../../../middleware/authenticate.js";
+import { requireActiveUser } from "../../../middleware/requireActiveUser.js";
+import { studentErrorHandler } from "../studentErrorHandler.js";
 
 import {
   getQuestionProgressController,
@@ -26,6 +28,7 @@ const router = Router();
  * }
  */
 router.use(authenticate);
+router.use(requireActiveUser);
 
 /*
  * ==================================================
@@ -38,5 +41,6 @@ router.get("/:targetType/:targetId", getQuestionProgressController);
 
 /* CREATE / UPDATE progress */
 router.put("/", setQuestionProgressController);
+router.use(studentErrorHandler);
 
 export default router;

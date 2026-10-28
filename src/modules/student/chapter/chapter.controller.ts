@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { getChaptersBySubject, type ChapterLanguage } from "./chapter.service.js";
+import { isUuid } from "../student.validation.js";
 
 function getQueryParam(value: Request["query"]["subjectId"]): string | null {
   if (typeof value !== "string") {
@@ -22,41 +23,34 @@ function parseUuid(value: Request["query"]["subjectId"]): string | null {
     return null;
   }
 
-  return trimmed;
+  return isUuid(trimmed) ? trimmed : null;
 }
 
 export async function getChaptersController(req: Request, res: Response): Promise<void> {
   const subjectId = parseUuid(req.query.subjectId);
   const rawLanguage = req.query.language;
-  const language = typeof rawLanguage === "string" ? rawLanguage.trim() : "bangla";
+  const language = rawLanguage === undefined
+    ? "bangla"
+    : typeof rawLanguage === "string" ? rawLanguage.trim() : "";
 
   if (subjectId === null) {
-    res.status(400).json({
-      success: false,
-      message: "A valid subjectId is required",
-    });
+    res.status(400).json("invalid request");
 
     return;
   }
 
   if (language !== "bangla" && language !== "english") {
-    res.status(400).json({ success: false, message: "language must be bangla or english" });
+    res.status(400).json("invalid request");
     return;
   }
 
   try {
     const data = await getChaptersBySubject(subjectId, language as ChapterLanguage);
 
-    res.status(200).json({
-      success: true,
-      data,
-    });
+    res.status(200).json(data);
   } catch (error: unknown) {
     if (error instanceof Error && error.name === "NOT_FOUND") {
-      res.status(404).json({
-        success: false,
-        message: "Subject not found",
-      });
+      res.status(404).json("data not found");
 
       return;
     }

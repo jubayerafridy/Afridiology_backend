@@ -1,4 +1,5 @@
 import { prisma } from "../../../config/prisma.js";
+import { hasActiveQuestionPaper } from "../studentContentAccess.service.js";
 
 export type MCQLanguage = "bangla" | "english";
 
@@ -7,7 +8,7 @@ export async function getMCQDetail(id: string, language: MCQLanguage = "bangla")
   if (!mcq || !mcq.isActive) return null;
 
   const questionPaper = await prisma.orm.public.QuestionPaper.first({ id: mcq.questionPaperId });
-  if (!questionPaper || !questionPaper.isActive) return null;
+  if (!questionPaper || !questionPaper.isActive || !await hasActiveQuestionPaper(questionPaper.id)) return null;
 
   return {
     id: mcq.id,

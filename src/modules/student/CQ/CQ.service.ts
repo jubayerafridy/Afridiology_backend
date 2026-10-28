@@ -1,4 +1,5 @@
 import { prisma } from "../../../config/prisma.js";
+import { hasActiveQuestionPaper } from "../studentContentAccess.service.js";
 
 export type CQLanguage = "bangla" | "english";
 
@@ -7,7 +8,7 @@ export async function getCQDetail(id: string, language: CQLanguage = "bangla") {
   if (!cq || !cq.isActive) return null;
 
   const questionPaper = await prisma.orm.public.QuestionPaper.first({ id: cq.questionPaperId });
-  if (!questionPaper || !questionPaper.isActive) return null;
+  if (!questionPaper || !questionPaper.isActive || !await hasActiveQuestionPaper(questionPaper.id)) return null;
 
   return {
     id: cq.id,

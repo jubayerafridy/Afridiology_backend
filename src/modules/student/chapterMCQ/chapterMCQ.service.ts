@@ -4,6 +4,7 @@ import { getBookmarkStates } from "../bookmark/bookmark.service.js";
 import { getQuestionProgressStates } from "../questionProgress/questionProgress.service.js";
 
 import type { BookmarkCollectionData, BookmarkState } from "../bookmark/bookmark.types.js";
+import { hasActiveChapter, hasActiveQuestionPaper } from "../studentContentAccess.service.js";
 
 export type ChapterMCQLanguage = "bangla" | "english";
 
@@ -41,11 +42,14 @@ function buildBookmarkCollectionData(
 export async function getChapterMCQs(chapterId: string, language: ChapterMCQLanguage = "bangla", userId?: string) {
   const chapter = await prisma.orm.public.Chapter.first({
     id: chapterId,
+    isActive: true,
   });
 
   if (!chapter) {
     return null;
   }
+
+  if (!await hasActiveChapter(chapterId)) return null;
 
   const hierarchyTargets = new Set<string>([`CHAPTER:${chapterId}`]);
 
@@ -100,7 +104,7 @@ export async function getChapterMCQs(chapterId: string, language: ChapterMCQLang
       id: mcq.questionPaperId,
     });
 
-    if (!questionPaper || !questionPaper.isActive) {
+    if (!questionPaper || !questionPaper.isActive || !await hasActiveQuestionPaper(questionPaper.id)) {
       continue;
     }
 

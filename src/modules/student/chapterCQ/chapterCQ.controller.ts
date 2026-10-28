@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { getChapterCQs, type ChapterCQLanguage } from "./chapterCQ.service.js";
+import { isUuid } from "../student.validation.js";
 
 interface AuthenticatedRequest extends Request {
   auth?: {
@@ -45,21 +46,17 @@ export async function getChapterCQsController(req: Request, res: Response): Prom
     // Express query parameters can be strings, arrays, or ParsedQs objects.
     // Accept only a string for the language parameter.
     const rawLanguage = req.query.language;
-    const languageValue = typeof rawLanguage === "string" ? rawLanguage.trim() : "bangla";
+    const languageValue = rawLanguage === undefined
+      ? "bangla"
+      : typeof rawLanguage === "string" ? rawLanguage.trim() : "";
 
-    if (chapterId === null) {
-      res.status(400).json({
-        success: false,
-        message: "A valid chapterId is required",
-      });
+    if (chapterId === null || !isUuid(chapterId)) {
+      res.status(400).json("invalid request");
       return;
     }
 
     if (!isChapterCQLanguage(languageValue)) {
-      res.status(400).json({
-        success: false,
-        message: "language must be bangla or english",
-      });
+      res.status(400).json("invalid request");
       return;
     }
 
@@ -68,23 +65,13 @@ export async function getChapterCQsController(req: Request, res: Response): Prom
     const data = await getChapterCQs(chapterId, languageValue, userId);
 
     if (data === null) {
-      res.status(404).json({
-        success: false,
-        message: "Chapter not found",
-      });
+      res.status(404).json("data not found");
       return;
     }
 
-    res.status(200).json({
-      success: true,
-      data,
-    });
+    res.status(200).json(data);
   } catch (error) {
-    console.error("Failed to fetch chapter CQs:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch chapter CQs",
-    });
+    console.error("Failed to fetch chapter CQs:", error instanceof Error ? error.name : typeof error);
+    res.status(500).json("error response");
   }
 }

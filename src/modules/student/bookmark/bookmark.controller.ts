@@ -1,4 +1,6 @@
 import type { Request, Response } from "express";
+import { AppError } from "../../../core/errors/AppError.js";
+import { isUuid } from "../student.validation.js";
 
 import {
   createBookmark,
@@ -55,7 +57,7 @@ function getAuthenticatedUserId(req: Request): string {
   const authenticatedRequest = req as AuthenticatedRequest;
 
   if (!authenticatedRequest.auth) {
-    throw new Error("Authenticated user not found");
+    throw new AppError("Authentication required", 401, "AUTHENTICATION_REQUIRED");
   }
 
   return authenticatedRequest.auth.userId;
@@ -74,16 +76,8 @@ function getUuidParam(
 ): string {
   const normalizedValue = Array.isArray(value) ? value[0] : value;
 
-  if (!normalizedValue) {
-    throw new Error(`${name} is required`);
-  }
-
-  const parsed = normalizedValue.trim();
-
-  if (parsed.length === 0) {
-    throw new Error(`${name} must be a valid UUID`);
-  }
-
+  const parsed = typeof normalizedValue === "string" ? normalizedValue.trim() : "";
+  if (!isUuid(parsed)) throw new AppError(`${name} must be a valid UUID`, 400, "BAD_REQUEST");
   return parsed;
 }
 
@@ -106,10 +100,7 @@ export async function getBookmarkController(
 
   const bookmark = await getBookmark(userId, bookmarkId);
 
-  res.status(200).json({
-    success: true,
-    data: bookmark,
-  });
+  res.status(200).json(bookmark);
 }
 
 /**
@@ -123,10 +114,7 @@ export async function createBookmarkController(
 
   const bookmark = await createBookmark(userId, req.body);
 
-  res.status(201).json({
-    success: true,
-    data: bookmark,
-  });
+  res.status(201).json(bookmark);
 }
 
 /**
@@ -158,10 +146,7 @@ export async function updateBookmarkController(
     return;
   }
 
-  res.status(200).json({
-    success: true,
-    data: bookmark,
-  });
+  res.status(200).json(bookmark);
 }
 
 /**
@@ -204,10 +189,7 @@ export async function getBookmarkCollectionsController(
 
   const collections = await getBookmarkCollections(userId);
 
-  res.status(200).json({
-    success: true,
-    data: collections,
-  });
+  res.status(200).json(collections);
 }
 
 /**
@@ -224,18 +206,12 @@ export async function getBookmarkCollectionController(
   const collection = await getBookmarkCollection(userId, collectionId);
 
   if (!collection) {
-    res.status(404).json({
-      success: false,
-      message: "Bookmark collection not found",
-    });
+    res.status(404).json("data not found");
 
     return;
   }
 
-  res.status(200).json({
-    success: true,
-    data: collection,
-  });
+  res.status(200).json(collection);
 }
 
 /**
@@ -249,10 +225,7 @@ export async function createBookmarkCollectionController(
 
   const collection = await createBookmarkCollection(userId, req.body);
 
-  res.status(201).json({
-    success: true,
-    data: collection,
-  });
+  res.status(201).json(collection);
 }
 
 /**
@@ -273,18 +246,12 @@ export async function updateBookmarkCollectionController(
   );
 
   if (!collection) {
-    res.status(404).json({
-      success: false,
-      message: "Bookmark collection not found",
-    });
+    res.status(404).json("data not found");
 
     return;
   }
 
-  res.status(200).json({
-    success: true,
-    data: collection,
-  });
+  res.status(200).json(collection);
 }
 
 /**

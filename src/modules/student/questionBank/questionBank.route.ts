@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import { boardPapersController, paperCQsController, paperMCQsController, testPapersController } from "./questionBank.controller.js";
+import { studentErrorHandler } from "../studentErrorHandler.js";
 
 const router = Router();
 
@@ -24,5 +25,6 @@ router.get("/papers/:paperId/cqs", paperCQsController);
 
 // Returns MCQ questions for a paper in the requested language.
 router.get("/papers/:paperId/mcqs", paperMCQsController);
+router.use(studentErrorHandler);
 
 export default router;

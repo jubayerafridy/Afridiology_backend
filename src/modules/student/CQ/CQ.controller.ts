@@ -1,10 +1,11 @@
 import type { Request, Response } from "express";
 import { getCQDetail, type CQLanguage } from "./CQ.service.js";
+import { isUuid } from "../student.validation.js";
 
 function parseId(value: string | string[] | undefined): string | null {
   if (typeof value !== "string") return null;
   const id = value.trim();
-  return id.length > 0 ? id : null;
+  return isUuid(id) ? id : null;
 }
 
 function parseLanguage(value: Request["query"]["language"]): CQLanguage | null {
@@ -20,23 +21,23 @@ export async function getCQDetailController(req: Request, res: Response): Promis
     const language = parseLanguage(req.query.language);
 
     if (id === null) {
-      res.status(400).json({ success: false, message: "Invalid CQ ID" });
+      res.status(400).json("invalid request");
       return;
     }
     if (language === null) {
-      res.status(400).json({ success: false, message: "language must be bangla or english" });
+      res.status(400).json("invalid request");
       return;
     }
 
     const cq = await getCQDetail(id, language);
     if (!cq) {
-      res.status(404).json({ success: false, message: "CQ not found" });
+      res.status(404).json("data not found");
       return;
     }
 
-    res.status(200).json({ success: true, data: cq });
+    res.status(200).json(cq);
   } catch (error) {
-    console.error("getCQDetailController error:", error);
-    res.status(500).json({ success: false, message: "Internal server error" });
+    console.error("getCQDetailController error:", error instanceof Error ? error.name : typeof error);
+    res.status(500).json("error response");
   }
 }

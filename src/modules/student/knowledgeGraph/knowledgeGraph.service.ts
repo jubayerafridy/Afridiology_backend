@@ -3,6 +3,7 @@ import { prisma } from "../../../config/prisma.js";
 import { getBookmarkStates } from "../bookmark/bookmark.service.js";
 
 import { getQuestionProgressStates } from "../questionProgress/questionProgress.service.js";
+import { hasActiveChapter, hasActiveQuestionPaper } from "../studentContentAccess.service.js";
 
 import type {
   BookmarkCollectionData,
@@ -741,11 +742,14 @@ export async function getChapterKnowledgeGraph(
 ): Promise<KnowledgeGraphData | null> {
   const chapter = await prisma.orm.public.Chapter.first({
     id: chapterId,
+    isActive: true,
   });
 
   if (!chapter) {
     return null;
   }
+
+  if (!await hasActiveChapter(chapterId)) return null;
 
   const lessons = await prisma.orm.public.Lesson.where({
     chapterId,
@@ -978,7 +982,7 @@ export async function getChapterKnowledgeGraph(
       id: cq.questionPaperId,
     });
 
-    if (!questionPaper || !questionPaper.isActive) {
+    if (!questionPaper || !questionPaper.isActive || !await hasActiveQuestionPaper(questionPaper.id)) {
       continue;
     }
 
@@ -1070,7 +1074,7 @@ export async function getChapterKnowledgeGraph(
       id: mcq.questionPaperId,
     });
 
-    if (!questionPaper || !questionPaper.isActive) {
+    if (!questionPaper || !questionPaper.isActive || !await hasActiveQuestionPaper(questionPaper.id)) {
       continue;
     }
 

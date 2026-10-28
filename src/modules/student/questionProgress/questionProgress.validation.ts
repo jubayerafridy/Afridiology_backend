@@ -6,6 +6,8 @@ import {
 } from "./questionProgress.constants.js";
 
 import type { SetQuestionProgressInput } from "./questionProgress.types.js";
+import { AppError } from "../../../core/errors/AppError.js";
+import { isUuid } from "../student.validation.js";
 
 /*
  * ==================================================
@@ -25,6 +27,10 @@ import type { SetQuestionProgressInput } from "./questionProgress.types.js";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function badRequest(message: string): never {
+  throw new AppError(message, 400, "BAD_REQUEST");
 }
 
 /* ==================================================
@@ -60,8 +66,8 @@ export function isQuestionProgressStatus(
 export function validateQuestionProgressTargetId(
   targetId: unknown,
 ): asserts targetId is string {
-  if (typeof targetId !== "string" || targetId.trim().length === 0) {
-    throw new Error("targetId must be a valid UUID");
+  if (!isUuid(targetId)) {
+    badRequest("targetId must be a valid UUID");
   }
 }
 
@@ -73,16 +79,20 @@ export function validateSetQuestionProgressInput(
   input: unknown,
 ): asserts input is SetQuestionProgressInput {
   if (!isRecord(input)) {
-    throw new Error("Invalid question progress input");
+    badRequest("Invalid question progress input");
+  }
+
+  if (Object.keys(input).some((key) => !["targetType", "targetId", "status"].includes(key))) {
+    badRequest("Unexpected request field");
   }
 
   if (!isQuestionProgressTargetType(input.targetType)) {
-    throw new Error("Invalid question progress targetType");
+    badRequest("Invalid question progress targetType");
   }
 
   validateQuestionProgressTargetId(input.targetId);
 
   if (!isQuestionProgressStatus(input.status)) {
-    throw new Error("Invalid question progress status");
+    badRequest("Invalid question progress status");
   }
 }

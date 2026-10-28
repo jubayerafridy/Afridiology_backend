@@ -1,4 +1,6 @@
 import { prisma } from "../../../config/prisma.js";
+import { isUuid } from "../student.validation.js";
+import { hasActiveQuestionPaper } from "../studentContentAccess.service.js";
 
 export type QuestionBankType = "CQ" | "MCQ";
 export type RequestLanguage = "english" | "bangla";
@@ -35,7 +37,7 @@ function validateQuestionBankType(type: string): QuestionBankType {
 }
 
 function validateUuid(value: string, fieldName: string): void {
-  if (typeof value !== "string" || value.trim().length === 0) {
+  if (!isUuid(value)) {
     const error = new Error(`${fieldName} must be a valid UUID`);
     error.name = "BAD_REQUEST";
     throw error;
@@ -267,7 +269,7 @@ export async function getPaperCQs(paperId: string, requestedLanguage?: string) {
     id: paperId,
   });
 
-  if (!paper || !paper.isActive || paper.questionType !== "CQ") {
+  if (!paper || !paper.isActive || paper.questionType !== "CQ" || !await hasActiveQuestionPaper(paper.id)) {
     const error = new Error("CQ question paper not found");
     error.name = "NOT_FOUND";
     throw error;
@@ -359,7 +361,7 @@ export async function getPaperMCQs(paperId: string, requestedLanguage?: string) 
    * MCQ records. The presence of active MCQ records determines
    * whether this endpoint has MCQs to return.
    */
-  if (!paper || !paper.isActive) {
+  if (!paper || !paper.isActive || !await hasActiveQuestionPaper(paper.id)) {
     const error = new Error("MCQ question paper not found");
     error.name = "NOT_FOUND";
     throw error;

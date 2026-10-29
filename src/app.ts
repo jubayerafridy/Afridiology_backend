@@ -4,12 +4,17 @@ import express from "express";
 import helmet from "helmet";
 
 import routes from "./routes/index.js";
+import { env } from "./config/env.js";
 import { AppError } from "./core/errors/AppError.js";
 import errorHandler from "./core/errors/errorHandler.js";
 
 const app = express();
 
-const allowedOrigins = new Set(["http://localhost:3000", "https://afridiology.com", "https://admin.afridiology.com"]);
+const allowedOrigins = new Set([
+  "https://afridiology.com",
+  "https://admin.afridiology.com",
+  ...(env.NODE_ENV === "development" || env.NODE_ENV === "test" ? ["http://localhost:3000"] : []),
+]);
 
 // This server returns API responses and does not serve the frontend's HTML or
 // scripts, so CSP is left to the frontend host. The remaining Helmet defaults

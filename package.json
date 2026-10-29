@@ -4,6 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
     "test": "tsx --test tests/authRateLimit.test.ts tests/appSecurity.test.ts tests/jwtSecurity.test.ts",
     "dev": "tsx watch src/server.ts",
     "postinstall": "prisma skills sync || exit 0"

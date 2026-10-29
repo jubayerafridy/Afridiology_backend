@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { SignJWT, jwtVerify, type JWTPayload } from "jose";
 
 import { env } from "../../config/env.js";
@@ -24,9 +25,7 @@ function getRefreshSecret(): Uint8Array {
 /**
  * Create a short-lived access JWT.
  */
-export async function createAccessToken(
-  payload: AccessTokenPayload,
-): Promise<string> {
+export async function createAccessToken(payload: AccessTokenPayload): Promise<string> {
   return new SignJWT({
     userId: payload.userId,
     role: payload.role,
@@ -43,14 +42,13 @@ export async function createAccessToken(
 }
 
 /**
- * Create a long-lived refresh JWT.
+ * Create a refresh JWT with a unique ID.
  *
- * The refresh token is still backed by an AuthSession in the database.
- * JWT validity alone is NOT enough to authenticate a session.
+ * The unique jti prevents tokens generated for the same
+ * user and session within the same second from being identical.
+ * The server-side session and stored token hash remain mandatory.
  */
-export async function createRefreshToken(
-  payload: RefreshTokenPayload,
-): Promise<string> {
+export async function createRefreshToken(payload: RefreshTokenPayload): Promise<string> {
   return new SignJWT({
     userId: payload.userId,
     sessionId: payload.sessionId,
@@ -60,6 +58,7 @@ export async function createRefreshToken(
       typ: "JWT",
     })
     .setIssuedAt()
+    .setJti(randomUUID())
     .setSubject(payload.userId)
     .setExpirationTime(env.JWT_REFRESH_EXPIRES_IN)
     .sign(getRefreshSecret());
@@ -68,9 +67,7 @@ export async function createRefreshToken(
 /**
  * Verify an access JWT.
  */
-export async function verifyAccessToken(
-  token: string,
-): Promise<AccessTokenPayload> {
+export async function verifyAccessToken(token: string): Promise<AccessTokenPayload> {
   const { payload } = await jwtVerify(token, getAccessSecret(), {
     algorithms: ["HS256"],
   });
@@ -81,9 +78,7 @@ export async function verifyAccessToken(
 /**
  * Verify a refresh JWT.
  */
-export async function verifyRefreshToken(
-  token: string,
-): Promise<RefreshTokenPayload> {
+export async function verifyRefreshToken(token: string): Promise<RefreshTokenPayload> {
   const { payload } = await jwtVerify(token, getRefreshSecret(), {
     algorithms: ["HS256"],
   });
@@ -92,10 +87,7 @@ export async function verifyRefreshToken(
 }
 
 function parseAccessPayload(payload: JWTPayload): AccessTokenPayload {
-  if (
-    typeof payload.userId !== "string" ||
-    payload.userId.trim().length === 0
-  ) {
+  if (typeof payload.userId !== "string" || payload.userId.trim().length === 0) {
     throw new Error("Invalid access token userId");
   }
 
@@ -103,10 +95,7 @@ function parseAccessPayload(payload: JWTPayload): AccessTokenPayload {
     throw new Error("Invalid access token role");
   }
 
-  if (
-    typeof payload.sessionId !== "string" ||
-    payload.sessionId.trim().length === 0
-  ) {
+  if (typeof payload.sessionId !== "string" || payload.sessionId.trim().length === 0) {
     throw new Error("Invalid access token sessionId");
   }
 
@@ -118,17 +107,11 @@ function parseAccessPayload(payload: JWTPayload): AccessTokenPayload {
 }
 
 function parseRefreshPayload(payload: JWTPayload): RefreshTokenPayload {
-  if (
-    typeof payload.userId !== "string" ||
-    payload.userId.trim().length === 0
-  ) {
+  if (typeof payload.userId !== "string" || payload.userId.trim().length === 0) {
     throw new Error("Invalid refresh token userId");
   }
 
-  if (
-    typeof payload.sessionId !== "string" ||
-    payload.sessionId.trim().length === 0
-  ) {
+  if (typeof payload.sessionId !== "string" || payload.sessionId.trim().length === 0) {
     throw new Error("Invalid refresh token sessionId");
   }
 

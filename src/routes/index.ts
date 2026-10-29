@@ -1,5 +1,9 @@
 import { Router } from "express";
 
+import { authenticate } from "../middleware/authenticate.js";
+import { authorize } from "../middleware/authorize.js";
+import { requireActiveUser } from "../middleware/requireActiveUser.js";
+
 import educationLevelRouter from "../modules/admin/educationLevel/educationLevel.route.js";
 import subjectRouter from "../modules/admin/subject/subject.route.js";
 import chapterRouter from "../modules/admin/chapter/chapter.route.js";
@@ -33,14 +37,38 @@ const router = Router();
  * ==================================================
  * AUTH
  * ==================================================
+ *
+ * Student registration remains public.
+ * The registration service must always assign STUDENT
+ * as the role and must never accept a client-supplied role.
+ *
  */
 
 router.use("/auth", authRouter);
 
 /*
  * ==================================================
- * ADMIN
+ * ADMIN AUTHORIZATION GUARD
  * ==================================================
+ *
+ * All /admin/* API endpoints require:
+ * 1. A valid access token.
+ * 2. An active user account.
+ * 3. The ADMIN or SUPER_ADMIN role.
+ *
+ * Keep this guard BEFORE all admin route registrations.
+ *
+ */
+
+router.use("/admin", authenticate, requireActiveUser, authorize("ADMIN", "SUPER_ADMIN"));
+
+/*
+ * ==================================================
+ * ADMIN ROUTES
+ * ==================================================
+ *
+ * These routes inherit the authorization guard above.
+ *
  */
 
 router.use("/admin/education-levels", educationLevelRouter);
@@ -63,13 +91,25 @@ router.use("/admin/mcqs", mcqRouter);
 
 router.use("/admin/knowledge-graph", adminKnowledgeGraphRouter);
 
+/*
+ * ==================================================
+ * STUDENT ROUTES
+ * ==================================================
+ *
+ * These routes remain outside the admin guard.
+ * Each route must still enforce authentication and
+ * ownership where the operation requires it.
+ *
+ */
+
 router.use("/chapters", studentChapterRouter);
 
 router.use("/knowledge-graph", knowledgeGraphRouter);
 
-// Keep the former detail URLs working while their handlers live in the
-// dedicated CQ and MCQ modules.
+// Keep the former detail URLs working while their
+// handlers live in the dedicated CQ and MCQ modules.
 router.use("/knowledge-graph/cqs", studentCQRouter);
+
 router.use("/knowledge-graph/mcqs", studentMCQRouter);
 
 router.use("/cqs", studentCQRouter);
@@ -85,6 +125,7 @@ router.use("/question-progress", questionProgressRouter);
 router.use("/cq-answers", cqAnsRouter);
 
 router.use("/student/chapter-cq", chapterCQRoutes);
+
 router.use("/student/chapter-mcq", chapterMCQRoutes);
 
 export default router;

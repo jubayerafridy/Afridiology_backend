@@ -31,13 +31,72 @@ function getNodeEnv(): "development" | "test" | "production" {
   const value = getOptionalEnv("NODE_ENV", "development");
 
   if (value !== "development" && value !== "test" && value !== "production") {
-    throw new Error(
-      `Invalid NODE_ENV value: ${value}. Expected development, test, or production.`,
-    );
+    throw new Error(`Invalid NODE_ENV value: ${value}. Expected development, test, or production.`);
   }
 
   return value;
 }
+
+/**
+ * Require independently configured, cryptographically strong JWT secrets.
+ *
+ * HS256 requires a key with at least 256 bits of cryptographic strength.
+ * Checking the UTF-8 byte length is a basic configuration safeguard;
+ * it does not prove that a secret is random or unpredictable.
+ */
+function getJwtSecret(name: string): string {
+  const secret = getRequiredEnv(name);
+
+  if (Buffer.byteLength(secret, "utf8") < 32) {
+    throw new Error(`${name} must contain at least 32 UTF-8 bytes. Use a cryptographically random secret.`);
+  }
+
+  return secret;
+}
+
+/**
+ * Accept positive integer durations with an explicit unit.
+ * Supported units match common jose duration formats.
+ */
+function getTokenExpiration(name: string, fallback: string): { value: string; milliseconds: number } {
+  const value = getOptionalEnv(name, fallback);
+
+  const match = /^([1-9]\d*)\s*(seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|weeks?|w|years?|yrs?|y)$/i.exec(value);
+
+  if (!match) {
+    throw new Error(`Invalid ${name} value. Use a positive integer followed by a supported time unit, such as 15m or 30d.`);
+  }
+
+  const amount = Number(match[1]);
+
+  const unit = match[2]![0]!.toLowerCase();
+  const secondsPerUnit: Record<string, number> = {
+    s: 1,
+    m: 60,
+    h: 60 * 60,
+    d: 24 * 60 * 60,
+    w: 7 * 24 * 60 * 60,
+    y: 365.25 * 24 * 60 * 60,
+  };
+  const milliseconds = Math.round(amount * secondsPerUnit[unit]! * 1000);
+
+  if (!Number.isSafeInteger(amount) || !Number.isSafeInteger(milliseconds)) {
+    throw new Error(`${name} duration is too large.`);
+  }
+
+  return { value, milliseconds };
+}
+
+const accessSecret = getJwtSecret("JWT_ACCESS_SECRET");
+const refreshSecret = getJwtSecret("JWT_REFRESH_SECRET");
+
+if (accessSecret === refreshSecret) {
+  throw new Error("JWT_ACCESS_SECRET and JWT_REFRESH_SECRET must be different.");
+}
+
+const accessExpiration = getTokenExpiration("JWT_ACCESS_EXPIRES_IN", "15m");
+
+const refreshExpiration = getTokenExpiration("JWT_REFRESH_EXPIRES_IN", "30d");
 
 export const env = Object.freeze({
   DATABASE_URL: getRequiredEnv("DATABASE_URL"),
@@ -46,18 +105,17 @@ export const env = Object.freeze({
 
   NODE_ENV: getNodeEnv(),
 
-  JWT_ACCESS_SECRET: getRequiredEnv("JWT_ACCESS_SECRET"),
+  JWT_ACCESS_SECRET: accessSecret,
 
-  JWT_REFRESH_SECRET: getRequiredEnv("JWT_REFRESH_SECRET"),
+  JWT_REFRESH_SECRET: refreshSecret,
 
-  JWT_ACCESS_EXPIRES_IN: getOptionalEnv("JWT_ACCESS_EXPIRES_IN", "15m"),
+  JWT_ACCESS_EXPIRES_IN: accessExpiration.value,
 
-  JWT_REFRESH_EXPIRES_IN: getOptionalEnv("JWT_REFRESH_EXPIRES_IN", "30d"),
+  JWT_REFRESH_EXPIRES_IN: refreshExpiration.value,
 
-  AUTH_REFRESH_COOKIE_NAME: getOptionalEnv(
-    "AUTH_REFRESH_COOKIE_NAME",
-    "afridiology_refresh",
-  ),
+  JWT_REFRESH_EXPIRES_IN_MS: refreshExpiration.milliseconds,
+
+  AUTH_REFRESH_COOKIE_NAME: getOptionalEnv("AUTH_REFRESH_COOKIE_NAME", "afridiology_refresh"),
 });
 
 export const isProduction = env.NODE_ENV === "production";

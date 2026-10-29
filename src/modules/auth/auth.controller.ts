@@ -1,20 +1,10 @@
-import type { Request, Response } from "express";
+import type { Request } from "express";
 
 import { AppError } from "../../core/errors/AppError.js";
-import {
-  clearRefreshTokenCookie,
-  setRefreshTokenCookie,
-} from "../../core/security/cookies.js";
+import { clearRefreshTokenCookie, setRefreshTokenCookie } from "../../core/security/cookies.js";
 import { asyncHandler } from "../../core/http/asyncHandler.js";
 
-import {
-  getMe,
-  login,
-  logout,
-  logoutAll,
-  refresh,
-  register,
-} from "./auth.service.js";
+import { getMe, login, logout, logoutAll, refresh, register } from "./auth.service.js";
 
 import { loginSchema, registerSchema } from "./auth.validation.js";
 
@@ -40,8 +30,14 @@ interface AuthenticatedRequest extends Request {
  * ==================================================
  */
 
-function getValidationErrorMessage(issues: Array<{ message: string }>): string {
-  return issues[0]?.message ?? "Invalid request data";
+function requireAuthenticatedRequest(req: Request): NonNullable<AuthenticatedRequest["auth"]> {
+  const auth = (req as AuthenticatedRequest).auth;
+
+  if (!auth) {
+    throw new AppError("Authentication required", 401, "AUTHENTICATION_REQUIRED");
+  }
+
+  return auth;
 }
 
 function getRefreshTokenFromCookie(req: Request): string | null {
@@ -66,17 +62,17 @@ function getRefreshTokenFromCookie(req: Request): string | null {
  * ==================================================
  *
  * POST /api/auth/register
+ *
+ * Public registration creates STUDENT accounts only.
+ * The role is assigned by auth.service.ts, never by
+ * the client request.
  */
 
 export const registerController = asyncHandler(async (req, res) => {
   const result = registerSchema.safeParse(req.body);
 
   if (!result.success) {
-    throw new AppError(
-      getValidationErrorMessage(result.error.issues),
-      400,
-      "VALIDATION_ERROR",
-    );
+    throw new AppError("Invalid request", 400, "VALIDATION_ERROR");
   }
 
   const authResult = await register({
@@ -88,7 +84,6 @@ export const registerController = asyncHandler(async (req, res) => {
   setRefreshTokenCookie(res, authResult.refreshToken);
 
   res.status(201).json({
-    success: true,
     data: {
       user: authResult.user,
       accessToken: authResult.accessToken,
@@ -108,11 +103,7 @@ export const loginController = asyncHandler(async (req, res) => {
   const result = loginSchema.safeParse(req.body);
 
   if (!result.success) {
-    throw new AppError(
-      getValidationErrorMessage(result.error.issues),
-      400,
-      "VALIDATION_ERROR",
-    );
+    throw new AppError("Invalid request", 400, "VALIDATION_ERROR");
   }
 
   const authResult = await login({
@@ -123,7 +114,6 @@ export const loginController = asyncHandler(async (req, res) => {
   setRefreshTokenCookie(res, authResult.refreshToken);
 
   res.status(200).json({
-    success: true,
     data: {
       user: authResult.user,
       accessToken: authResult.accessToken,
@@ -138,18 +128,14 @@ export const loginController = asyncHandler(async (req, res) => {
  *
  * POST /api/auth/refresh
  *
- * Refresh token comes from HttpOnly cookie.
+ * The refresh token is read from an HttpOnly cookie.
  */
 
 export const refreshController = asyncHandler(async (req, res) => {
   const refreshToken = getRefreshTokenFromCookie(req);
 
   if (!refreshToken) {
-    throw new AppError(
-      "Refresh token is required",
-      401,
-      "INVALID_REFRESH_TOKEN",
-    );
+    throw new AppError("Authentication required", 401, "INVALID_REFRESH_TOKEN");
   }
 
   const authResult = await refresh(refreshToken);
@@ -157,7 +143,6 @@ export const refreshController = asyncHandler(async (req, res) => {
   setRefreshTokenCookie(res, authResult.refreshToken);
 
   res.status(200).json({
-    success: true,
     data: {
       user: authResult.user,
       accessToken: authResult.accessToken,
@@ -176,23 +161,14 @@ export const refreshController = asyncHandler(async (req, res) => {
  */
 
 export const logoutController = asyncHandler(async (req, res) => {
-  const authReq = req as AuthenticatedRequest;
+  const auth = requireAuthenticatedRequest(req);
 
-  if (!authReq.auth) {
-    throw new AppError(
-      "Authentication required",
-      401,
-      "AUTHENTICATION_REQUIRED",
-    );
-  }
-
-  await logout(authReq.auth.sessionId, authReq.auth.userId);
+  await logout(auth.sessionId, auth.userId);
 
   clearRefreshTokenCookie(res);
 
   res.status(200).json({
-    success: true,
-    message: "Logged out successfully",
+    data: "Logged out successfully",
   });
 });
 
@@ -207,23 +183,14 @@ export const logoutController = asyncHandler(async (req, res) => {
  */
 
 export const logoutAllController = asyncHandler(async (req, res) => {
-  const authReq = req as AuthenticatedRequest;
+  const auth = requireAuthenticatedRequest(req);
 
-  if (!authReq.auth) {
-    throw new AppError(
-      "Authentication required",
-      401,
-      "AUTHENTICATION_REQUIRED",
-    );
-  }
-
-  await logoutAll(authReq.auth.userId);
+  await logoutAll(auth.userId);
 
   clearRefreshTokenCookie(res);
 
   res.status(200).json({
-    success: true,
-    message: "All sessions have been logged out",
+    data: "All sessions have been logged out",
   });
 });
 
@@ -238,20 +205,11 @@ export const logoutAllController = asyncHandler(async (req, res) => {
  */
 
 export const meController = asyncHandler(async (req, res) => {
-  const authReq = req as AuthenticatedRequest;
+  const auth = requireAuthenticatedRequest(req);
 
-  if (!authReq.auth) {
-    throw new AppError(
-      "Authentication required",
-      401,
-      "AUTHENTICATION_REQUIRED",
-    );
-  }
-
-  const user = await getMe(authReq.auth.userId);
+  const user = await getMe(auth.userId);
 
   res.status(200).json({
-    success: true,
     data: {
       user,
     },

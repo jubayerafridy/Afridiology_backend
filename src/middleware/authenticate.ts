@@ -12,85 +12,57 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
-export async function authenticate(
-  req: Request,
-  _res: Response,
-  next: NextFunction,
-): Promise<void> {
+function authenticationRequired(): AppError {
+  return new AppError("Authentication required", 401, "AUTHENTICATION_REQUIRED");
+}
+
+export async function authenticate(req: Request, _res: Response, next: NextFunction): Promise<void> {
   try {
     const authorization = req.headers.authorization;
 
     if (!authorization) {
-      throw new AppError(
-        "Authentication required",
-        401,
-        "AUTHENTICATION_REQUIRED",
-      );
+      throw authenticationRequired();
     }
 
-    const [scheme, token] = authorization.split(" ");
+    // Accept exactly: Bearer <token>
+    const parts = authorization.trim().split(/\s+/);
 
-    if (scheme !== "Bearer" || !token || token.trim().length === 0) {
-      throw new AppError(
-        "Authentication required",
-        401,
-        "AUTHENTICATION_REQUIRED",
-      );
+    if (parts.length !== 2 || parts[0] !== "Bearer" || !parts[1]) {
+      throw authenticationRequired();
     }
 
-    const accessToken = token.trim();
+    // Verify the signature, allowed algorithm, and token expiration.
+    const payload = await verifyAccessToken(parts[1]);
 
-    const payload = await verifyAccessToken(accessToken);
-
+    // Verify that the server-side session exists and is still valid.
     const session = await prisma.orm.public.AuthSession.first({
       id: payload.sessionId,
     });
 
-    if (!session) {
-      throw new AppError(
-        "Authentication required",
-        401,
-        "AUTHENTICATION_REQUIRED",
-      );
+    if (!session || session.userId !== payload.userId || session.revokedAt !== null || session.expiresAt.epochMilliseconds <= Date.now()) {
+      throw authenticationRequired();
     }
 
-    if (session.userId !== payload.userId) {
-      throw new AppError(
-        "Authentication required",
-        401,
-        "AUTHENTICATION_REQUIRED",
-      );
+    // Always load the current account state and role from the database.
+    const user = await prisma.orm.public.User.first({
+      id: payload.userId,
+    });
+
+    if (!user) {
+      throw authenticationRequired();
     }
 
-    if (session.revokedAt !== null) {
-      throw new AppError(
-        "Authentication required",
-        401,
-        "AUTHENTICATION_REQUIRED",
-      );
-    }
-
-    /*
-     * Prisma 8 PostgreSQL timestamptz is returned as
-     * Temporal.Instant.
-     *
-     * Therefore we must use epochMilliseconds rather
-     * than Date.getTime().
-     */
-    if (session.expiresAt.epochMilliseconds <= Date.now()) {
-      throw new AppError(
-        "Authentication required",
-        401,
-        "AUTHENTICATION_REQUIRED",
-      );
+    // Reject inactive accounts on every route using this middleware.
+    if (user.status !== "ACTIVE") {
+      throw new AppError("Account is not active", 403, "ACCOUNT_NOT_ACTIVE");
     }
 
     const authenticatedRequest = req as AuthenticatedRequest;
 
     authenticatedRequest.auth = {
-      userId: payload.userId,
-      role: payload.role,
-      sessionId: payload.sessionId,
+      userId: user.id,
+      role: user.role,
+      sessionId: session.id,
     };
 
     next();

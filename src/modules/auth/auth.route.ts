@@ -10,6 +10,11 @@ import {
 } from "./auth.controller.js";
 
 import { authenticate } from "../../middleware/authenticate.js";
+import {
+  loginRateLimit,
+  refreshRateLimit,
+  registrationRateLimit,
+} from "../../middleware/authRateLimit.js";
 
 const router = Router();
 
@@ -19,11 +24,11 @@ const router = Router();
  * ==================================================
  */
 
-router.post("/register", registerController);
+router.post("/register", registrationRateLimit, registerController);
 
-router.post("/login", loginController);
+router.post("/login", loginRateLimit, loginController);
 
-router.post("/refresh", refreshController);
+router.post("/refresh", refreshRateLimit, refreshController);
 
 /*
  * ==================================================

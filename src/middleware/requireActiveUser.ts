@@ -7,7 +7,7 @@ interface AuthenticatedRequest extends Request {
   auth?: {
     userId: string;
     role: string;
-    sessionId: number;
+    sessionId: string;
   };
 }
 
@@ -20,30 +20,22 @@ interface AuthenticatedRequest extends Request {
  *
  * authenticate()
  *      ↓
- * verifies access token + session
+ * Verifies the access token and session.
  *
  * requireActiveUser()
  *      ↓
- * verifies the actual user's current account status
+ * Checks the user's current database account status.
  *
- * This means changing a user's status in the database
- * immediately affects protected requests.
+ * This ensures suspended or deactivated accounts
+ * cannot access routes protected by this middleware.
  */
 
-export async function requireActiveUser(
-  req: Request,
-  _res: Response,
-  next: NextFunction,
-): Promise<void> {
+export async function requireActiveUser(req: Request, _res: Response, next: NextFunction): Promise<void> {
   try {
     const authenticatedRequest = req as AuthenticatedRequest;
 
     if (!authenticatedRequest.auth) {
-      throw new AppError(
-        "Authentication required",
-        401,
-        "AUTHENTICATION_REQUIRED",
-      );
+      throw new AppError("Authentication required", 401, "AUTHENTICATION_REQUIRED");
     }
 
     const user = await prisma.orm.public.User.first({
@@ -51,19 +43,7 @@ export async function requireActiveUser(
     });
 
     if (!user) {
-      throw new AppError(
-        "Authentication required",
-        401,
-        "AUTHENTICATION_REQUIRED",
-      );
-    }
-
-    if (user.status === "SUSPENDED") {
-      throw new AppError("Account is suspended", 403, "ACCOUNT_SUSPENDED");
-    }
-
-    if (user.status === "DEACTIVATED") {
-      throw new AppError("Account is deactivated", 403, "ACCOUNT_DEACTIVATED");
+      throw new AppError("Authentication required", 401, "AUTHENTICATION_REQUIRED");
     }
 
     if (user.status !== "ACTIVE") {

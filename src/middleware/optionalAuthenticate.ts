@@ -49,7 +49,7 @@ export async function optionalAuthenticate(
       return;
     }
 
-    const [scheme, token] = authorization.split(" ");
+    const parts = authorization.trim().split(/\s+/);
 
     /*
      * Malformed Authorization header.
@@ -57,12 +57,12 @@ export async function optionalAuthenticate(
      * Because this is optional authentication, we simply
      * treat the request as anonymous.
      */
-    if (scheme !== "Bearer" || !token || token.trim().length === 0) {
+    if (parts.length !== 2 || parts[0] !== "Bearer" || !parts[1]) {
       next();
       return;
     }
 
-    const accessToken = token.trim();
+    const accessToken = parts[1];
 
     /*
      * Verify:
@@ -115,15 +115,27 @@ export async function optionalAuthenticate(
       return;
     }
 
+    // Optional auth is used only for public graph personalization. Do not
+    // expose private personalization for suspended or deactivated accounts,
+    // and do not trust a potentially stale role claim.
+    const user = await prisma.orm.public.User.first({
+      id: payload.userId,
+    });
+
+    if (!user || user.status !== "ACTIVE") {
+      next();
+      return;
+    }
+
     /*
      * Authentication succeeded.
      */
     const authenticatedRequest = req as AuthenticatedRequest;
 
     authenticatedRequest.auth = {
-      userId: payload.userId,
-      role: payload.role,
-      sessionId: payload.sessionId,
+      userId: user.id,
+      role: user.role,
+      sessionId: session.id,
     };
 
     next();

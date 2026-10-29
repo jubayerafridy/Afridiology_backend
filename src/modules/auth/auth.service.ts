@@ -1,6 +1,7 @@
 import { Temporal } from "@js-temporal/polyfill";
 
 import { prisma } from "../../config/prisma.js";
+import { env } from "../../config/env.js";
 
 import { AppError } from "../../core/errors/AppError.js";
 
@@ -134,7 +135,8 @@ async function createSessionAndTokens(user: {
     /*
      * Session lifetime:
      *
-     * 30 days for now, matching the current auth design.
+     * Match the configured refresh JWT lifetime. The database remains the
+     * authoritative upper bound if a rotated JWT carries a later exp claim.
      *
      * IMPORTANT:
      * Use Temporal.Instant instead of JavaScript Date
@@ -142,7 +144,7 @@ async function createSessionAndTokens(user: {
      */
 
     const expiresAt = instantFromMilliseconds(
-      Date.now() + 30 * 24 * 60 * 60 * 1000,
+      Date.now() + env.JWT_REFRESH_EXPIRES_IN_MS,
     );
 
     const session = await tx.orm.public.AuthSession.create({
@@ -492,7 +494,7 @@ export async function logoutAll(userId: string): Promise<void> {
   await prisma.orm.public.AuthSession.where({
     userId,
     revokedAt: null,
-  }).update({
+  }).updateAndCount({
     revokedAt: nowInstant(),
   });
 }

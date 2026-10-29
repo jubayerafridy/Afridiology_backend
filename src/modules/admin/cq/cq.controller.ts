@@ -861,12 +861,81 @@ function buildBulkCreateInputs(body: Record<string, unknown>): CreateCQInput[] {
   });
 }
 
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
+function getSafeClientErrorMessage(error: unknown): string | null {
+  const message = typeof error === "string"
+    ? error
+    : error instanceof Error
+      ? error.message
+      : null;
+
+  if (!message) return null;
+
+  if (/^[A-Za-z][A-Za-z0-9_.\[\]]{0,100} is required(?: and must contain valid JSON)?$/.test(message)) {
+    return message;
   }
 
-  return "Internal server error";
+  if (/^[A-Za-z][A-Za-z0-9_.\[\]]{0,100} must be (?:a positive integer|a non-negative integer|a valid UUID|true or false|a boolean|a string|an object|a non-empty array|a non-empty string)$/.test(message)) {
+    return message;
+  }
+
+  if (/^[A-Za-z][A-Za-z0-9_.\[\]]{0,100} must (?:contain valid JSON|not be empty)$/.test(message)) {
+    return message;
+  }
+
+  const safeMessages: Record<string, string> = {
+    "Request body must be an object": "Request body must be an object",
+    "Question Paper not found": "Question paper not found",
+    "CQ not found": "CQ not found",
+    "Knowledge link type must be CHAPTER, LESSON, CONCEPT, or EXECUTION": "Knowledge link type must be CHAPTER, LESSON, CONCEPT, or EXECUTION",
+    "At least one CQ is required": "At least one CQ is required",
+    "questions must be an array": "questions must be an array",
+    "questions must contain at least one CQ": "questions must contain at least one CQ",
+    "At least one CQ update is required": "At least one CQ update is required",
+    "Every CQ update must include a valid string ID": "Every CQ update must include a valid string ID",
+    "quesGhaBN is required when Gha is provided": "quesGhaBN is required when Gha is provided",
+    "quesGhaEng is required when Gha is provided": "quesGhaEng is required when Gha is provided",
+    "quesGhaLinkId is required when Gha is provided": "quesGhaLinkId is required when Gha is provided",
+    "Gha question must be provided before Gha answer or knowledge link": "Gha question must be provided before Gha answer or knowledge link",
+  };
+
+  if (safeMessages[message]) return safeMessages[message];
+  if (message.startsWith("Invalid knowledge link type:")) return "Invalid knowledge link type";
+  if (/^Question number \d+ already exists in this Question Paper$/.test(message)) {
+    return "Question number already exists in this question paper";
+  }
+  if (/^(?:ques[A-Za-z]+ )?(?:chapter|lesson|concept|execution) with ID .+ (?:was not found|for .+ was not found|has no valid (?:chapter|lesson|concept))$/.test(message)) {
+    return "Referenced content was not found";
+  }
+  if (/^(?:ques[A-Za-z]+ )?(?:chapter|lesson|concept|execution) with ID .+ does not belong to the Question Paper subject$/.test(message)) {
+    return "Knowledge link does not belong to the question paper subject";
+  }
+  if (/^CQ ID .+ appears more than once in the bulk update$/.test(message)) return "Duplicate CQ id in bulk update";
+  if (/^CQ with ID .+ was not found$/.test(message)) return "CQ not found";
+  if (/^Update data is required for CQ .+$/.test(message)) return "Update data is required for each CQ";
+  if (/^At least one field must be provided for CQ .+$/.test(message)) return "At least one field must be provided for each CQ";
+
+  return null;
+}
+
+function handleControllerError(error: unknown, res: Response): void {
+  const validationMessage = getSafeClientErrorMessage(error);
+  if (validationMessage !== null) {
+    res.status(400).json({ success: false, message: validationMessage });
+    return;
+  }
+
+  console.error("Admin CQ controller failed", error instanceof Error ? "Error" : "NonErrorThrown");
+  res.status(500).json({ data: "error response" });
+}
+
+function sanitizeBulkUpdateResults<T extends { success: boolean; error?: string }>(results: T[]): T[] {
+  return results.map((result) => {
+    if (result.success || result.error === undefined) return result;
+    return {
+      ...result,
+      error: getSafeClientErrorMessage(result.error) ?? "Update failed",
+    };
+  });
 }
 
 export async function createCQController(req: Request, res: Response) {
@@ -929,13 +998,7 @@ export async function createCQController(req: Request, res: Response) {
       data: cq,
     });
   } catch (error) {
-    console.error(error);
-
-    res.status(400).json({
-      success: false,
-
-      message: getErrorMessage(error),
-    });
+    handleControllerError(error, res);
   }
 }
 
@@ -954,13 +1017,7 @@ export async function getCQsController(req: Request, res: Response) {
       data: cqs,
     });
   } catch (error) {
-    console.error(error);
-
-    res.status(400).json({
-      success: false,
-
-      message: getErrorMessage(error),
-    });
+    handleControllerError(error, res);
   }
 }
 
@@ -986,13 +1043,7 @@ export async function getCQController(req: Request, res: Response) {
       data: cq,
     });
   } catch (error) {
-    console.error(error);
-
-    res.status(400).json({
-      success: false,
-
-      message: getErrorMessage(error),
-    });
+    handleControllerError(error, res);
   }
 }
 
@@ -1022,13 +1073,7 @@ export async function updateCQController(req: Request, res: Response) {
       data: cq,
     });
   } catch (error) {
-    console.error(error);
-
-    res.status(400).json({
-      success: false,
-
-      message: getErrorMessage(error),
-    });
+    handleControllerError(error, res);
   }
 }
 
@@ -1084,7 +1129,7 @@ export async function updateCQsController(req: Request, res: Response) {
       return { id, data };
     });
 
-    const results = await updateCQs(prepared);
+    const results = sanitizeBulkUpdateResults(await updateCQs(prepared));
     const succeeded = results.filter((result) => result.success).length;
     const failed = results.length - succeeded;
 
@@ -1098,12 +1143,7 @@ export async function updateCQsController(req: Request, res: Response) {
       data: results,
     });
   } catch (error) {
-    console.error(error);
-
-    res.status(400).json({
-      success: false,
-      message: getErrorMessage(error),
-    });
+    handleControllerError(error, res);
   }
 }
 
@@ -1129,12 +1169,6 @@ export async function deleteCQController(req: Request, res: Response) {
       data: cq,
     });
   } catch (error) {
-    console.error(error);
-
-    res.status(400).json({
-      success: false,
-
-      message: getErrorMessage(error),
-    });
+    handleControllerError(error, res);
   }
 }

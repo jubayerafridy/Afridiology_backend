@@ -362,12 +362,81 @@ function getRequestBody(req: Request): Record<string, unknown> {
   return req.body as Record<string, unknown>;
 }
 
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
+function getSafeClientErrorMessage(error: unknown): string | null {
+  const message = typeof error === "string"
+    ? error
+    : error instanceof Error
+      ? error.message
+      : null;
+
+  if (!message) return null;
+
+  if (/^[A-Za-z][A-Za-z0-9_.\[\]]{0,100} is required(?: and must contain valid JSON)?$/.test(message)) {
+    return message;
   }
 
-  return "Internal server error";
+  if (/^[A-Za-z][A-Za-z0-9_.\[\]]{0,100} must be (?:a positive integer|a non-negative integer|a valid UUID|true or false|a boolean|a string|an object|a non-empty array|a non-empty string)$/.test(message)) {
+    return message;
+  }
+
+  if (/^[A-Za-z][A-Za-z0-9_.\[\]]{0,100} must (?:contain valid JSON|not be empty)$/.test(message)) {
+    return message;
+  }
+
+  const safeMessages: Record<string, string> = {
+    "Request body must be an object": "Request body must be an object",
+    "linkType is required when linkId is provided": "linkType is required when linkId is provided",
+    "linkId is required when linkType is provided": "linkId is required when linkType is provided",
+    "linkId is required": "linkId is required",
+    "linkType and linkId must be provided together": "linkType and linkId must be provided together",
+    "questions must be a non-empty array": "questions must be a non-empty array",
+    "questions must contain at least one MCQ": "questions must contain at least one MCQ",
+    "updates must be a non-empty array": "updates must be a non-empty array",
+    "updates must contain at least one MCQ update": "updates must contain at least one MCQ update",
+    "Every update must contain a valid MCQ id": "Every update must contain a valid MCQ id",
+    "Question Paper not found": "Question paper not found",
+    "MCQ not found": "MCQ not found",
+    "Knowledge link type must be CHAPTER, LESSON, CONCEPT, or EXECUTION": "Knowledge link type must be CHAPTER, LESSON, CONCEPT, or EXECUTION",
+    "questionPaperId is required when qusNo is provided": "questionPaperId is required when qusNo is provided",
+  };
+
+  if (safeMessages[message]) return safeMessages[message];
+  if (message.startsWith("Invalid knowledge link type:")) return "Invalid knowledge link type";
+  if (/^Question number \d+ already exists in this Question Paper$/.test(message)) {
+    return "Question number already exists in this question paper";
+  }
+  if (/^(?:Chapter|Lesson|Concept|Execution) with ID .+ (?:was not found|for .+ was not found|has no valid (?:chapter|lesson|concept))$/.test(message)) {
+    return "Referenced content was not found";
+  }
+  if (/^(?:Chapter|Lesson|Concept|Execution) with ID .+ does not belong to the Question Paper subject$/.test(message)) {
+    return "Knowledge link does not belong to the question paper subject";
+  }
+  if (/^Duplicate MCQ id in bulk update: .+$/.test(message)) return "Duplicate MCQ id in bulk update";
+  if (/^A valid data object is required for MCQ .+$/.test(message)) return "A valid data object is required for each MCQ update";
+  if (/^Update data cannot be empty for MCQ .+$/.test(message)) return "Update data cannot be empty";
+
+  return null;
+}
+
+function handleControllerError(error: unknown, res: Response): void {
+  const validationMessage = getSafeClientErrorMessage(error);
+  if (validationMessage !== null) {
+    res.status(400).json({ success: false, message: validationMessage });
+    return;
+  }
+
+  console.error("Admin MCQ controller failed", error instanceof Error ? "Error" : "NonErrorThrown");
+  res.status(500).json({ data: "error response" });
+}
+
+function sanitizeBulkUpdateResults<T extends { success: boolean; error?: string }>(results: T[]): T[] {
+  return results.map((result) => {
+    if (result.success || result.error === undefined) return result;
+    return {
+      ...result,
+      error: getSafeClientErrorMessage(result.error) ?? "Update failed",
+    };
+  });
 }
 
 export async function createMCQController(req: Request, res: Response) {
@@ -433,12 +502,7 @@ export async function createMCQController(req: Request, res: Response) {
       data: mcq,
     });
   } catch (error) {
-    console.error(error);
-
-    res.status(400).json({
-      success: false,
-      message: getErrorMessage(error),
-    });
+    handleControllerError(error, res);
   }
 }
 
@@ -456,12 +520,7 @@ export async function getMCQsController(req: Request, res: Response) {
       data: mcqs,
     });
   } catch (error) {
-    console.error(error);
-
-    res.status(400).json({
-      success: false,
-      message: getErrorMessage(error),
-    });
+    handleControllerError(error, res);
   }
 }
 
@@ -485,12 +544,7 @@ export async function getMCQController(req: Request, res: Response) {
       data: mcq,
     });
   } catch (error) {
-    console.error(error);
-
-    res.status(400).json({
-      success: false,
-      message: getErrorMessage(error),
-    });
+    handleControllerError(error, res);
   }
 }
 
@@ -518,12 +572,7 @@ export async function updateMCQController(req: Request, res: Response) {
       data: mcq,
     });
   } catch (error) {
-    console.error(error);
-
-    res.status(400).json({
-      success: false,
-      message: getErrorMessage(error),
-    });
+    handleControllerError(error, res);
   }
 }
 
@@ -587,7 +636,7 @@ export async function updateMCQsController(req: Request, res: Response) {
       return { id, data };
     });
 
-    const results = await updateMCQs(updates);
+    const results = sanitizeBulkUpdateResults(await updateMCQs(updates));
 
     const successCount = results.filter((result) => result.success).length;
     const failureCount = results.length - successCount;
@@ -600,12 +649,7 @@ export async function updateMCQsController(req: Request, res: Response) {
       data: results,
     });
   } catch (error) {
-    console.error(error);
-
-    res.status(400).json({
-      success: false,
-      message: getErrorMessage(error),
-    });
+    handleControllerError(error, res);
   }
 }
 
@@ -629,11 +673,6 @@ export async function deleteMCQController(req: Request, res: Response) {
       data: mcq,
     });
   } catch (error) {
-    console.error(error);
-
-    res.status(400).json({
-      success: false,
-      message: getErrorMessage(error),
-    });
+    handleControllerError(error, res);
   }
 }

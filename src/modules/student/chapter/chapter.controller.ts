@@ -29,29 +29,25 @@ function parseUuid(value: Request["query"]["subjectId"]): string | null {
 export async function getChaptersController(req: Request, res: Response): Promise<void> {
   const subjectId = parseUuid(req.query.subjectId);
   const rawLanguage = req.query.language;
-  const language = rawLanguage === undefined
-    ? "bangla"
-    : typeof rawLanguage === "string" ? rawLanguage.trim() : "";
 
-  if (subjectId === null) {
-    res.status(400).json("invalid request");
+  const language = rawLanguage === undefined ? "bangla" : typeof rawLanguage === "string" ? rawLanguage.trim() : "";
 
-    return;
-  }
+  const rawIncludeInactive = req.query.includeInactive;
 
-  if (language !== "bangla" && language !== "english") {
+  const includeInactive = rawIncludeInactive === undefined ? false : rawIncludeInactive === "true" ? true : rawIncludeInactive === "false" ? false : null;
+
+  if (subjectId === null || (language !== "bangla" && language !== "english") || includeInactive === null) {
     res.status(400).json("invalid request");
     return;
   }
 
   try {
-    const data = await getChaptersBySubject(subjectId, language as ChapterLanguage);
+    const data = await getChaptersBySubject(subjectId, language as ChapterLanguage, includeInactive);
 
     res.status(200).json(data);
   } catch (error: unknown) {
     if (error instanceof Error && error.name === "NOT_FOUND") {
       res.status(404).json("data not found");
-
       return;
     }
 

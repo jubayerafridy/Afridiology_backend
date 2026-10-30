@@ -16,8 +16,16 @@ const app = express();
  * ==================================================
  */
 
-const allowedOrigins = new Set(["https://afridiology.com", "https://admin.afridiology.com", "http://localhost:3000"]);
-/*
+const allowedOrigins = new Set([
+  // Production portals
+  "https://afridiology.com",
+  "https://www.afridiology.com",
+  "https://admin.afridiology.com",
+
+  // Local development portals
+  "http://localhost:3000",
+  "http://admin.localhost:3000",
+]); /*
  * ==================================================
  * SECURITY HEADERS
  * ==================================================

@@ -1,10 +1,12 @@
 import type { Request } from "express";
 
 import { AppError } from "../../core/errors/AppError.js";
-import { clearRefreshTokenCookie, setRefreshTokenCookie } from "../../core/security/cookies.js";
+
+import { clearAdminRefreshTokenCookie, clearRefreshTokenCookie, setAdminRefreshTokenCookie, setRefreshTokenCookie } from "../../core/security/cookies.js";
+
 import { asyncHandler } from "../../core/http/asyncHandler.js";
 
-import { getMe, login, logout, logoutAll, refresh, register } from "./auth.service.js";
+import { adminLogin, adminRefresh, getMe, login, logout, logoutAll, refresh, register } from "./auth.service.js";
 
 import { loginSchema, registerSchema } from "./auth.validation.js";
 
@@ -40,17 +42,33 @@ function requireAuthenticatedRequest(req: Request): NonNullable<AuthenticatedReq
   return auth;
 }
 
-function getRefreshTokenFromCookie(req: Request): string | null {
+function getCookie(req: Request, cookieName: string): string | null {
   const cookies = req.cookies as Record<string, unknown> | undefined;
 
   if (!cookies) {
     return null;
   }
 
-  const token = cookies[env.AUTH_REFRESH_COOKIE_NAME];
+  const token = cookies[cookieName];
 
   if (typeof token !== "string" || token.length === 0) {
     return null;
+  }
+
+  return token;
+}
+
+function getStudentRefreshToken(req: Request): string | null {
+  return getCookie(req, env.AUTH_REFRESH_COOKIE_NAME);
+}
+
+function getAdminRefreshToken(req: Request): string | null {
+  return getCookie(req, env.AUTH_ADMIN_REFRESH_COOKIE_NAME);
+}
+
+function requireRefreshToken(token: string | null): string {
+  if (!token) {
+    throw new AppError("Authentication required", 401, "INVALID_REFRESH_TOKEN");
   }
 
   return token;
@@ -64,8 +82,7 @@ function getRefreshTokenFromCookie(req: Request): string | null {
  * POST /api/auth/register
  *
  * Public registration creates STUDENT accounts only.
- * The role is assigned by auth.service.ts, never by
- * the client request.
+ * The role is assigned by auth.service.ts.
  */
 
 export const registerController = asyncHandler(async (req, res) => {
@@ -93,10 +110,12 @@ export const registerController = asyncHandler(async (req, res) => {
 
 /*
  * ==================================================
- * LOGIN
+ * STUDENT LOGIN
  * ==================================================
  *
  * POST /api/auth/login
+ *
+ * STUDENT accounts only.
  */
 
 export const loginController = asyncHandler(async (req, res) => {
@@ -123,24 +142,77 @@ export const loginController = asyncHandler(async (req, res) => {
 
 /*
  * ==================================================
- * REFRESH
+ * ADMIN LOGIN
+ * ==================================================
+ *
+ * POST /api/auth/admin/login
+ *
+ * ADMIN and SUPER_ADMIN accounts only.
+ */
+
+export const adminLoginController = asyncHandler(async (req, res) => {
+  const result = loginSchema.safeParse(req.body);
+
+  if (!result.success) {
+    throw new AppError("Invalid request", 400, "VALIDATION_ERROR");
+  }
+
+  const authResult = await adminLogin({
+    email: result.data.email,
+    password: result.data.password,
+  });
+
+  setAdminRefreshTokenCookie(res, authResult.refreshToken);
+
+  res.status(200).json({
+    data: {
+      user: authResult.user,
+      accessToken: authResult.accessToken,
+    },
+  });
+});
+
+/*
+ * ==================================================
+ * STUDENT REFRESH
  * ==================================================
  *
  * POST /api/auth/refresh
  *
- * The refresh token is read from an HttpOnly cookie.
+ * Reads only the student refresh cookie.
  */
 
 export const refreshController = asyncHandler(async (req, res) => {
-  const refreshToken = getRefreshTokenFromCookie(req);
-
-  if (!refreshToken) {
-    throw new AppError("Authentication required", 401, "INVALID_REFRESH_TOKEN");
-  }
+  const refreshToken = requireRefreshToken(getStudentRefreshToken(req));
 
   const authResult = await refresh(refreshToken);
 
   setRefreshTokenCookie(res, authResult.refreshToken);
+
+  res.status(200).json({
+    data: {
+      user: authResult.user,
+      accessToken: authResult.accessToken,
+    },
+  });
+});
+
+/*
+ * ==================================================
+ * ADMIN REFRESH
+ * ==================================================
+ *
+ * POST /api/auth/admin/refresh
+ *
+ * Reads only the admin refresh cookie.
+ */
+
+export const adminRefreshController = asyncHandler(async (req, res) => {
+  const refreshToken = requireRefreshToken(getAdminRefreshToken(req));
+
+  const authResult = await adminRefresh(refreshToken);
+
+  setAdminRefreshTokenCookie(res, authResult.refreshToken);
 
   res.status(200).json({
     data: {
@@ -158,6 +230,9 @@ export const refreshController = asyncHandler(async (req, res) => {
  * POST /api/auth/logout
  *
  * Requires authenticate middleware.
+ *
+ * Clears the cookie corresponding to the authenticated
+ * account role.
  */
 
 export const logoutController = asyncHandler(async (req, res) => {
@@ -165,7 +240,11 @@ export const logoutController = asyncHandler(async (req, res) => {
 
   await logout(auth.sessionId, auth.userId);
 
-  clearRefreshTokenCookie(res);
+  if (auth.role === "ADMIN" || auth.role === "SUPER_ADMIN") {
+    clearAdminRefreshTokenCookie(res);
+  } else {
+    clearRefreshTokenCookie(res);
+  }
 
   res.status(200).json({
     data: "Logged out successfully",
@@ -179,7 +258,7 @@ export const logoutController = asyncHandler(async (req, res) => {
  *
  * POST /api/auth/logout-all
  *
- * Requires authenticate middleware.
+ * Revokes every session belonging to the user.
  */
 
 export const logoutAllController = asyncHandler(async (req, res) => {
@@ -187,7 +266,10 @@ export const logoutAllController = asyncHandler(async (req, res) => {
 
   await logoutAll(auth.userId);
 
+  // Clear both cookie names because all sessions
+  // belonging to this account have been revoked.
   clearRefreshTokenCookie(res);
+  clearAdminRefreshTokenCookie(res);
 
   res.status(200).json({
     data: "All sessions have been logged out",

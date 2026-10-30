@@ -1,27 +1,20 @@
 import { Router } from "express";
 
-import {
-  loginController,
-  logoutAllController,
-  logoutController,
-  meController,
-  refreshController,
-  registerController,
-} from "./auth.controller.js";
+import { adminLoginController, adminRefreshController, loginController, logoutAllController, logoutController, meController, refreshController, registerController } from "./auth.controller.js";
 
 import { authenticate } from "../../middleware/authenticate.js";
-import {
-  loginRateLimit,
-  refreshRateLimit,
-  registrationRateLimit,
-} from "../../middleware/authRateLimit.js";
+
+import { loginRateLimit, refreshRateLimit, registrationRateLimit } from "../../middleware/authRateLimit.js";
 
 const router = Router();
 
 /*
  * ==================================================
- * PUBLIC AUTH ROUTES
+ * STUDENT AUTHENTICATION
  * ==================================================
+ *
+ * Public registration creates STUDENT accounts only.
+ * Student login and refresh reject administrative roles.
  */
 
 router.post("/register", registrationRateLimit, registerController);
@@ -32,8 +25,25 @@ router.post("/refresh", refreshRateLimit, refreshController);
 
 /*
  * ==================================================
- * PROTECTED AUTH ROUTES
+ * ADMIN AUTHENTICATION
  * ==================================================
+ *
+ * ADMIN and SUPER_ADMIN accounts only.
+ *
+ * Separate endpoints use separate refresh cookies.
+ */
+
+router.post("/admin/login", loginRateLimit, adminLoginController);
+
+router.post("/admin/refresh", refreshRateLimit, adminRefreshController);
+
+/*
+ * ==================================================
+ * PROTECTED AUTHENTICATION
+ * ==================================================
+ *
+ * Access tokens are verified by authenticate middleware.
+ * Logout controllers clear the appropriate refresh cookie.
  */
 
 router.post("/logout", authenticate, logoutController);

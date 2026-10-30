@@ -10,25 +10,42 @@ import errorHandler from "./core/errors/errorHandler.js";
 
 const app = express();
 
-const allowedOrigins = new Set([
-  "https://afridiology.com",
-  "https://admin.afridiology.com",
-  ...(env.NODE_ENV === "development" || env.NODE_ENV === "test" ? ["http://localhost:3000"] : []),
-]);
+/*
+ * ==================================================
+ * ALLOWED FRONTEND ORIGINS
+ * ==================================================
+ */
 
-// This server returns API responses and does not serve the frontend's HTML or
-// scripts, so CSP is left to the frontend host. The remaining Helmet defaults
-// apply to successful responses and errors alike.
-app.use(helmet({ contentSecurityPolicy: false }));
+const allowedOrigins = new Set(["https://afridiology.com", "https://admin.afridiology.com", ...(env.NODE_ENV === "development" || env.NODE_ENV === "test" ? ["http://localhost:3000"] : [])]);
+
+/*
+ * ==================================================
+ * SECURITY HEADERS
+ * ==================================================
+ *
+ * The frontend serves HTML and scripts, so its CSP is
+ * configured separately. API responses use Helmet's
+ * remaining security headers.
+ */
+
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+  }),
+);
 
 /*
  * ==================================================
  * CORS
  * ==================================================
  *
- * Allow only known frontend origins.
- * Requests without an Origin header (such as server-to-
- * server requests and curl) are not rejected by CORS.
+ * Allow requests only from registered frontend origins.
+ *
+ * Both student and admin portals are allowed to use
+ * credentialed API requests.
+ *
+ * Requests without Origin headers are permitted for
+ * server-to-server communication and command-line tools.
  *
  * CORS is not an authentication or authorization control.
  */
@@ -43,9 +60,14 @@ app.use(
 
       callback(new AppError("Origin not allowed", 403, "CORS_ORIGIN_DENIED"));
     },
+
     credentials: true,
+
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+
     allowedHeaders: ["Content-Type", "Authorization"],
+
+    optionsSuccessStatus: 204,
   }),
 );
 
@@ -55,7 +77,12 @@ app.use(
  * ==================================================
  */
 
-app.use(express.json({ limit: "1mb" }));
+app.use(
+  express.json({
+    limit: "1mb",
+  }),
+);
+
 app.use(cookieParser());
 
 /*

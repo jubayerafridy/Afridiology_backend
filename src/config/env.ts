@@ -70,6 +70,7 @@ function getTokenExpiration(name: string, fallback: string): { value: string; mi
   const amount = Number(match[1]);
 
   const unit = match[2]![0]!.toLowerCase();
+
   const secondsPerUnit: Record<string, number> = {
     s: 1,
     m: 60,
@@ -78,6 +79,7 @@ function getTokenExpiration(name: string, fallback: string): { value: string; mi
     w: 7 * 24 * 60 * 60,
     y: 365.25 * 24 * 60 * 60,
   };
+
   const milliseconds = Math.round(amount * secondsPerUnit[unit]! * 1000);
 
   if (!Number.isSafeInteger(amount) || !Number.isSafeInteger(milliseconds)) {
@@ -98,6 +100,14 @@ const accessExpiration = getTokenExpiration("JWT_ACCESS_EXPIRES_IN", "15m");
 
 const refreshExpiration = getTokenExpiration("JWT_REFRESH_EXPIRES_IN", "30d");
 
+const studentRefreshCookieName = getOptionalEnv("AUTH_REFRESH_COOKIE_NAME", "afridiology_refresh");
+
+const adminRefreshCookieName = getOptionalEnv("AUTH_ADMIN_REFRESH_COOKIE_NAME", "afridiology_admin_refresh");
+
+if (studentRefreshCookieName === adminRefreshCookieName) {
+  throw new Error("AUTH_REFRESH_COOKIE_NAME and AUTH_ADMIN_REFRESH_COOKIE_NAME must be different.");
+}
+
 export const env = Object.freeze({
   DATABASE_URL: getRequiredEnv("DATABASE_URL"),
 
@@ -115,7 +125,9 @@ export const env = Object.freeze({
 
   JWT_REFRESH_EXPIRES_IN_MS: refreshExpiration.milliseconds,
 
-  AUTH_REFRESH_COOKIE_NAME: getOptionalEnv("AUTH_REFRESH_COOKIE_NAME", "afridiology_refresh"),
+  AUTH_REFRESH_COOKIE_NAME: studentRefreshCookieName,
+
+  AUTH_ADMIN_REFRESH_COOKIE_NAME: adminRefreshCookieName,
 });
 
 export const isProduction = env.NODE_ENV === "production";

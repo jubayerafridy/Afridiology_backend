@@ -35,40 +35,44 @@ const router = Router();
 
 /*
  * ==================================================
- * AUTH
+ * AUTH ROUTES
  * ==================================================
  *
  * Student registration remains public.
- * The registration service must always assign STUDENT
- * as the role and must never accept a client-supplied role.
  *
+ * The registration service must always assign STUDENT
+ * and must never accept a client-supplied role.
+ *
+ * Student and admin authentication use separate
+ * login and refresh endpoints.
  */
 
 router.use("/auth", authRouter);
 
 /*
  * ==================================================
- * ADMIN AUTHORIZATION GUARD
+ * ADMIN API AUTHORIZATION
  * ==================================================
  *
- * All /admin/* API endpoints require:
+ * Every /admin/* API request requires:
+ *
  * 1. A valid access token.
  * 2. An active user account.
- * 3. The ADMIN or SUPER_ADMIN role.
+ * 3. ADMIN or SUPER_ADMIN role.
  *
- * Keep this guard BEFORE all admin route registrations.
- *
+ * IMPORTANT:
+ * This guard MUST remain before every admin route.
  */
 
 router.use("/admin", authenticate, requireActiveUser, authorize("ADMIN", "SUPER_ADMIN"));
 
 /*
  * ==================================================
- * ADMIN ROUTES
+ * ADMIN API ROUTES
  * ==================================================
  *
- * These routes inherit the authorization guard above.
- *
+ * Every route below inherits the admin authorization
+ * middleware registered above.
  */
 
 router.use("/admin/education-levels", educationLevelRouter);
@@ -93,21 +97,19 @@ router.use("/admin/knowledge-graph", adminKnowledgeGraphRouter);
 
 /*
  * ==================================================
- * STUDENT ROUTES
+ * STUDENT API ROUTES
  * ==================================================
  *
- * These routes remain outside the admin guard.
- * Each route must still enforce authentication and
- * ownership where the operation requires it.
- *
+ * These routes remain outside the admin authorization
+ * guard. Individual routes must enforce authentication,
+ * account status, and ownership where required.
  */
 
 router.use("/chapters", studentChapterRouter);
 
 router.use("/knowledge-graph", knowledgeGraphRouter);
 
-// Keep the former detail URLs working while their
-// handlers live in the dedicated CQ and MCQ modules.
+// Preserve the existing knowledge-graph detail URLs.
 router.use("/knowledge-graph/cqs", studentCQRouter);
 
 router.use("/knowledge-graph/mcqs", studentMCQRouter);

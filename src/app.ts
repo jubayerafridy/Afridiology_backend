@@ -16,8 +16,7 @@ const app = express();
  * ==================================================
  */
 
-const allowedOrigins = new Set(["https://afridiology.com", "https://admin.afridiology.com", ...(env.NODE_ENV === "development" || env.NODE_ENV === "test" ? ["http://localhost:3000"] : [])]);
-
+const allowedOrigins = new Set(["https://afridiology.com", "https://admin.afridiology.com", "http://localhost:3000"]);
 /*
  * ==================================================
  * SECURITY HEADERS

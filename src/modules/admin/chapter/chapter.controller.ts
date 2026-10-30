@@ -1,16 +1,8 @@
 import type { Request, Response } from "express";
 
-import {
-  createChapter,
-  deleteChapter,
-  getChapters,
-  updateChapter,
-} from "./chapter.service.js";
+import { createChapter, deleteChapter, getChapters, updateChapter, updateChapterStatus } from "./chapter.service.js";
 
-import type {
-  CreateChapterInput,
-  UpdateChapterInput,
-} from "./chapter.service.js";
+import type { CreateChapterInput, UpdateChapterInput } from "./chapter.service.js";
 
 /*
  * ================================================================
@@ -20,10 +12,7 @@ import type {
 
 type JsonPrimitive = string | number | boolean | null;
 
-type JsonValue =
-  | JsonPrimitive
-  | JsonValue[]
-  | { readonly [key: string]: JsonValue };
+type JsonValue = JsonPrimitive | JsonValue[] | { readonly [key: string]: JsonValue };
 
 /*
  * ================================================================
@@ -56,12 +45,7 @@ function parsePositiveInteger(value: unknown): number | null {
 }
 
 function isJsonValue(value: unknown): value is JsonValue {
-  if (
-    value === null ||
-    typeof value === "string" ||
-    typeof value === "number" ||
-    typeof value === "boolean"
-  ) {
+  if (value === null || typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
     return true;
   }
 
@@ -149,10 +133,7 @@ function parseChapterDocument(value: unknown): ChapterDocument | null {
      * Every document item must have a type.
      */
 
-    if (
-      typeof candidate.type !== "string" ||
-      candidate.type.trim().length === 0
-    ) {
+    if (typeof candidate.type !== "string" || candidate.type.trim().length === 0) {
       return null;
     }
 
@@ -202,18 +183,8 @@ function parseChapterDocument(value: unknown): ChapterDocument | null {
  * }
  */
 
-export async function createChapterController(
-  req: Request,
-  res: Response,
-): Promise<void> {
-  const {
-    subjectId,
-    chapterNo,
-    nameBN,
-    nameEng,
-    descriptionBN,
-    descriptionEng,
-  } = req.body as {
+export async function createChapterController(req: Request, res: Response): Promise<void> {
+  const { subjectId, chapterNo, nameBN, nameEng, descriptionBN, descriptionEng } = req.body as {
     subjectId?: unknown;
     chapterNo?: unknown;
     nameBN?: unknown;
@@ -391,10 +362,7 @@ export async function createChapterController(
      * --------------------------------------------------
      */
 
-    if (
-      error.message ===
-      "A chapter with this serial number already exists for this subject"
-    ) {
+    if (error.message === "A chapter with this serial number already exists for this subject") {
       res.status(409).json({
         success: false,
         message: error.message,
@@ -417,10 +385,7 @@ export async function createChapterController(
  * Returns Chapters belonging to the specified Subject.
  */
 
-export async function getChaptersController(
-  req: Request,
-  res: Response,
-): Promise<void> {
+export async function getChaptersController(req: Request, res: Response): Promise<void> {
   const subjectId = parseUuid(req.query.subjectId);
 
   if (subjectId === null) {
@@ -460,10 +425,7 @@ export async function getChaptersController(
  * supplied document whenever the frontend wants to preserve them.
  */
 
-export async function updateChapterController(
-  req: Request,
-  res: Response,
-): Promise<void> {
+export async function updateChapterController(req: Request, res: Response): Promise<void> {
   const id = parseUuid(req.params.id);
 
   if (id === null) {
@@ -475,14 +437,13 @@ export async function updateChapterController(
     return;
   }
 
-  const { chapterNo, nameBN, nameEng, descriptionBN, descriptionEng } =
-    req.body as {
-      chapterNo?: unknown;
-      nameBN?: unknown;
-      nameEng?: unknown;
-      descriptionBN?: unknown;
-      descriptionEng?: unknown;
-    };
+  const { chapterNo, nameBN, nameEng, descriptionBN, descriptionEng } = req.body as {
+    chapterNo?: unknown;
+    nameBN?: unknown;
+    nameEng?: unknown;
+    descriptionBN?: unknown;
+    descriptionEng?: unknown;
+  };
 
   /*
    * --------------------------------------------------
@@ -619,11 +580,7 @@ export async function updateChapterController(
       data: chapter,
     });
   } catch (error) {
-    if (
-      error instanceof Error &&
-      error.message ===
-        "A chapter with this serial number already exists for this subject"
-    ) {
+    if (error instanceof Error && error.message === "A chapter with this serial number already exists for this subject") {
       res.status(409).json({
         success: false,
         message: error.message,
@@ -634,6 +591,68 @@ export async function updateChapterController(
 
     throw error;
   }
+}
+
+/*
+ * ================================================================
+ * UPDATE CHAPTER STATUS
+ * ================================================================
+ *
+ * PATCH /admin/chapters/:id/status
+ *
+ * Updates only Chapter.isActive.
+ *
+ * The request must explicitly provide:
+ *
+ * {
+ *   "isActive": true
+ * }
+ *
+ * This endpoint is separate from updateChapterController so
+ * changing the status never requires or overwrites chapter content.
+ */
+
+export async function updateChapterStatusController(req: Request, res: Response): Promise<void> {
+  const id = parseUuid(req.params.id);
+
+  if (id === null) {
+    res.status(400).json({
+      success: false,
+      message: "Invalid chapter ID",
+    });
+
+    return;
+  }
+
+  const { isActive } = req.body as {
+    isActive?: unknown;
+  };
+
+  if (typeof isActive !== "boolean") {
+    res.status(400).json({
+      success: false,
+      message: "A valid isActive boolean value is required",
+    });
+
+    return;
+  }
+
+  const chapter = await updateChapterStatus(id, isActive);
+
+  if (!chapter) {
+    res.status(404).json({
+      success: false,
+      message: "Chapter not found",
+    });
+
+    return;
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Chapter status updated successfully",
+    data: chapter,
+  });
 }
 
 /*
@@ -649,10 +668,7 @@ export async function updateChapterController(
  * children by this controller.
  */
 
-export async function deleteChapterController(
-  req: Request,
-  res: Response,
-): Promise<void> {
+export async function deleteChapterController(req: Request, res: Response): Promise<void> {
   const id = parseUuid(req.params.id);
 
   if (id === null) {

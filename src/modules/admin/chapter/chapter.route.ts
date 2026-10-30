@@ -1,11 +1,6 @@
 import { Router } from "express";
 
-import {
-  createChapterController,
-  deleteChapterController,
-  getChaptersController,
-  updateChapterController,
-} from "./chapter.controller.js";
+import { createChapterController, deleteChapterController, getChaptersController, updateChapterController, updateChapterStatusController } from "./chapter.controller.js";
 
 const chapterRouter = Router();
 
@@ -91,6 +86,27 @@ chapterRouter.get("/", getChaptersController);
  */
 
 chapterRouter.post("/", createChapterController);
+
+/*
+ * ------------------------------------------------
+ * UPDATE CHAPTER STATUS
+ * ------------------------------------------------
+ *
+ * PATCH /admin/chapters/:id/status
+ *
+ * Updates only the Chapter.isActive field.
+ *
+ * The status is supplied explicitly in the request body:
+ *
+ * {
+ *   "isActive": true
+ * }
+ *
+ * This dedicated route prevents a status change from
+ * overwriting chapter metadata or description documents.
+ */
+
+chapterRouter.patch("/:id/status", updateChapterStatusController);
 
 /*
  * ------------------------------------------------

@@ -8,10 +8,7 @@ import { prisma } from "../../../config/prisma.js";
 
 type JsonPrimitive = string | number | boolean | null;
 
-type JsonValue =
-  | JsonPrimitive
-  | JsonValue[]
-  | { readonly [key: string]: JsonValue };
+type JsonValue = JsonPrimitive | JsonValue[] | { readonly [key: string]: JsonValue };
 
 /**
  * ================================================================
@@ -143,10 +140,7 @@ function normalizeChapterDocument(value: unknown): ChapterDocument {
       [key: string]: unknown;
     };
 
-    if (
-      typeof candidate.type !== "string" ||
-      candidate.type.trim().length === 0
-    ) {
+    if (typeof candidate.type !== "string" || candidate.type.trim().length === 0) {
       continue;
     }
 
@@ -216,9 +210,7 @@ export async function createChapter(data: CreateChapterInput) {
   });
 
   if (existingChapter) {
-    throw new Error(
-      "A chapter with this serial number already exists for this subject",
-    );
+    throw new Error("A chapter with this serial number already exists for this subject");
   }
 
   const descriptionBN = normalizeChapterDocument(data.descriptionBN);
@@ -294,9 +286,7 @@ export async function updateChapter(id: string, data: UpdateChapterInput) {
   }).first();
 
   if (duplicate && duplicate.id !== id) {
-    throw new Error(
-      "A chapter with this serial number already exists for this subject",
-    );
+    throw new Error("A chapter with this serial number already exists for this subject");
   }
 
   const descriptionBN = normalizeChapterDocument(data.descriptionBN);
@@ -312,6 +302,33 @@ export async function updateChapter(id: string, data: UpdateChapterInput) {
 
     descriptionBN,
     descriptionEng,
+  });
+}
+
+/**
+ * ================================================================
+ * UPDATE CHAPTER STATUS
+ * ================================================================
+ *
+ * Updates only the Chapter.isActive field.
+ *
+ * This is intentionally separate from updateChapter() so a status
+ * change cannot overwrite chapter metadata or content documents.
+ */
+
+export async function updateChapterStatus(id: string, isActive: boolean) {
+  const chapter = await prisma.orm.public.Chapter.first({
+    id,
+  });
+
+  if (!chapter) {
+    return null;
+  }
+
+  return prisma.orm.public.Chapter.where({
+    id,
+  }).update({
+    isActive,
   });
 }
 
@@ -335,11 +352,7 @@ export async function updateChapter(id: string, data: UpdateChapterInput) {
  * ================================================================
  */
 
-export async function setChapterStructure(
-  chapterId: string,
-  descriptionBN: ChapterDocument,
-  descriptionEng?: ChapterDocument,
-) {
+export async function setChapterStructure(chapterId: string, descriptionBN: ChapterDocument, descriptionEng?: ChapterDocument) {
   const chapter = await prisma.orm.public.Chapter.first({
     id: chapterId,
   });
@@ -357,10 +370,7 @@ export async function setChapterStructure(
    * This keeps this function safe for any existing caller
    * while the frontend is migrated.
    */
-  const normalizedEng =
-    descriptionEng !== undefined
-      ? normalizeChapterDocument(descriptionEng)
-      : normalizeChapterDocument(chapter.descriptionEng);
+  const normalizedEng = descriptionEng !== undefined ? normalizeChapterDocument(descriptionEng) : normalizeChapterDocument(chapter.descriptionEng);
 
   return prisma.orm.public.Chapter.where({
     id: chapterId,
@@ -400,10 +410,7 @@ export async function setChapterStructure(
  * ================================================================
  */
 
-export async function appendLessonToChapterStructure(
-  chapterId: string,
-  lessonId: string,
-) {
+export async function appendLessonToChapterStructure(chapterId: string, lessonId: string) {
   const chapter = await prisma.orm.public.Chapter.first({
     id: chapterId,
   });
@@ -438,13 +445,9 @@ export async function appendLessonToChapterStructure(
    *
    * Normally both documents should stay synchronized.
    */
-  const bnAlreadyExists = descriptionBN.some(
-    (item) => getLessonId(item) === lessonId,
-  );
+  const bnAlreadyExists = descriptionBN.some((item) => getLessonId(item) === lessonId);
 
-  const engAlreadyExists = descriptionEng.some(
-    (item) => getLessonId(item) === lessonId,
-  );
+  const engAlreadyExists = descriptionEng.some((item) => getLessonId(item) === lessonId);
 
   /**
    * If the reference is already present in both documents,
@@ -511,10 +514,7 @@ export async function appendLessonToChapterStructure(
  * ================================================================
  */
 
-export async function removeLessonFromChapterStructure(
-  chapterId: string,
-  lessonId: string,
-) {
+export async function removeLessonFromChapterStructure(chapterId: string, lessonId: string) {
   const chapter = await prisma.orm.public.Chapter.first({
     id: chapterId,
   });
@@ -527,21 +527,14 @@ export async function removeLessonFromChapterStructure(
 
   const descriptionEng = normalizeChapterDocument(chapter.descriptionEng);
 
-  const nextDescriptionBN = descriptionBN.filter(
-    (item) => getLessonId(item) !== lessonId,
-  );
+  const nextDescriptionBN = descriptionBN.filter((item) => getLessonId(item) !== lessonId);
 
-  const nextDescriptionEng = descriptionEng.filter(
-    (item) => getLessonId(item) !== lessonId,
-  );
+  const nextDescriptionEng = descriptionEng.filter((item) => getLessonId(item) !== lessonId);
 
   /**
    * Nothing changed.
    */
-  if (
-    nextDescriptionBN.length === descriptionBN.length &&
-    nextDescriptionEng.length === descriptionEng.length
-  ) {
+  if (nextDescriptionBN.length === descriptionBN.length && nextDescriptionEng.length === descriptionEng.length) {
     return chapter;
   }
 
